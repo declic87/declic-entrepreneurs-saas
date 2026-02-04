@@ -1,0 +1,437 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================
+// ENUMS
+// ========================
+
+enum Role {
+  ADMIN
+  HOS      // Head of Sales
+  CLOSER
+  SETTER
+  EXPERT
+  CLIENT
+}
+
+enum LeadStatus {
+  NOUVEAU
+  CONTACTE
+  QUALIFIE
+  RDV_PLANIFIE
+  RDV_EFFECTUE
+  PROPOSITION
+  NEGOCIE
+  CLOSE
+  PERDU
+}
+
+enum Temperature {
+  HOT
+  WARM
+  COLD
+}
+
+enum Offre {
+  PLATEFORME      // 97€/mois
+  STARTER         // 3600€/6 mois
+  PRO             // 4600€/12 mois
+  EXPERT          // 6600€/18 mois
+  FORMATION_ESS   // 497€
+  FORMATION_IMMO  // 897€
+  DAF             // Sur devis
+}
+
+enum ClientStatus {
+  ONBOARDING
+  EN_COURS
+  TERMINE
+  SUSPENDU
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum DocumentType {
+  CNI
+  JUSTIFICATIF_DOMICILE
+  DESCRIPTIF_ACTIVITE
+  ELEMENTS_FINANCIERS
+  STATUTS
+  KBIS
+  CONTRAT
+  FACTURE
+  AUTRE
+}
+
+enum DocumentStatus {
+  EN_ATTENTE
+  VALIDE
+  REJETE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum RdvType {
+  DIAGNOSTIC
+  STRATEGIE
+  SUIVI
+  EXPERT
+  JEROME
+}
+
+enum RdvStatus {
+  PLANIFIE
+  CONFIRME
+  EFFECTUE
+  NO_SHOW
+  ANNULE
+  REPORTE
+}
+
+enum RefundStatus {
+  DEMANDE
+  EN_COURS
+  APPROUVE
+  REFUSE
+  TRAITE
+}
+
+// ========================
+// MODELS
+// ========================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  role          Role      @default(CLIENT)
+  avatar        String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  client        Client?
+  expert        Expert?
+  leads         Lead[]    @relation("CloserLeads")
+  setterLeads   Lead[]    @relation("SetterLeads")
+  tasks         Task[]
+  notifications Notification[]
+  
+  @@map("users")
+}
+
+model Client {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  offre         Offre
+  status        ClientStatus  @default(ONBOARDING)
+  progression   Int           @default(0)  // 0-100%
+  etape         Int           @default(1)  // 1-7
+  
+  expertId      String?
+  expert        Expert?       @relation(fields: [expertId], references: [id])
+  
+  note          Float?        // Note donnée par le client à l'expert
+  commentaire   String?
+  
+  stripeCustomerId String?
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  documents     Document[]
+  payments      Payment[]
+  rdvs          Rdv[]
+  notes         Note[]
+  contracts     Contract[]
+  refunds       Refund[]
+  simulations   Simulation[]
+  
+  @@map("clients")
+}
+
+model Expert {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  specialite    String?
+  calendlyUrl   String?
+  bio           String?
+  
+  noteMoyenne   Float?
+  satisfaction  Float?    // Pourcentage
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  clients       Client[]
+  rdvs          Rdv[]
+  notes         Note[]
+  
+  @@map("experts")
+}
+
+model Lead {
+  id            String      @id @default(cuid())
+  
+  // Infos contact
+  name          String
+  email         String
+  phone         String?
+  
+  // Qualification
+  source        String?     // Google, Meta, Referral, etc.
+  status        LeadStatus  @default(NOUVEAU)
+  temperature   Temperature @default(COLD)
+  
+  // Assignation
+  setterId      String?
+  setter        User?       @relation("SetterLeads", fields: [setterId], references: [id])
+  closerId      String?
+  closer        User?       @relation("CloserLeads", fields: [closerId], references: [id])
+  
+  // Pipeline stage (pour le Kanban)
+  stage         Int         @default(0)  // 0-7
+  
+  // Infos business
+  ca            Float?
+  activite      String?
+  statut        String?     // Micro, SASU, etc.
+  
+  // Raison si perdu
+  raisonPerdu   String?
+  
+  // RDV
+  rdvDate       DateTime?
+  showUp        Boolean?
+  
+  // Notes
+  notes         String?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@map("leads")
+}
+
+model Document {
+  id            String          @id @default(cuid())
+  clientId      String
+  client        Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  type          DocumentType
+  name          String
+  url           String
+  size          Int?            // En bytes
+  mimeType      String?
+  
+  status        DocumentStatus  @default(EN_ATTENTE)
+  commentaire   String?
+  
+  uploadedAt    DateTime        @default(now())
+  validatedAt   DateTime?
+  
+  @@map("documents")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  
+  stripePaymentId   String?
+  stripeInvoiceId   String?
+  
+  description   String?
+  echeance      Int?          // Numéro d'échéance (1, 2, 3, 4)
+  
+  dueDate       DateTime
+  paidAt        DateTime?
+  
+  createdAt     DateTime      @default(now())
+  
+  @@map("payments")
+}
+
+model Task {
+  id            String      @id @default(cuid())
+  
+  title         String
+  description   String?
+  
+  priority      TaskPriority @default(MEDIUM)
+  status        TaskStatus   @default(TODO)
+  
+  assignedToId  String
+  assignedTo    User        @relation(fields: [assignedToId], references: [id])
+  
+  clientId      String?
+  
+  dueDate       DateTime?
+  completedAt   DateTime?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@map("tasks")
+}
+
+model Rdv {
+  id            String    @id @default(cuid())
+  
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  expertId      String?
+  expert        Expert?   @relation(fields: [expertId], references: [id])
+  
+  type          RdvType
+  status        RdvStatus @default(PLANIFIE)
+  
+  date          DateTime
+  duration      Int       @default(30)  // En minutes
+  
+  calendlyEventId String?
+  meetingUrl    String?
+  
+  notes         String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("rdvs")
+}
+
+model Simulation {
+  id            String    @id @default(cuid())
+  
+  clientId      String?
+  client        Client?   @relation(fields: [clientId], references: [id])
+  
+  type          String    // COMPARATEUR, IK, COTISATIONS, IMMOBILIER
+  
+  inputs        Json      // Paramètres d'entrée
+  results       Json      // Résultats calculés
+  
+  createdAt     DateTime  @default(now())
+  
+  @@map("simulations")
+}
+
+model Note {
+  id            String    @id @default(cuid())
+  
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  expertId      String?
+  expert        Expert?   @relation(fields: [expertId], references: [id])
+  
+  content       String
+  
+  createdAt     DateTime  @default(now())
+  
+  @@map("notes")
+}
+
+model Contract {
+  id            String    @id @default(cuid())
+  
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  type          String    // ACCOMPAGNEMENT, FORMATION, etc.
+  url           String
+  
+  signedAt      DateTime?
+  
+  createdAt     DateTime  @default(now())
+  
+  @@map("contracts")
+}
+
+model Refund {
+  id            String        @id @default(cuid())
+  
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  reason        String
+  amount        Float
+  percentage    Int           // 10, 20, 30, etc.
+  
+  ribUrl        String?
+  
+  status        RefundStatus  @default(DEMANDE)
+  
+  processedAt   DateTime?
+  processedBy   String?
+  
+  createdAt     DateTime      @default(now())
+  
+  @@map("refunds")
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type          String    // INFO, WARNING, SUCCESS, ERROR
+  title         String
+  message       String
+  
+  read          Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  
+  @@map("notifications")
+}
+
+model Team {
+  id            String    @id @default(cuid())
+  name          String
+  
+  headOfSalesId String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("teams")
+}

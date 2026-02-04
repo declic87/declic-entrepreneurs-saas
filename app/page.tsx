@@ -159,7 +159,7 @@ export default function HomePage() {
               >
                 Tarifs
               </Link>
-              <Link href="/auth/login">
+              <Link href="/login">
                 <Button variant="outline">Connexion</Button>
               </Link>
               <Link href="https://calendly.com/declic-entrepreneurs/diagnostic">
@@ -203,7 +203,7 @@ export default function HomePage() {
               >
                 Tarifs
               </Link>
-              <Link href="/auth/login" className="block py-2">
+              <Link href="/login" className="block py-2">
                 <Button variant="outline" className="w-full">
                   Connexion
                 </Button>

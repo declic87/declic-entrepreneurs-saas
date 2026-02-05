@@ -1,24 +1,18 @@
--- Table des templates
-CREATE TABLE email_templates (
-  id TEXT PRIMARY KEY,
-  name TEXT,
-  subject TEXT,
-  body TEXT,
-  trigger TEXT,
-  target_type TEXT, -- Note: ton code JS utilise 'targetType', vérifie la correspondance
-  active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+import React from 'react';
 
--- Table des logs
-CREATE TABLE email_logs (
-  id TEXT PRIMARY KEY,
-  template_id TEXT REFERENCES email_templates(id),
-  recipient_email TEXT,
-  recipient_name TEXT,
-  subject TEXT,
-  body TEXT,
-  status TEXT,
-  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+export default function EmailsPage() {
+  return (
+    <div className="p-8 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Gestion des Templates d'Emails</h1>
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <p className="text-yellow-700">
+          <strong>Note technique :</strong> Les tables <code>email_templates</code> et <code>email_logs</code> 
+          doivent être créées dans Supabase via l'éditeur SQL.
+        </p>
+      </div>
+      <div className="border rounded-lg p-6 bg-white shadow-sm">
+        <p className="text-gray-600">L'interface de gestion apparaîtra ici une fois la base de données prête.</p>
+      </div>
+    </div>
+  );
+}

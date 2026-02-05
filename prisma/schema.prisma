@@ -1,13 +1,14 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema", "views"] // On garde tout, c'est la base du SaaS
-  binaryTargets   = ["native"]
+  previewFeatures = ["multiSchema", "views", "driverAdapters"]
+  binaryTargets   = ["native", "rhel-debian-node-18.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["auth", "public"] // Attention : pas de virgule à l'intérieur des noms
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
 }
 
 model User {

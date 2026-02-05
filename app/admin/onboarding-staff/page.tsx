@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Video, Plus, Trash2, Edit3, Save, X, GripVertical } from "lucide-react";
@@ -145,7 +145,10 @@ function SortableVideoItem({
 
 // --- Page Principale ---
 export default function OnboardingStaffPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [videos, setVideos] = useState<OnboardingVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPole, setSelectedPole] = useState('ADMIN');

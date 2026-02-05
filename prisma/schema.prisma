@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "" // On laisse vide car l'adapter injecte la connexion
   schemas  = ["auth", "public"]
 }
 

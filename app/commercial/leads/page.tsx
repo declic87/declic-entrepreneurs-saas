@@ -111,6 +111,8 @@ function Sidebar({ role, userName, userEmail }: SidebarProps) {
       </div>
     </aside>
   );
+}
+
   export default function LeadsPage() {
     return (
       <div className="flex min-h-screen bg-slate-50">

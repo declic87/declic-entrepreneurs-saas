@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Target, Phone, Mail, Award, TrendingUp, BarChart3 } from "lucide-react";
 
@@ -24,7 +24,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function EquipePage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState("ALL");

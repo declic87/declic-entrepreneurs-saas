@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Plus, CheckCircle, XCircle, Clock, ExternalLink } from "lucide-react";
@@ -28,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AgendaPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [rdvs, setRdvs] = useState<Rdv[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("ALL");

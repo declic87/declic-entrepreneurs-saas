@@ -1,13 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Shield, Save, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function CommercialSettingsPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null, msg: string }>({ type: null, msg: "" });

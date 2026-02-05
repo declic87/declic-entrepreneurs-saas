@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Circle, Clock, Plus, Trash2, AlertCircle, X, Calendar as CalendarIcon } from "lucide-react";
@@ -21,7 +21,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; class: string }> = {
 };
 
 export default function TachesPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("ALL");

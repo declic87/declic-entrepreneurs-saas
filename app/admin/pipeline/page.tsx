@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Flame, User, ArrowRight } from "lucide-react";
@@ -15,7 +15,7 @@ const STAGES = [
 ];
 
 export default function PipelinePage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

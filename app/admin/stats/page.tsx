@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   BarChart3, TrendingUp, Users, Euro, Target, 
@@ -10,7 +10,7 @@ import {
 type TimeRange = "all" | "today" | "7d" | "30d" | "90d";
 
 export default function StatsPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<TimeRange>("all");
   const [stats, setStats] = useState({

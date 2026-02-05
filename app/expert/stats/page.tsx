@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Users, Calendar, CheckCircle, Clock, AlertTriangle, TrendingUp } from "lucide-react";
 
@@ -25,7 +25,7 @@ const OFFRE_COLORS: Record<string, string> = {
 };
 
 export default function ExpertStatsPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [data, setData] = useState({ clients: [] as Client[], rdvs: [] as Rdv[], tasks: [] as Task[] });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("ALL");

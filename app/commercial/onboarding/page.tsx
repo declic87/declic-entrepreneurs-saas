@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserCheck, CheckCircle, Mail, Phone, Rocket, ArrowRight } from "lucide-react";
@@ -19,7 +19,7 @@ const STEPS = [
 ];
 
 export default function OnboardingPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 

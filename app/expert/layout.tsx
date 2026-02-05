@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Sidebar } from "@/components/ui/sidebar";
 
 export default function ExpertLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [userName, setUserName] = useState("Expert");
   const [userEmail, setUserEmail] = useState("");
 

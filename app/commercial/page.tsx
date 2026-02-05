@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Users, 
@@ -51,7 +51,7 @@ const STATUS_COLORS: Record<string, string> = {
 const PIPELINE_STEPS = ["NOUVEAU", "CONTACTE", "QUALIFIE", "RDV_PLANIFIE", "RDV_EFFECTUE", "PROPOSITION", "NEGOCIE", "CLOSE", "PERDU"];
 
 export default function CommercialDashboard() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("");

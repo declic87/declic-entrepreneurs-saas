@@ -1,11 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Sidebar } from "@/components/ui/sidebar";
 import { Loader2 } from "lucide-react";
 
 export default function CommercialLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [userData, setUserData] = useState({
     name: "Chargement...",
     email: "",

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   BarChart3, TrendingUp, Target, Users, 
@@ -31,7 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function CommercialStatsPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("ALL");

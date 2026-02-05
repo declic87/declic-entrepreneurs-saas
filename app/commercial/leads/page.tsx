@@ -111,4 +111,23 @@ function Sidebar({ role, userName, userEmail }: SidebarProps) {
       </div>
     </aside>
   );
+  export default function LeadsPage() {
+    return (
+      <div className="flex min-h-screen bg-slate-50">
+        {/* On appelle ton composant Sidebar ici */}
+        <Sidebar 
+          role="ADMIN" 
+          userName="Utilisateur" 
+          userEmail="admin@test.com" 
+        />
+        
+        {/* Le contenu principal à droite de la sidebar */}
+        <main className="ml-64 p-8 w-full">
+          <h1 className="text-2xl font-bold text-slate-900">Gestion des Leads</h1>
+          <div className="mt-6 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <p className="text-slate-600">Le contenu de vos leads s'affichera ici.</p>
+          </div>
+        </main>
+      </div>
+    );
 }

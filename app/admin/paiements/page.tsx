@@ -144,7 +144,13 @@ export default function PaiementsPage() {
     doc.text(`Rapport Financier - ${period}`, 14, 15);
     autoTable(doc, {
       head: [["Client", "Description", "Montant", "Statut", "Date"]],
-      body: filtered.map(p => [p.client?.user?.name, p.description, `${p.amount}€`, p.status, p.paidAt || "—"]),
+      body: filtered.map(p => [
+        p.client?.user?.name || "Inconnu",
+        p.description || "",
+        `${p.amount}€`,
+        p.status || "",
+        p.paidAt ? String(p.paidAt) : "—"
+      ]),
       startY: 25,
       headStyles: { fillColor: [249, 115, 22] }
     });

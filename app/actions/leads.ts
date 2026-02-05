@@ -8,7 +8,7 @@ export async function createLead(formData: FormData) {
   const email = formData.get("email") as string
 
   try {
-    await prisma.leads.create({
+    await prisma.lead.create({
       data: {
         first_name: firstName,
         email: email,
@@ -16,7 +16,7 @@ export async function createLead(formData: FormData) {
       },
     })
 
-    revalidatePath("/leads") // Actualise la liste des leads automatiquement
+    revalidatePath("/lead") // Actualise la liste des leads automatiquement
     return { success: true }
   } catch (error) {
     console.error("Erreur Prisma:", error)

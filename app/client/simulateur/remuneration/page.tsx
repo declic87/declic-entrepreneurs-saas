@@ -6,10 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Wallet, ArrowLeft, Calculator, Award, Info, TrendingUp, PieChart } from "lucide-react";
 import Link from "next/link";
 
-/**
- * Barème de l'Impôt sur le Revenu (IR) 2026 (prévisionnel sur revenus 2025)
- * Données basées sur la revalorisation de +0.9%
- */
 const TRANCHES_IR = [
   { min: 0, max: 11601, taux: 0 },
   { min: 11602, max: 29579, taux: 0.11 },
@@ -80,7 +76,6 @@ export default function SimuRemunerationPage() {
       const netPerso = net - ir;
       const totalDispo = netPerso + tresoSociete;
       
-      // Pourcentage pour la barre visuelle
       const totalPrelevements = charges + ir + is;
 
       return { ...s, brut, charges, net, ir, is, tresoSociete, netPerso, totalDispo, totalPrelevements };
@@ -171,73 +166,66 @@ export default function SimuRemunerationPage() {
 
       {computed && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Table des résultats */}
-            <Card className="border-gray-200 shadow-md overflow-hidden lg:col-span-2">
-              <div className="bg-slate-900 p-4 flex justify-between items-center">
-                <h2 className="text-white font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
-                  <PieChart size={18} className="text-orange-400" /> Analyse des Scénarios
-                </h2>
-                <span className="text-[10px] text-slate-400 font-mono italic underline">Estimations fiscales 2026</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-gray-200 text-gray-500 font-bold text-[10px] uppercase">
-                      <th className="p-4 text-left">Mix (Salaire/Tréso)</th>
-                      <th className="p-4 text-right">Salaire Net</th>
-                      <th className="p-4 text-right">Impôts (IR+IS)</th>
-                      <th className="p-4 text-right text-blue-600">En Société</th>
-                      <th className="p-4 text-right text-slate-900">Total Disponible</th>
-                      <th className="p-4 w-48 text-center">Répartition Visuelle</th>
+          <Card className="border-gray-200 shadow-md overflow-hidden">
+            <div className="bg-slate-900 p-4 flex justify-between items-center">
+              <h2 className="text-white font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
+                <PieChart size={18} className="text-orange-400" /> Analyse des Scénarios
+              </h2>
+              <span className="text-[10px] text-slate-400 font-mono italic underline">Estimations fiscales 2026</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-gray-200 text-gray-500 font-bold text-[10px] uppercase">
+                    <th className="p-4 text-left">Mix (Salaire/Tréso)</th>
+                    <th className="p-4 text-right">Salaire Net</th>
+                    <th className="p-4 text-right">Impôts (IR+IS)</th>
+                    <th className="p-4 text-right text-blue-600">En Société</th>
+                    <th className="p-4 text-right text-slate-900">Total Disponible</th>
+                    <th className="p-4 w-48 text-center">Répartition</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {results.map((r, i) => (
+                    <tr key={i} className={`hover:bg-orange-50/30 transition-colors ${r.totalDispo === maxTotal ? "bg-emerald-50" : ""}`}>
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800 flex items-center gap-1">
+                            {r.label}
+                            {r.totalDispo === maxTotal && <Award size={14} className="text-emerald-600" />}
+                          </span>
+                          <span className="text-[10px] text-gray-400">Charges : {fmt(r.charges)}€</span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right font-medium">{fmt(r.netPerso)}</td>
+                      <td className="p-4 text-right text-red-500 font-medium">{fmt(r.ir + r.is)}</td>
+                      <td className="p-4 text-right text-blue-600 font-bold">{fmt(r.tresoSociete)}</td>
+                      <td className={`p-4 text-right font-black ${r.totalDispo === maxTotal ? "text-emerald-700 text-lg" : "text-slate-900"}`}>
+                        {currency(r.totalDispo)}
+                      </td>
+                      <td className="p-4">
+                         <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden flex shadow-inner">
+                            <div style={{ width: `${(r.netPerso / disponible) * 100}%` }} className="bg-emerald-500" />
+                            <div style={{ width: `${(r.tresoSociete / disponible) * 100}%` }} className="bg-blue-500" />
+                            <div style={{ width: `${((r.ir + r.is + r.charges) / (disponible + r.charges)) * 100}%` }} className="bg-red-400" />
+                         </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {results.map((r, i) => (
-                      <tr key={i} className={`hover:bg-orange-50/30 transition-colors ${r.totalDispo === maxTotal ? "bg-emerald-50" : ""}`}>
-                        <td className="p-4">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-800 flex items-center gap-1">
-                              {r.label}
-                              {r.totalDispo === maxTotal && <Award size={14} className="text-emerald-600" />}
-                            </span>
-                            <span className="text-[10px] text-gray-400">Charges : {fmt(r.charges)}€</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-right font-medium">{fmt(r.netPerso)}</td>
-                        <td className="p-4 text-right text-red-500 font-medium">{fmt(r.ir + r.is)}</td>
-                        <td className="p-4 text-right text-blue-600 font-bold">{fmt(r.tresoSociete)}</td>
-                        <td className={`p-4 text-right font-black ${r.totalDispo === maxTotal ? "text-emerald-700 text-lg" : "text-slate-900"}`}>
-                          {currency(r.totalDispo)}
-                        </td>
-                        <td className="p-4">
-                           <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden flex shadow-inner">
-                              <div style={{ width: `${(r.netPerso / disponible) * 100}%` }} className="bg-emerald-500" title="Net dans la poche" />
-                              <div style={{ width: `${(r.tresoSociete / disponible) * 100}%` }} className="bg-blue-500" title="Trésorerie société" />
-                              <div style={{ width: `${((r.ir + r.is + r.charges) / (disponible + r.charges)) * 100}%` }} className="bg-red-400" title="Prélèvements" />
-                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
           <div className="flex gap-3 p-4 bg-orange-50 rounded-xl border border-orange-100">
             <Info size={20} className="text-orange-400 shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-orange-700 uppercase tracking-tight">Interprétation de la barre visuelle :</p>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-500 rounded" /> <span className="text-[10px] text-gray-600">Net Perso (Poche)</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-500 rounded" /> <span className="text-[10px] text-gray-600">Trésorerie (Société)</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-red-400 rounded" /> <span className="text-[10px] text-gray-600">Impôts & Cotisations</span></div>
+              <p className="text-[11px] font-bold text-orange-700 uppercase tracking-tight">Légende de la barre :</p>
+              <div className="flex flex-wrap gap-4 text-[10px]">
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-500 rounded" /> <span>Net Poche</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-500 rounded" /> <span>Tréso Société</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-red-400 rounded" /> <span>Prélèvements</span></div>
               </div>
-              <p className="text-[10px] text-gray-500 leading-relaxed pt-2 border-t border-orange-200/50">
-                Calculs basés sur le barème fiscal 2026. L'optimisation ne prend pas en compte les dividendes (Flat Tax de 30%). 
-                Pour l'EURL, le net perso est calculé après déduction des cotisations SSI payées par la structure.
-              </p>
             </div>
           </div>
         </div>

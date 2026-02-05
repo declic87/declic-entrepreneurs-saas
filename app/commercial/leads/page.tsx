@@ -19,7 +19,7 @@ interface SidebarProps {
   userEmail: string;
 }
 
-export function Sidebar({ role, userName, userEmail }: SidebarProps) {
+function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const pathname = usePathname();
 
   // Configuration des menus selon le rôle

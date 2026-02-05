@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, UserPlus, Trash2, Mail, Phone, Calendar, ChevronDown } from "lucide-react";
@@ -11,7 +11,10 @@ const ROLE_COLORS: Record<string, string> = { ADMIN: "bg-orange-100 text-orange-
 const ROLE_OPTIONS = [ { value: "CLOSER", label: "Closer" }, { value: "SETTER", label: "Setter" }, { value: "HOS", label: "Head of Sales" }, { value: "EXPERT", label: "Expert" }, { value: "ADMIN", label: "Admin" } ];
 
 export default function EquipePage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState("ALL");

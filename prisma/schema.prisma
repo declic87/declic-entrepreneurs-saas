@@ -1,7 +1,7 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema", "views", "driverAdapters"]
-  binaryTargets   = ["native", "rhel-debian-node-18.x"]
+  previewFeatures = ["views"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

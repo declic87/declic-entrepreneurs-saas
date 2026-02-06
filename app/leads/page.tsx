@@ -1,14 +1,16 @@
+// 1. Force le rendu dynamique pour éviter l'erreur Prisma au build
+export const dynamic = 'force-dynamic';
+
 import { prisma } from "@/lib/prisma";
 
 export default async function LeadsPage() {
-  // 1. Protection : On vérifie si prisma est bien chargé
+  // Protection : On vérifie si prisma est bien chargé
   if (!prisma) {
     return <div style={{ padding: "20px", color: "red" }}>Erreur : Prisma n'est pas initialisé.</div>;
   }
 
   try {
-    // 2. On essaie de récupérer les leads (Note : j'ai ajouté des vérifications)
-    // Si ta table s'appelle 'lead' sans 's', change 'leads' en 'lead' ci-dessous
+    // On récupère les leads
     const leads = await prisma.lead.findMany({
       orderBy: {
         created_at: 'desc'
@@ -37,10 +39,11 @@ export default async function LeadsPage() {
               {leads.length > 0 ? (
                 leads.map((lead: any) => (
                   <tr key={lead.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "16px 24px" }}>{lead.first_name || "N/A"}</td>
+                    {/* Note: On vérifie firstName ou first_name selon ton schéma */}
+                    <td style={{ padding: "16px 24px" }}>{lead.firstName || lead.first_name || "N/A"}</td>
                     <td style={{ padding: "16px 24px" }}>{lead.email}</td>
                     <td style={{ padding: "16px 24px", color: "#6b7280", fontSize: "14px" }}>
-                      {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : "Inconnue"}
+                      {lead.created_at ? new Date(lead.created_at).toLocaleDateString('fr-FR') : "Inconnue"}
                     </td>
                   </tr>
                 ))
@@ -61,8 +64,10 @@ export default async function LeadsPage() {
     return (
       <div style={{ padding: "40px", color: "red", fontFamily: "sans-serif" }}>
         <h2>Erreur de connexion à la base de données</h2>
-        <p>{error.message}</p>
-        <p>Vérifiez que vos variables d'environnement dans le fichier <strong>.env</strong> sont correctes.</p>
+        <p>L'application n'a pas pu récupérer les données.</p>
+        <details style={{ marginTop: "10px", fontSize: "12px", color: "#666" }}>
+          {error.message}
+        </details>
       </div>
     );
   }

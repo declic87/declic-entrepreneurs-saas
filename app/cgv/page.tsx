@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Zap, ArrowLeft, ShieldCheck, scale } from "lucide-react";
+import { Zap, ArrowLeft, ShieldCheck, Scale } from "lucide-react";
 
 export default function CGVPage() {
   return (

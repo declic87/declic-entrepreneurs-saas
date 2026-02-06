@@ -26,7 +26,7 @@ const BusinessPlanSimulateur = () => {
 
   // --- LOGIQUE DE CALCUL (MOTEUR) ---
   const calculs = useMemo(() => {
-    const formatMoney = (val) => new Intl.NumberFormat('fr-FR', { 
+    const formatMoney = (val: number) => new Intl.NumberFormat('fr-FR', {
         style: 'currency', 
         currency: 'EUR', 
         maximumFractionDigits: 0 

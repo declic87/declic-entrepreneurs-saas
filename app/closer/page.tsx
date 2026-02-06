@@ -25,11 +25,7 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   return (
-    <DashboardLayout
-      userRole="COMMERCIAL"
-      userName="Admin Commercial"
-      userEmail="comm@declic.fr"
-    >
+    <DashboardLayout>
       <div className="space-y-6">
         {/* Header avec Actions */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -9,7 +9,7 @@ export default async function LeadsPage() {
   try {
     // 2. On essaie de récupérer les leads (Note : j'ai ajouté des vérifications)
     // Si ta table s'appelle 'lead' sans 's', change 'leads' en 'lead' ci-dessous
-    const leads = await prisma.leads.findMany({
+    const leads = await prisma.lead.findMany({
       orderBy: {
         created_at: 'desc'
       }

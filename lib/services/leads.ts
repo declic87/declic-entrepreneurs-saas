@@ -1,18 +1,14 @@
 import { prisma } from "@/lib/prisma";
 
 export const LeadService = {
-  // Récupérer tous les leads avec les infos du Closer et du Setter
+  // Récupérer tous les leads (Inclusions désactivées temporairement pour le build)
   async getAllLeads() {
     return await prisma.lead.findMany({
-      include: {
-        closer: true,
-        setter: true
-      },
       orderBy: { createdAt: 'desc' }
     });
   },
 
-  // Mettre à jour le statut d'un lead (ex: Nouveau -> Qualifié)
+  // Mettre à jour le statut d'un lead
   async updateStatus(id: string, status: any) {
     return await prisma.lead.update({
       where: { id },

@@ -29,12 +29,8 @@ export default function TeamPage() {
   ];
 
   return (
-    <DashboardLayout
-      navItems={hosNavItems}
-      userRole="HOS"
-      userName="Marie HOS"
-      userEmail="hos@declic.fr"
-    >
+    <DashboardLayout navItems={hosNavItems}>
+      
       <div className="space-y-6">
         {/* Header de la page */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

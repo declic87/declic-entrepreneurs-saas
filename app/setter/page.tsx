@@ -16,12 +16,7 @@ import {
 
 export default function SetterDashboard() {
   return (
-    <DashboardLayout
-      navItems={setterNavItems}
-      userRole="SETTER"
-      userName="Sophie Setter"
-      userEmail="setter@declic.fr"
-    >
+    <DashboardLayout navItems={setterNavItems}>
       <div className="space-y-6">
         {/* Header avec bouton d'action rapide */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -16,16 +16,16 @@ interface NavItem {
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  navItems: NavItem[];
-  userName: string;
-  userEmail: string;
+  navItems?: NavItem[];
+  userName?: string;
+  userEmail?: string;
 }
 
 export function DashboardLayout({
   children,
-  navItems,
-  userName,
-  userEmail,
+  navItems = [],
+  userName = "Utilisateur",
+  userEmail = "",
 }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);

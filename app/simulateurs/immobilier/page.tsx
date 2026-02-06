@@ -4,9 +4,18 @@ import React, { useState, useMemo } from 'react';
 import { TrendingUp, Info, CheckCircle2, Euro, Home, PieChart } from 'lucide-react';
 
 /**
- * COMPOSANT BOUTON RÉUTILISABLE
+ * INTERFACE POUR LE BOUTON
  */
-const Button = ({ children, className = "", size = "md", ...props }) => {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+  className?: string;
+  size?: 'md' | 'lg';
+}
+
+/**
+ * COMPOSANT BOUTON RÉUTILISABLE CORRIGÉ
+ */
+const Button = ({ children, className = "", size = "md", ...props }: ButtonProps) => {
   const sizeClasses = size === 'lg' ? 'px-8 py-4 text-lg' : 'px-4 py-2 text-sm';
   return (
     <button 
@@ -39,7 +48,6 @@ export default function TaxSimulator() {
     const rendementBrut = (loyerAnnuel / valeurBien) * 100;
 
     // Amortissements (Base LMNP / SCI IS)
-    // On amortit environ 85% du bien sur 25 ans (hors terrain)
     const amortissementImmeuble = (valeurBien * 0.85) / 25;
     const amortissementMobilier = mobilier / 10;
     const amortissementTravaux = travaux / 10;
@@ -56,7 +64,7 @@ export default function TaxSimulator() {
     const impotsReelFoncier = baseReelFoncier * (tmi / 100 + 0.172);
     const netNueReel = loyerAnnuel - chargesDeductiblesBase - impotsReelFoncier;
 
-    // 3. LMNP - Réel (Le plus fréquent en optimisation)
+    // 3. LMNP - Réel
     const baseReelLMNP = Math.max(0, loyerAnnuel - chargesDeductiblesBase - totalAmortissement);
     const impotsLMNPReel = baseReelLMNP * (tmi / 100 + 0.172);
     const netLMNPReel = loyerAnnuel - chargesDeductiblesBase - impotsLMNPReel;
@@ -75,15 +83,15 @@ export default function TaxSimulator() {
       totalAmortissement,
       microFoncierPossible,
       results: [
-        { name: "Nu (Micro)", net: microFoncierPossible ? netNueMicro : -1, impots: irMicroFoncier + pssMicroFoncier, color: "blue" },
-        { name: "Nu (Réel)", net: netNueReel, impots: impotsReelFoncier, color: "slate" },
-        { name: "LMNP (Réel)", net: netLMNPReel, impots: impotsLMNPReel, color: "green" },
-        { name: "SCI IS", net: tresorerieSCIIS, impots: isSCIIS, color: "purple" }
+        { name: "Nu (Micro)", net: microFoncierPossible ? netNueMicro : -1, impots: irMicroFoncier + pssMicroFoncier },
+        { name: "Nu (Réel)", net: netNueReel, impots: impotsReelFoncier },
+        { name: "LMNP (Réel)", net: netLMNPReel, impots: impotsLMNPReel },
+        { name: "SCI IS", net: tresorerieSCIIS, impots: isSCIIS }
       ].sort((a, b) => b.net - a.net)
     };
   }, [valeurBien, loyerMensuel, chargesAnnuelles, taxeFonciere, tmi, travaux, mobilier]);
 
-  const formatEuro = (val) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+  const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
   return (
     <div className="bg-slate-50 min-h-screen p-4 md:p-8 font-sans text-slate-900">
@@ -103,7 +111,7 @@ export default function TaxSimulator() {
           </div>
         </div>
 
-        {/* INPUTS / CONTROLS (Simplifié pour l'exemple) */}
+        {/* INPUTS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <label className="text-xs font-bold text-slate-400 uppercase">Valeur du bien</label>
@@ -169,7 +177,6 @@ export default function TaxSimulator() {
                   Optimiser mon dossier
                 </Button>
             </div>
-            {/* Déco background */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
         </div>
 

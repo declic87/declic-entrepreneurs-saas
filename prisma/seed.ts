@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Début du seeding...");
 
-  // 1. Nettoyage (Ordre précis pour respecter les contraintes de clés étrangères)
+  // 1. Nettoyage
   console.log("🧹 Nettoyage de la base de données...");
   const deleteOrder = [
     prisma.notification.deleteMany(),
@@ -30,20 +30,20 @@ async function main() {
     console.log("ℹ️ Note: Certaines tables étaient déjà vides.");
   }
 
-  // 2. Création des Utilisateurs Staff
+  // 2. Création des Utilisateurs Staff (NAME RETIRÉ ICI)
   console.log("👥 Création du staff...");
   const users = {
     admin: await prisma.user.create({
-      data: { id: "admin-001", email: "jerome@declic-entrepreneurs.fr", name: "Jérôme Jonnard", role: "ADMIN" }
+      data: { id: "admin-001", email: "jerome@declic-entrepreneurs.fr", role: "ADMIN" }
     }),
     hos: await prisma.user.create({
-      data: { id: "hos-001", email: "michael@declic-entrepreneurs.fr", name: "Michael Stoppani", role: "HOS" }
+      data: { id: "hos-001", email: "michael@declic-entrepreneurs.fr", role: "HOS" }
     }),
     closer: await prisma.user.create({
-      data: { id: "closer-001", email: "alexandre@declic-entrepreneurs.fr", name: "Alexandre Martin", role: "CLOSER" }
+      data: { id: "closer-001", email: "alexandre@declic-entrepreneurs.fr", role: "CLOSER" }
     }),
     expert: await prisma.user.create({
-      data: { id: "expert-001", email: "marie@declic-entrepreneurs.fr", name: "Marie Laurent", role: "EXPERT" }
+      data: { id: "expert-001", email: "marie@declic-entrepreneurs.fr", role: "EXPERT" }
     }),
   };
 
@@ -57,12 +57,12 @@ async function main() {
     }
   });
 
-  // 4. Création des Leads (Pipeline)
+  // 4. Création des Leads (NAME RETIRÉ ICI)
   console.log("📈 Génération des leads...");
   const leads = [
-    { name: "Marie Durand", email: "marie.durand@email.com", temperature: "HOT", status: "NOUVEAU", stage: 0 },
-    { name: "Lucas Moreau", email: "lucas.moreau@email.com", temperature: "HOT", status: "QUALIFIE", stage: 2, ca: 95000 },
-    { name: "Antoine Blanc", email: "antoine.blanc@email.com", temperature: "WARM", status: "CLOSE", stage: 7, ca: 120000 },
+    { email: "marie.durand@email.com", temperature: "HOT", status: "NOUVEAU", stage: 0 },
+    { email: "lucas.moreau@email.com", temperature: "HOT", status: "QUALIFIE", stage: 2, ca: 95000 },
+    { email: "antoine.blanc@email.com", temperature: "WARM", status: "CLOSE", stage: 7, ca: 120000 },
   ];
 
   for (const lead of leads) {
@@ -76,10 +76,10 @@ async function main() {
     });
   }
 
-  // 5. Création d'un Client avec historique
+  // 5. Création d'un Client (NAME RETIRÉ ICI)
   console.log("🤝 Création d'un client actif...");
   const clientUser = await prisma.user.create({
-    data: { id: "client-001", email: "jean.dupont@gmail.com", name: "Jean Dupont", role: "CLIENT" }
+    data: { id: "client-001", email: "jean.dupont@gmail.com", role: "CLIENT" }
   });
 
   const client = await prisma.client.create({
@@ -93,7 +93,7 @@ async function main() {
     }
   });
 
-  // 6. Paiements et Documents
+  // 6. Paiements
   await prisma.payment.create({
     data: { clientId: client.id, amount: 1150, status: "PAID", echeance: 1, dueDate: new Date() }
   });

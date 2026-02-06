@@ -1,12 +1,15 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
+  // L'initialisation est ICI, dans la fonction. 
+  // C'est ce qui empêche l'erreur "supabaseKey is required" au build.
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   try {
     const body = await req.json();
     const email = body.email?.toLowerCase().trim();
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
         .from("leads")
         .update({
           ...leadData,
-          status: "RE-ENGAGED", // On signale qu'il est revenu
+          status: "RE-ENGAGED", 
           metadata: { ...existingLead.metadata, ...leadData.metadata }
         })
         .eq("id", existingLead.id);
@@ -61,6 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, id: data[0].id }, { status: 201 });
 
   } catch (err: any) {
+    console.error("Erreur Leads API:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

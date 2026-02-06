@@ -14,12 +14,12 @@ import {
   BarChart2
 } from "lucide-react";
 
-// 1. Définition des items de navigation (ce qui manquait pour le build)
+// 1. Définition des items de navigation corrigée (label au lieu de name)
 const setterNavItems = [
-  { name: "Vue d'ensemble", href: "/setter", icon: <Home size={20} /> },
-  { name: "Mes Leads", href: "/setter/leads", icon: <Users size={20} /> },
-  { name: "Mon Agenda", href: "/setter/agenda", icon: <Calendar size={20} /> },
-  { name: "Performances", href: "/setter/stats", icon: <BarChart2 size={20} /> },
+  { label: "Vue d'ensemble", href: "/setter", icon: <Home size={20} /> },
+  { label: "Mes Leads", href: "/setter/leads", icon: <Users size={20} /> },
+  { label: "Mon Agenda", href: "/setter/agenda", icon: <Calendar size={20} /> },
+  { label: "Performances", href: "/setter/stats", icon: <BarChart2 size={20} /> },
 ];
 
 export default function SetterDashboard() {
@@ -29,7 +29,7 @@ export default function SetterDashboard() {
         {/* Header avec bouton d'action rapide */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-blue-900 uppercase italic">Dashboard Setter</h1>
+            <h1 className="text-3xl font-black text-blue-900 uppercase italic">Dashboard Setter</h1>
             <p className="text-gray-500 font-medium">Objectif du jour : 40 appels (70% complétés)</p>
           </div>
           <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg shadow-emerald-100 uppercase text-sm tracking-tighter">

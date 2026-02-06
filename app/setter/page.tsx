@@ -4,7 +4,6 @@ import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { 
   Users, 
   Calendar, 
-  TrendingUp, 
   PhoneCall, 
   Clock, 
   Plus, 
@@ -14,19 +13,19 @@ import {
   BarChart2
 } from "lucide-react";
 
-// 1. Définition des items de navigation corrigée (label au lieu de name)
+// On passe la référence du composant (ex: Home) et non l'élément rendu (ex: <Home />)
 const setterNavItems = [
-  { label: "Vue d'ensemble", href: "/setter", icon: <Home size={20} /> },
-  { label: "Mes Leads", href: "/setter/leads", icon: <Users size={20} /> },
-  { label: "Mon Agenda", href: "/setter/agenda", icon: <Calendar size={20} /> },
-  { label: "Performances", href: "/setter/stats", icon: <BarChart2 size={20} /> },
+  { label: "Vue d'ensemble", href: "/setter", icon: Home },
+  { label: "Mes Leads", href: "/setter/leads", icon: Users },
+  { label: "Mon Agenda", href: "/setter/agenda", icon: Calendar },
+  { label: "Performances", href: "/setter/stats", icon: BarChart2 },
 ];
 
 export default function SetterDashboard() {
   return (
     <DashboardLayout navItems={setterNavItems}>
       <div className="space-y-6">
-        {/* Header avec bouton d'action rapide */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-black text-blue-900 uppercase italic">Dashboard Setter</h1>
@@ -45,7 +44,7 @@ export default function SetterDashboard() {
             <StatCard icon={<Clock />} count="3h24" label="Temps d'appel" color="text-purple-600" bg="bg-purple-100" />
         </div>
 
-        {/* Section Priorités du jour */}
+        {/* Priorités */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex justify-between items-center mb-6">

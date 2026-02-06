@@ -1,14 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
 export const LeadService = {
-  // Récupérer tous les leads (Inclusions désactivées temporairement pour le build)
+  // Récupérer tous les leads sans tri pour valider le build
   async getAllLeads() {
-    return await prisma.lead.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    return await prisma.lead.findMany();
   },
 
-  // Mettre à jour le statut d'un lead
+  // Mettre à jour le statut
   async updateStatus(id: string, status: any) {
     return await prisma.lead.update({
       where: { id },

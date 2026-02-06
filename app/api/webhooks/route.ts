@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16", // ou la version la plus récente
-});
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
+  // 1. Initialisation des clients à l'intérieur pour éviter les erreurs de build
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: "2023-10-16" as any, 
+  });
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const body = await req.text(); // Stripe nécessite le body brut (raw)
   const signature = req.headers.get("stripe-signature") as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -25,20 +26,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Gestion des événements
+  // 2. Gestion des événements
   switch (event.type) {
     case "checkout.session.completed":
       const session = event.data.object as Stripe.Checkout.Session;
-      // Logique : Marquer un client comme "Payé" ou activer un abonnement
-      await supabaseAdmin
+      
+      // Mise à jour de l'utilisateur dans Supabase
+      const { error } = await supabaseAdmin
         .from("clients")
         .update({ status: "PAID", stripe_customer_id: session.customer })
         .eq("email", session.customer_details?.email);
+
+      if (error) {
+        console.error("Erreur mise à jour client Stripe:", error);
+      }
       break;
 
     case "invoice.payment_failed":
-      // Logique : Alerter l'admin ou suspendre l'accès
-      console.log("Paiement échoué");
+      console.log("Paiement échoué pour l'événement:", event.id);
       break;
 
     default:

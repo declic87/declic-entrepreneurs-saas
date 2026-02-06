@@ -39,7 +39,7 @@ export default function OnboardingPage() {
           .eq("status", "ONBOARDING")
           .order("createdAt", { ascending: false });
           
-        if (data) setLeads(data);
+          if (data) setClients(data as Client[]);
       } catch (e) { console.error(e); }
       setLoading(false);
     }

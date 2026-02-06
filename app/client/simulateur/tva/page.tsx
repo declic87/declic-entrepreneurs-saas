@@ -2,7 +2,8 @@
 import React, { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calculator, AlertCircle, TrendingUp, TrendingDown, Users, Building2, Info } from "lucide-react";
+import { ArrowLeft, Calculator, AlertCircle, TrendingUp, TrendingDown, Users, Building2, Info,
+  Receipt } from "lucide-react";
 import Link from "next/link";
 
 export default function SimuTVAPage() {

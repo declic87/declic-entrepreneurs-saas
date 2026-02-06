@@ -1,15 +1,23 @@
 import { createBrowserClient } from "@supabase/ssr";
 
-// Initialisation du client Supabase pour le Browser
+/**
+ * Initialisation sécurisée du client Supabase.
+ * On vérifie la présence des clés pour éviter de faire planter le build Vercel.
+ */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Si les clés sont absentes (pendant le build), on évite le crash
+  if (!url || !anonKey) {
+    // On retourne un objet vide typé pour ne pas bloquer la compilation
+    return {} as any;
+  }
+
+  return createBrowserClient(url, anonKey);
 }
 
 // Types pour l'authentification et les rôles
-// Ces rôles correspondent à ton enum Prisma/DB
 export type DBUserRole = "ADMIN" | "HOS" | "CLOSER" | "SETTER" | "EXPERT" | "CLIENT";
 
 export type AuthUser = {
@@ -17,7 +25,7 @@ export type AuthUser = {
   email: string;
   name?: string;
   role: DBUserRole;
-  uiRole: string; // Le rôle formaté pour la Sidebar (admin, commercial, etc.)
+  uiRole: string; 
   avatar?: string;
 };
 
@@ -27,7 +35,7 @@ export type AuthUser = {
 export function mapRoleToUI(dbRole: DBUserRole): string {
   const mapping: Record<DBUserRole, string> = {
     ADMIN: "admin",
-    HOS: "admin",       // Head of Sales a les accès Admin
+    HOS: "admin",       
     CLOSER: "commercial",
     SETTER: "commercial",
     EXPERT: "expert",
@@ -37,19 +45,20 @@ export function mapRoleToUI(dbRole: DBUserRole): string {
 }
 
 /**
- * Récupère l'utilisateur courant avec ses données de profil (rôle, nom, etc.)
+ * Récupère l'utilisateur courant avec ses données de profil
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const supabase = createClient();
   
-  // 1. Vérifier la session active
+  // Si le client n'est pas initialisé (cas du build), on sort proprement
+  if (!supabase.auth) return null;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return null;
 
-  // 2. Récupérer les données étendues depuis la table 'users'
   const { data: userData, error } = await supabase
     .from("users")
     .select("name, role, avatar")
@@ -76,7 +85,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
  */
 export async function signOut() {
   const supabase = createClient();
-  await supabase.auth.signOut();
+  if (supabase.auth) await supabase.auth.signOut();
 }
 
 /**
@@ -84,6 +93,8 @@ export async function signOut() {
  */
 export async function signIn(email: string, password: string) {
   const supabase = createClient();
+  if (!supabase.auth) throw new Error("Client non initialisé");
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -98,6 +109,8 @@ export async function signIn(email: string, password: string) {
  */
 export async function signUp(email: string, password: string, name: string) {
   const supabase = createClient();
+  if (!supabase.auth) throw new Error("Client non initialisé");
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,

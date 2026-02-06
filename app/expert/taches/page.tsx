@@ -21,7 +21,10 @@ const PRIORITY_CONFIG: Record<string, { label: string; class: string }> = {
 };
 
 export default function TachesPage() {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("ALL");

@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { User, Shield, Save, Eye, EyeOff, Briefcase, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function ExpertSettingsPage() {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);

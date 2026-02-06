@@ -10,7 +10,10 @@ import {
 type TimeRange = "all" | "today" | "7d" | "30d" | "90d";
 
 export default function StatsPage() {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<TimeRange>("all");
   const [stats, setStats] = useState({

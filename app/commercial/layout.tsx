@@ -5,7 +5,10 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { Loader2 } from "lucide-react";
 
 export default function CommercialLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [userData, setUserData] = useState({
     name: "Chargement...",
     email: "",

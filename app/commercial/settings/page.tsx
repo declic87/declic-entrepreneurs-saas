@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import { User, Shield, Save, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function CommercialSettingsPage() {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null, msg: string }>({ type: null, msg: "" });

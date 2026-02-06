@@ -5,7 +5,10 @@ import { createBrowserClient } from "@supabase/ssr";
 import { Sidebar } from "@/components/ui/sidebar";
 
 export default function ExpertLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [userName, setUserName] = useState("Expert");
   const [userEmail, setUserEmail] = useState("");
 

@@ -33,7 +33,10 @@ interface Task {
 }
 
 export default function ExpertDashboard() {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [clients, setClients] = useState<Client[]>([]);
   const [rdvs, setRdvs] = useState<Rdv[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);

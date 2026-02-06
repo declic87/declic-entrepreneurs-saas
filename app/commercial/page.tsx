@@ -51,7 +51,10 @@ const STATUS_COLORS: Record<string, string> = {
 const PIPELINE_STEPS = ["NOUVEAU", "CONTACTE", "QUALIFIE", "RDV_PLANIFIE", "RDV_EFFECTUE", "PROPOSITION", "NEGOCIE", "CLOSE", "PERDU"];
 
 export default function CommercialDashboard() {
-  const supabase = createBrowserClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("");

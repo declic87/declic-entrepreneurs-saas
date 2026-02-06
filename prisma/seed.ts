@@ -57,24 +57,21 @@ async function main() {
     }
   });
 
-  // 4. Création des Leads (NAME RETIRÉ ICI)
-  console.log("📈 Génération des leads...");
-  const leads = [
-    { email: "marie.durand@email.com", temperature: "HOT", status: "NOUVEAU", stage: 0 },
-    { email: "lucas.moreau@email.com", temperature: "HOT", status: "QUALIFIE", stage: 2, ca: 95000 },
-    { email: "antoine.blanc@email.com", temperature: "WARM", status: "CLOSE", stage: 7, ca: 120000 },
-  ];
+// 4. Création des Leads (Version ultra-simplifiée pour le build)
+console.log("📈 Génération des leads...");
+const leads = [
+  { email: "marie.durand@email.com" },
+  { email: "lucas.moreau@email.com" },
+];
 
-  for (const lead of leads) {
-    await prisma.lead.create({
-      data: {
-        ...lead,
-        temperature: lead.temperature as any,
-        status: lead.status as any,
-        closerId: users.closer.id,
-      }
-    });
-  }
+for (const lead of leads) {
+  await prisma.lead.create({
+    data: {
+      email: lead.email,
+      // On ne met QUE ce qui est obligatoire dans ton schéma
+    }
+  });
+}
 
   // 5. Création d'un Client (NAME RETIRÉ ICI)
   console.log("🤝 Création d'un client actif...");

@@ -8,14 +8,12 @@ import { CheckCircle2, ArrowRight, Star, Zap, Shield, Trophy } from "lucide-reac
 /* -------------------------------------------------------------------------- */
 
 export const metadata: Metadata = {
-  title:
-    "Formations • Optimisation fiscale & création de société | Déclic‑Entrepreneur",
+  title: "Formations • Optimisation fiscale & création de société | Déclic‑Entrepreneur",
   description:
     "Formations premium pour indépendants et agents immobiliers : choisissez le bon statut (SASU/EURL), appliquez la méthode VASE, maximisez vos IK, pilotez vos revenus et économisez 5 000€ à 20 000€ par an selon votre profil.",
   alternates: { canonical: "/formations" },
   openGraph: {
-    title:
-      "Formations • Optimisation fiscale & création de société | Déclic‑Entrepreneur",
+    title: "Formations • Optimisation fiscale & création de société | Déclic‑Entrepreneur",
     description:
       "Copywriting high‑ticket, ROI immédiat, méthode VASE, cas pratiques — achetez votre formation et accédez à vie.",
     url: "/formations",
@@ -24,8 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "Formations • Optimisation fiscale & création de société | Déclic‑Entrepreneur",
+    title: "Formations • Optimisation fiscale & création de société | Déclic‑Entrepreneur",
     description:
       "Des formations premium pour gagner plus en payant moins d’impôts — accès instantané.",
   },
@@ -165,7 +162,7 @@ export default function FormationsIndex() {
                 <ArrowRight className="ml-2" size={18} />
               </Button>
             </Link>
-            /#faq
+            <Link href="#faq">
               <Button
                 variant="outline"
                 className="h-12 rounded-xl border-white/40 text-white hover:bg-white/10"
@@ -233,116 +230,120 @@ export default function FormationsIndex() {
             Choisissez votre transformation
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* CRÉATEUR */}
-            <article className="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all">
-              <header>
-                <h3 className="text-2xl font-bold text-[#123055]">
-                  Formation Créateur
-                </h3>
-                <p className="text-lg font-extrabold text-[#123055] mt-2">
-                  497€
-                </p>
-                <p className="mt-4 text-slate-600 leading-relaxed">
-                  Choix du statut (SASU/EURL), fiscalité appliquée,{" "}
-                  <strong>méthode VASE</strong>, création de société pas‑à‑pas.
-                  Le programme pour arrêter de perdre de l’argent à cause d’un
-                  mauvais setup.
-                </p>
-              </header>
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* CRÉATEUR */}
+          <article className="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all">
+            <header>
+              <h3 className="text-2xl font-bold text-[#123055]">
+                Formation Créateur
+              </h3>
+              <p className="text-lg font-extrabold text-[#123055] mt-2">
+                497€
+              </p>
+              <p className="mt-4 text-slate-600 leading-relaxed">
+                Choix du statut (SASU/EURL), fiscalité appliquée,{" "}
+                <strong>méthode VASE</strong>, création de société pas‑à‑pas.
+                Le programme pour arrêter de perdre de l’argent à cause d’un
+                mauvais setup.
+              </p>
+            </header>
 
-              <ul className="mt-6 space-y-3">
-                {[
-                  "Comparatif SASU/EURL : le bon curseur selon vos objectifs",
-                  "Salaire vs dividendes : augmenter le net, réduire le superflu",
-                  "Méthode VASE (Exclusif) : véhicule, abondement, salaire, épargne",
-                  "Pack documents + simulateurs pour décider en 30 minutes",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2
-                      size={20}
-                      className="text-emerald-600 mt-1"
-                    />
-                    <span className="text-slate-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            <ul className="mt-6 space-y-3">
+              {[
+                "Comparatif SASU/EURL : le bon curseur selon vos objectifs",
+                "Salaire vs dividendes : augmenter le net, réduire le superflu",
+                "Méthode VASE (Exclusif) : véhicule, abondement, salaire, épargne",
+                "Pack documents + simulateurs pour décider en 30 minutes",
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <CheckCircle2 size={20} className="text-emerald-600 mt-1" />
+                  <span className="text-slate-700">{item}</span>
+                </li>
+              ))}
+            </ul>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                /formations/createur
-                  <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold h-12 rounded-xl">
-                    En savoir plus <ArrowRight size={18} className="ml-2" />
-                  </Button>
-                </Link>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <Link href="/formations/createur">
+                <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold h-12 rounded-xl">
+                  En savoir plus <ArrowRight size={18} className="ml-2" />
+                </Button>
+              </Link>
 
-                {/* Payment Link (Stripe) */}
-                https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 font-semibold rounded-xl border-slate-300"
-                  >
-                    Acheter — 497€
-                  </Button>
-                </a>
+              {/* Payment Link (Stripe) */}
+              <a
+                href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full"
+              >
+                <Button
+                  variant="outline"
+                  className="w-full h-12 font-semibold rounded-xl border-slate-300"
+                >
+                  Acheter — 497€
+                </Button>
+              </a>
+            </div>
+          </article>
+
+          {/* AGENT IMMO */}
+          <article className="rounded-3xl bg-white border border-amber-300 p-8 shadow-xl ring-2 ring-amber-400/40">
+            <header>
+              <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                Populaire
               </div>
-            </article>
+              <h3 className="text-2xl font-bold text-[#123055] mt-2">
+                Formation Agent Immobilier
+              </h3>
+              <p className="text-lg font-extrabold text-[#123055] mt-2">
+                897€
+              </p>
+              <p className="mt-4 text-slate-600 leading-relaxed">
+                Optimisation <strong>spécifique mandataires</strong> :
+                indemnités kilométriques (IK) maximisées, frais réels,
+                cas pratiques par paliers de CA, holdings & SCI pour
+                réinvestir sereinement.
+              </p>
+            </header>
 
-            {/* AGENT IMMO */}
-            <article className="rounded-3xl bg-white border border-amber-300 p-8 shadow-xl ring-2 ring-amber-400/40">
-              <header>
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                  Populaire
-                </div>
-                <h3 className="text-2xl font-bold text-[#123055] mt-2">
-                  Formation Agent Immobilier
-                </h3>
-                <p className="text-lg font-extrabold text-[#123055] mt-2">
-                  897€
-                </p>
-                <p className="mt-4 text-slate-600 leading-relaxed">
-                  Optimisation <strong>spécifique mandataires</strong> :
-                  indemnités kilométriques (IK) maximisées, frais réels,
-                  cas pratiques par paliers de CA, holdings & SCI pour
-                  réinvestir sereinement.
-                </p>
-              </header>
+            <ul className="mt-6 space-y-3">
+              {[
+                "IK & frais réels : 6 000€ à 15 000€ possibles selon usage",
+                "Cas pratiques IAD, SAFTI, KW, etc. : décisions rapides",
+                "Holding/SCI : structurer vos gains sans vous piéger",
+                "Simulateur Agent Immo + tableur IK inclus",
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <CheckCircle2 size={20} className="text-emerald-600 mt-1" />
+                  <span className="text-slate-700">{item}</span>
+                </li>
+              ))}
+            </ul>
 
-              <ul className="mt-6 space-y-3">
-                {[
-                  "IK & frais réels : 6 000€ à 15 000€ possibles selon usage",
-                  "Cas pratiques IAD, SAFTI, KW, etc. : décisions rapides",
-                  "Holding/SCI : structurer vos gains sans vous piéger",
-                  "Simulateur Agent Immo + tableur IK inclus",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2
-                      size={20}
-                      className="text-emerald-600 mt-1"
-                    />
-                    <span className="text-slate-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <Link href="/formations/agent-immobilier">
+                <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold h-12 rounded-xl">
+                  En savoir plus <ArrowRight size={18} className="ml-2" />
+                </Button>
+              </Link>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                /formations/agent-immobilier
-                  <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-semibold h-12 rounded-xl">
-                    En savoir plus <ArrowRight size={18} className="ml-2" />
-                  </Button>
-                </Link>
-
-                {/* Payment Link (Stripe) */}
-                https://buy.stripe.com/4gM3cu5PFd382eF5j19fW02
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 font-semibold rounded-xl border-slate-300"
-                  >
-                    Acheter — 897€
-                  </Button>
-                </a>
-              </div>
-            </article>
-          </div>
+              {/* Payment Link (Stripe) */}
+              <a
+                href="https://buy.stripe.com/4gM3cu5PFd382eF5j19fW02"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full"
+              >
+                <Button
+                  variant="outline"
+                  className="w-full h-12 font-semibold rounded-xl border-slate-300"
+                >
+                  Acheter — 897€
+                </Button>
+              </a>
+            </div>
+          </article>
+        </div>
 
           <p className="text-center mt-12 text-slate-500 text-sm">
             Paiement sécurisé • Accès immédiat à vie • Mises à jour incluses
@@ -450,12 +451,12 @@ export default function FormationsIndex() {
             cette semaine, les leviers qui augmentent votre net.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            /formations/createur
+            <Link href="/formations/createur">
               <Button className="bg-white text-[#123055] hover:bg-slate-100 h-12 rounded-xl">
                 Formation Créateur — En savoir plus
               </Button>
             </Link>
-            /formations/agent-immobilier
+            <Link href="/formations/agent-immobilier">
               <Button
                 variant="outline"
                 className="h-12 rounded-xl border-white/40 text-white hover:bg-white/10"
@@ -472,4 +473,3 @@ export default function FormationsIndex() {
     </main>
   );
 }
-``

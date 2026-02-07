@@ -803,7 +803,6 @@ export default function HomePage() {
         <p className="font-semibold text-white mb-3">Contact</p>
         <ul className="space-y-2 text-sm">
           <li><a href="mailto:contact@declic-entrepreneur.fr" className="hover:text-white">contact@declic-entrepreneur.fr</a></li>
-          <li><a href="tel:+33123456789" className="hover:text-white">01 23 45 67 89</a></li>
         </ul>
       </div>
     </div>

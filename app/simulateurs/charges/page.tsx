@@ -6,9 +6,7 @@ import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
-  TrendingUp,
   PieChart,
-  Home,
   Menu,
   X,
   Star,
@@ -42,9 +40,9 @@ export default function ChargesPage() {
   const [remuneration, setRemuneration] = useState<number>(36000);
   const [showResults, setShowResults] = useState(false);
 
-  // Hypothèses pédagogiques (visibles dans l’UI)
+  // Hypothèses pédagogiques (affichées)
   const hypo = {
-    micro_total_rate: 0.22, // ~22% BNC (21.1 + FP ~0.2)
+    micro_total_rate: 0.22, // ~22% BNC (21.1 + formation ~0.2)
     micro_breakdown: {
       maladie: 0.064,
       retraiteBase: 0.088,
@@ -55,11 +53,10 @@ export default function ChargesPage() {
       fp: 0.002,
     },
     sasu: {
-      patronales: 0.45, // charges patronales sur BRUT
-      salariales: 0.22, // charges salariales sur BRUT
-      // net = brut * (1 - salariales), coût employeur = brut * (1 + patronales)
+      patronales: 0.45, // sur BRUT
+      salariales: 0.22, // sur BRUT
     },
-    eurl_tns: 0.45, // env. 45% TNS sur la rémunération nette
+    eurl_tns: 0.45, // env. 45% TNS sur le net
   };
 
   const calc = useMemo(() => {
@@ -93,26 +90,27 @@ export default function ChargesPage() {
       baseCalculLabel = "Rémunération BRUTE";
       baseValue = Math.max(0, remuneration);
 
-      const chargesPatronales = baseValue * hypo.sasu.patronales;
-      const chargesSalariales = baseValue * hypo.sasu.salariales;
-      cotisations = chargesPatronales + chargesSalariales;
+      const chargesPat = baseValue * hypo.sasu.patronales;
+      const chargesSal = baseValue * hypo.sasu.salariales;
+      cotisations = chargesPat + chargesSal;
 
-      netAvantIR = baseValue - chargesSalariales;
+      netAvantIR = baseValue - chargesSal; // net payé au dirigeant (hors IR)
       tauxEffectif = Math.round((cotisations / Math.max(1, netAvantIR)) * 100);
 
       details = [
-        { label: "Charges patronales", montant: chargesPatronales, taux: "45%" },
-        { label: "Charges salariales", montant: chargesSalariales, taux: "22%" },
+        { label: "Charges patronales (~)", montant: chargesPat, taux: "45%" },
+        { label: "Charges salariales (~)", montant: chargesSal, taux: "22%" },
         { label: "Retraite (Total ~)", montant: baseValue * 0.25, taux: "~25%" },
         { label: "Santé & Prévoyance (~)", montant: baseValue * 0.15, taux: "~15%" },
         { label: "CSG/CRDS (~)", montant: baseValue * 0.097, taux: "9,7%" },
       ];
-    } else if (statut === "eurl") {
+    } else {
+      // eurl / sarl TNS
       baseCalculLabel = "Rémunération NET (TNS)";
       baseValue = Math.max(0, remuneration);
 
       cotisations = baseValue * hypo.eurl_tns;
-      netAvantIR = baseValue; // en TNS, on considère net + charges à ajouter
+      netAvantIR = baseValue; // net + charges à ajouter
       tauxEffectif = Math.round((cotisations / Math.max(1, netAvantIR)) * 100);
 
       details = [
@@ -134,7 +132,7 @@ export default function ChargesPage() {
       <nav className="fixed top-0 z-50 w-full bg-[#0d1f33]/90 backdrop-blur-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
-          /
+          <Link href="/" className="flex items-center gap-3">
             <Logo size="md" showText variant="light" />
           </Link>
 
@@ -151,7 +149,8 @@ export default function ChargesPage() {
                 {l.label}
               </Link>
             ))}
-            /login
+
+            <Link href="/login">
               <Button
                 variant="outline"
                 className="text-white border-white/20 hover:bg-white/10 px-4"
@@ -159,19 +158,25 @@ export default function ChargesPage() {
                 Connexion
               </Button>
             </Link>
-            /app
+
+            <Link href="/app">
               <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
                 Mon Espace
               </Button>
             </Link>
-            https://calendly.com/declic-entrepreneurs/diagnostic
+
+            <Link
+              href="https://calendly.com/declic-entrepreneurs/diagnostic"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
                 Diagnostic gratuit
               </Button>
             </Link>
           </div>
 
-          {/* Mobile toggle */}
+          {/* Mobile toggler */}
           <button
             className="md:hidden p-2 text-slate-200"
             aria-label="Ouvrir le menu"
@@ -197,8 +202,9 @@ export default function ChargesPage() {
                   {l.label}
                 </Link>
               ))}
+
               <div className="flex flex-col gap-3 mt-4">
-                /login
+                <Link href="/login">
                   <Button
                     variant="outline"
                     className="w-full text-white border-white/20 hover:bg-white/10"
@@ -206,12 +212,18 @@ export default function ChargesPage() {
                     Connexion
                   </Button>
                 </Link>
-                /app
+
+                <Link href="/app">
                   <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">
                     Mon Espace
                   </Button>
                 </Link>
-                https://calendly.com/declic-entrepreneurs/diagnostic
+
+                <Link
+                  href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">
                     Diagnostic gratuit
                   </Button>
@@ -225,7 +237,7 @@ export default function ChargesPage() {
       {/* HEADER */}
       <header className="pt-28 md:pt-32 pb-8 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          /simulateurs
+          <Link href="/simulateurs" className="inline-flex items-center text-white/80 hover:text-white">
             <ArrowLeft size={18} className="mr-2" />
             Retour aux simulateurs
           </Link>
@@ -243,7 +255,7 @@ export default function ChargesPage() {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 mb-8">
           <h2 className="text-xl font-bold text-[#123055] mb-6">Vos informations</h2>
 
-          {/* Statut */}
+          {/* Choix du statut */}
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-3">Statut juridique</label>
@@ -301,7 +313,7 @@ export default function ChargesPage() {
                   />
                   <p className="text-xs text-slate-400 mt-2 italic">
                     {statut === "sasu"
-                      ? "Salaire avant charges salariales (net = brut × ~0,78)"
+                      ? "Salaire avant charges salariales (net ~ brut × 0,78)"
                       : "Revenu net TNS ; charges à ajouter (~45%)"}
                   </p>
                 </div>
@@ -311,7 +323,11 @@ export default function ChargesPage() {
 
           {/* CTA calcul */}
           <div className="mt-8">
-            <Button onClick={() => setShowResults(true)} size="lg" className="w-full md:w-auto bg-[#F59E0B] hover:bg-[#D97706]">
+            <Button
+              onClick={() => setShowResults(true)}
+              size="lg"
+              className="w-full md:w-auto bg-[#F59E0B] hover:bg-[#D97706]"
+            >
               <PieChart size={20} className="mr-2" />
               Calculer mes charges
             </Button>
@@ -374,7 +390,10 @@ export default function ChargesPage() {
                     Net de poche (avant IR)
                   </span>
                   <span className="text-2xl font-extrabold text-emerald-700">
-                    {euro(calc.netAvantIR)} <span className="text-base text-emerald-600">({euro(monthly(calc.netAvantIR))} / mois)</span>
+                    {euro(calc.netAvantIR)}{" "}
+                    <span className="text-base text-emerald-600">
+                      ({euro(monthly(calc.netAvantIR))} / mois)
+                    </span>
                   </span>
                 </div>
               </div>
@@ -386,7 +405,11 @@ export default function ChargesPage() {
               <p className="text-white/85 mb-6">
                 Un expert peut vous aider à réduire légalement vos charges selon votre situation.
               </p>
-              https://calendly.com/declic-entrepreneurs/diagnostic
+              <Link
+                href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button size="lg" className="bg-[#F59E0B] text-white hover:bg-[#D97706] border-none rounded-xl">
                   Réserver mon diagnostic gratuit (45 min)
                 </Button>

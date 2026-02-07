@@ -447,15 +447,10 @@ export default function FormationsIndex() {
               <Button className="bg-white text-[#123055] hover:bg-slate-100 h-12 rounded-xl">
                 Formation Créateur — En savoir plus
               </Button>
-            </Link>
-            <Link href="/formations/agent-immobilier">
-              <Button
-                variant="outline"
-                
-className="w-full h-12 rounded-xl font-semibold border border-white text-white hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60"
->
-  Formation Agent Immo — En savoir plus
-</Button>
+              <Link href="/formations/agent-immobilier">
+  <Button className="bg-white text-[#123055] hover:bg-slate-100 h-12 rounded-xl font-semibold">
+    Formation Agent Immo — En savoir plus
+  </Button>
 </Link>
 
           </div>

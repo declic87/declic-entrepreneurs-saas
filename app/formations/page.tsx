@@ -135,60 +135,55 @@ export default function FormationsIndex() {
     <main className="min-h-screen bg-white">
       <JsonLd />
 
-      {/* HERO HIGH‑TICKET */}
-      <section className="bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white py-24 px-4 text-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <Zap className="absolute -top-10 -left-10" size={300} />
-          <Star className="absolute -bottom-10 -right-10" size={300} />
-        </div>
+{/* HERO HIGH‑TICKET (contraste fixé) */}
+<section className="bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white py-24 px-4 text-center relative overflow-hidden">
+  <div className="absolute inset-0 opacity-10 pointer-events-none">
+    {/* décor éventuel (icône/shape) */}
+  </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
-            Passez au niveau supérieur&nbsp;:{" "}
-            <span className="text-[#F59E0B]">gagnez plus net, légalement.</span>
-          </h1>
+  <div className="relative z-10 max-w-4xl mx-auto">
+    <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
+      Passez au niveau supérieur&nbsp;:{" "}
+      <span className="text-[#F59E0B]">gagnez plus net, légalement.</span>
+    </h1>
 
-          <p className="text-lg md:text-xl mt-6 text-white/85 leading-relaxed">
-            Nos programmes condensent 10+ ans d’optimisation terrain pour
-            indépendants et agents. Vous suivez, vous appliquez, vous voyez la
-            différence sur votre compte pro. Accès immédiat, à vie, mises à jour
-            incluses.
-          </p>
+    <p className="text-lg md:text-xl mt-6 text-white/85 leading-relaxed">
+      Nos programmes condensent 10+ ans d’optimisation terrain pour indépendants et agents.
+      Vous suivez, vous appliquez, vous voyez la différence sur votre compte pro.
+      Accès immédiat, à vie, mises à jour incluses.
+    </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="#catalogue">
-              <Button className="bg-white text-[#123055] hover:bg-slate-100 h-12 rounded-xl">
-                Voir les programmes
-                <ArrowRight className="ml-2" size={18} />
-              </Button>
-            </Link>
-            <Link href="#faq">
-              <Button
-                variant="outline"
-                className="h-12 rounded-xl border-white/40 text-white hover:bg-white/10"
-              >
-                Questions fréquentes
-              </Button>
-            </Link>
-          </div>
+    {/* ✅ CTA : lisibilité assurée */}
+    <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+      {/* CTA primaire : bouton BLANC plein */}
+      <Link href="#catalogue">
+        <Button className="h-12 px-6 bg-white text-[#123055] hover:bg-slate-100 border-0 rounded-xl font-semibold shadow">
+          Voir les programmes
+        </Button>
+      </Link>
 
-          <div className="mt-6 flex items-center justify-center gap-5 text-white/80 text-sm">
-            <div className="flex items-center gap-2">
-              <Shield size={16} /> Paiement sécurisé
-            </div>
-            <div className="flex items-center gap-2">
-              <Trophy size={16} /> Accès à vie
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="text-yellow-400 fill-yellow-400" size={16} />
-              Satisfaction 4.9/5*
-            </div>
-          </div>
-          <p className="text-white/60 text-xs mt-2">
-            *Témoignages et retours clients collectés sur nos cohortes internes.
-          </p>
-        </div>
-      </section>
+      {/* CTA secondaire : OUTLINE sur fond sombre (texte + bordure blancs) */}
+      <Link href="/rdv">
+        <Button
+          variant="outline"
+          className="h-12 px-6 rounded-xl font-semibold border-white/40 text-white hover:bg-white/10"
+        >
+          Parler à un expert
+        </Button>
+      </Link>
+    </div>
+
+    {/* Bullets crédibilité */}
+    <div className="mt-6 flex items-center justify-center gap-5 text-white/80 text-sm">
+      <div className="flex items-center gap-2">Paiement sécurisé</div>
+      <div className="flex items-center gap-2">Accès à vie</div>
+      <div className="flex items-center gap-2">Satisfaction 4.9/5*</div>
+    </div>
+    <p className="text-white/60 text-xs mt-2">
+      *Témoignages et retours clients collectés sur nos cohortes internes.
+    </p>
+  </div>
+</section>
 
       {/* SECTION PROMESSE / ROI */}
       <section className="py-16 px-4 bg-white">

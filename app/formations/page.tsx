@@ -162,12 +162,9 @@ export default function FormationsIndex() {
         </Button>
       </Link>
 
-      {/* CTA secondaire : OUTLINE sur fond sombre (texte + bordure blancs) */}
+      {/* CTA secondaire : bouton BLANC plein (robuste sur fond sombre) */}
       <Link href="/rdv">
-        <Button
-          variant="outline"
-          className="h-12 px-6 rounded-xl font-semibold border-white/40 text-white hover:bg-white/10"
-        >
+        <Button className="h-12 px-6 bg-white text-[#123055] hover:bg-slate-100 border-0 rounded-xl font-semibold shadow">
           Parler à un expert
         </Button>
       </Link>

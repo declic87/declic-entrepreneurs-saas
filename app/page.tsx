@@ -64,9 +64,33 @@ const RDV = [
 ];
 
 const OFFRES = [
-  { name: "Starter", price: "3 600€", bullets: ["Audit fiscal complet","Création de société","2 RDV de suivi","Support email 3 mois"], cta: "/signup?plan=starter" },
-  { name: "Pro", tag: "POPULAIRE", price: "4 600€", bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 6 mois","Expert‑comptable partenaire"], cta: "/signup?plan=pro", featured: true },
-  { name: "Expert", price: "6 600€", bullets: ["Tout Pro inclus","Accompagnement premium","5 RDV de suivi","1er Audit annuel inclus","Support illimité 12 mois"], cta: "/signup?plan=expert", dark: true },
+  {
+    name: "Starter",
+    price: "3 600€",
+    bullets: ["Audit fiscal complet","Création de société","2 RDV de suivi","Support email 3 mois"],
+    // 👉 Remplace par ton Payment Link Stripe exact (copie l’URL “Pay link” depuis Stripe)
+    payLink: "https://buy.stripe.com/00weVcdi72ou8D34eX9fW06", 
+    cta: "/signup?plan=starter",
+  },
+  {
+    name: "Pro",
+    tag: "POPULAIRE",
+    price: "4 600€",
+    bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 6 mois","Expert‑comptable partenaire"],
+    // 👉 Remplace par ton Payment Link Stripe exact
+    payLink: "https://buy.stripe.com/00w9AS7XNgfk5qR6n59fW05",
+    cta: "/signup?plan=pro",
+    featured: true,
+  },
+  {
+    name: "Expert",
+    price: "6 600€",
+    bullets: ["Tout Pro inclus","Accompagnement premium","5 RDV de suivi","1er Audit annuel inclus","Support illimité 12 mois"],
+    // 👉 Remplace par ton Payment Link Stripe exact
+    payLink: "https://buy.stripe.com/fZueVcb9Z4wCf1r9zh9fW04",
+    cta: "/signup?plan=expert",
+    dark: true,
+  },
 ];
 
 /* ------------------------------ SMALL UI ------------------------------ */
@@ -116,7 +140,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* NAVBAR PREMIUM */}
+{/* NAVBAR PREMIUM */}
 <nav className="fixed top-0 z-50 w-full bg-[#0d1f33]/90 backdrop-blur-lg border-b border-white/10">
   <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
     {/* Logo */}
@@ -133,26 +157,22 @@ export default function HomePage() {
         </Link>
       ))}
 
-      {/* Connexion (contraste renforcé) */}
+      {/* Connexion — contraste renforcé */}
       <Link href="/login">
         <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
           Connexion
         </Button>
       </Link>
 
-      {/* Mon espace → /app (placeholder) */}
+      {/* Mon espace */}
       <Link href="/app">
         <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
           Mon Espace
         </Button>
       </Link>
 
-      {/* Diagnostic → Calendly (nouvel onglet) */}
-      <Link
-        href="https://calendly.com/declic-entrepreneurs/diagnostic"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      {/* Diagnostic — Calendly en nouvel onglet */}
+      <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
         <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
           Diagnostic gratuit
         </Button>
@@ -196,11 +216,7 @@ export default function HomePage() {
           </Link>
 
           {/* Diagnostic */}
-          <Link
-            href="https://calendly.com/declic-entrepreneurs/diagnostic"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
             <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">Diagnostic gratuit</Button>
           </Link>
         </div>
@@ -284,42 +300,76 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SIMULATEURS PREMIUM */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            title="Nos simulateurs gratuits"
-            subtitle="Calculez vos économies potentielles en quelques clics"
-          />
+{/* FORMATIONS PREMIUM */}
+<section className="py-16 bg-slate-50">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <SectionTitle
+      title="Nos formations"
+      subtitle="Apprenez à optimiser votre fiscalité par vous‑même"
+    />
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {SIMULATEURS.map((s) => (
-              <Link key={s.title} href={s.href}>
-                <div className="group rounded-2xl bg-white border border-slate-200 hover:border-[#F59E0B]/60 shadow-sm hover:shadow-lg transition-all p-6 cursor-pointer">
-                  <div
-                    className="w-10 h-10 rounded-lg mb-4 flex items-center justify-center"
-                    style={{ backgroundColor: `${s.color}1A` }}
-                  >
-                    <s.icon size={20} style={{ color: s.color }} />
-                  </div>
-
-                  <h3 className="font-semibold text-[#123055]">{s.title}</h3>
-                  <p className="text-slate-600 text-sm">{s.subtitle}</p>
-                </div>
-              </Link>
-            ))}
+    <div className="mt-10 grid gap-6 md:grid-cols-2">
+      {FORMATIONS.map((f) => (
+        <div
+          key={f.name}
+          className={`rounded-2xl border p-6 bg-white shadow-sm ${
+            f.highlighted ? "border-amber-300 shadow-amber-200/40" : "border-slate-200"
+          }`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-[#123055]">{f.name}</h3>
+              <p className="text-3xl font-extrabold mt-2">{f.price}</p>
+            </div>
           </div>
 
-          <div className="text-center mt-10">
-            <Link href="/simulateurs">
-              <Button className="bg-white text-[#123055] border border-slate-200 hover:bg-slate-100 rounded-xl">
-                Voir tous les simulateurs
+          <ul className="mt-4 space-y-2">
+            {f.bullets.map((b) => (
+              <Bullet key={b}>{b}</Bullet>
+            ))}
+          </ul>
+
+          {/* === Bloc boutons : EN SAVOIR PLUS + ACHETER (Stripe Payment Link) === */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            {/* En savoir plus → page de détail actuelle */}
+            <Link href={f.cta}>
+              <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
+                En savoir plus
                 <ArrowRight className="ml-2" size={16} />
               </Button>
             </Link>
+
+            {/* Acheter → Payment Link Stripe (URL complète) */}
+            {f.name.toLowerCase().includes("essentielle") || f.name.toLowerCase().includes("créateur") ? (
+              // ⚠️ Formation Créateur — remplace par TON lien Payment Link si différent
+              <a
+                href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" className="rounded-xl border-slate-300">
+                  Acheter — 497€
+                </Button>
+              </a>
+            ) : (
+              // ⚠️ Formation Agent Immobilier — remplace par TON lien Payment Link si différent
+              <a
+                href="https://buy.stripe.com/4gM3cu5PFd382eF5j19fW02"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" className="rounded-xl border-slate-300">
+                  Acheter — 897€
+                </Button>
+              </a>
+            )}
           </div>
+          {/* === Fin bloc boutons === */}
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* AVANTAGES */}
       <section className="py-16 bg-white">
@@ -445,81 +495,95 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* OFFRES D’ACCOMPAGNEMENT */}
-      <section id="tarifs" className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            title="Nos accompagnements"
-            subtitle="Choisissez la formule adaptée à vos besoins"
-          />
+{/* OFFRES D’ACCOMPAGNEMENT */}
+<section id="tarifs" className="py-16 bg-white">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <SectionTitle
+      title="Nos accompagnements"
+      subtitle="Choisissez la formule adaptée à vos besoins"
+    />
 
-          {/* Abonnement Plateforme */}
-          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 flex items-center justify-between">
-            <div className="text-[#123055]">
-              <p className="font-semibold">Abonnement Plateforme</p>
-              <p className="text-sm text-[#123055]/80">
-                Accès à tous les simulateurs, formations et ressources
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <p className="text-xl font-extrabold">
-                97€ <span className="text-sm font-semibold">/mois</span>
-              </p>
-              <Link href="/signup?plan=plateforme">
-                <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
-                  S'abonner
-                </Button>
-              </Link>
-            </div>
+    {/* Abonnement Plateforme */}
+    <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 flex items-center justify-between">
+      <div className="text-[#123055]">
+        <p className="font-semibold">Abonnement Plateforme</p>
+        <p className="text-sm text-[#123055]/80">
+          Accès à tous les simulateurs, formations et ressources
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <p className="text-xl font-extrabold">
+          97€ <span className="text-sm font-semibold">/mois</span>
+        </p>
+        {/* 👉 si tu as un Payment Link “Plateforme”, mets-le ici */}
+        <a href="https://buy.stripe.com/eVqeVc2Dtgfk2eFdPx9fW07" target="_blank" rel="noopener noreferrer">
+          <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">S'abonner</Button>
+        </a>
+      </div>
+    </div>
+
+    {/* Cartes d'offres */}
+    <div className="mt-8 grid gap-6 md:grid-cols-3">
+      {OFFRES.map((o) => (
+        <div
+          key={o.name}
+          className={`rounded-2xl p-6 border shadow-sm ${
+            o.dark ? "bg-[#0f2742] text-white border-[#0f2742]" : "bg-white text-[#123055] border-slate-200"
+          } ${o.featured ? "ring-2 ring-amber-400" : ""}`}
+        >
+          <div className="flex items-start justify-between">
+            <p className="text-xl font-semibold">{o.name}</p>
+            {o.tag ? (
+              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                {o.tag}
+              </span>
+            ) : null}
           </div>
 
-          {/* Cartes d'offres */}
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {OFFRES.map((o) => (
-              <div
-                key={o.name}
-                className={`rounded-2xl p-6 border shadow-sm ${
-                  o.dark ? "bg-[#0f2742] text-white border-[#0f2742]" : "bg-white text-[#123055] border-slate-200"
-                } ${o.featured ? "ring-2 ring-amber-400" : ""}`}
-              >
-                <div className="flex items-start justify-between">
-                  <p className="text-xl font-semibold">{o.name}</p>
-                  {o.tag ? (
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                      {o.tag}
-                    </span>
-                  ) : null}
-                </div>
-
-                <p className={`text-3xl font-extrabold mt-2 ${o.dark ? "text-white" : "text-[#123055]"}`}>
-                  {o.price}
-                </p>
-
-                <ul className="mt-4 space-y-2">
-                  {o.bullets.map((b) => (
-                    <Bullet key={b}>{b}</Bullet>
-                  ))}
-                </ul>
-
-                <Link href={o.cta}>
-                  <Button
-                    className={`mt-6 rounded-xl ${
-                      o.dark ? "bg-white text-[#123055] hover:bg-slate-100" : "bg-[#F59E0B] hover:bg-[#D97706] text-white"
-                    }`}
-                  >
-                    Choisir {o.name}
-                    <ArrowRight className="ml-2" size={16} />
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-center text-slate-500 mt-4">
-            Paiement en plusieurs fois disponible • Contactez‑nous pour en savoir plus
+          <p className={`text-3xl font-extrabold mt-2 ${o.dark ? "text-white" : "text-[#123055]"}`}>
+            {o.price}
           </p>
+
+          <ul className="mt-4 space-y-2">
+            {o.bullets.map((b) => (
+              <Bullet key={b}>{b}</Bullet>
+            ))}
+          </ul>
+
+          {/* 👉 ACHAT DIRECT STRIPE : Payment Link */}
+          {o.payLink ? (
+            <a href={o.payLink} target="_blank" rel="noopener noreferrer">
+              <Button
+                className={`mt-6 rounded-xl ${
+                  o.dark ? "bg-white text-[#123055] hover:bg-slate-100" : "bg-[#F59E0B] hover:bg-[#D97706] text-white"
+                }`}
+              >
+                Choisir {o.name}
+                <ArrowRight className="ml-2" size={16} />
+              </Button>
+            </a>
+          ) : (
+            // fallback vers l’ancien CTA interne si pas de payLink défini
+            <Link href={o.cta}>
+              <Button
+                className={`mt-6 rounded-xl ${
+                  o.dark ? "bg-white text-[#123055] hover:bg-slate-100" : "bg-[#F59E0B] hover:bg-[#D97706] text-white"
+                }`}
+              >
+                Choisir {o.name}
+                <ArrowRight className="ml-2" size={16} />
+              </Button>
+            </Link>
+          )}
         </div>
-      </section>
+      ))}
+    </div>
+
+    <p className="text-center text-slate-500 mt-4">
+      Paiement en plusieurs fois disponible • Contactez‑nous pour en savoir plus
+    </p>
+  </div>
+</section>
 
       {/* AVIS CLIENTS */}
       <section className="py-16 bg-slate-50">

@@ -117,93 +117,97 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* NAVBAR PREMIUM */}
-      <nav className="fixed top-0 z-50 w-full bg-[#0d1f33]/90 backdrop-blur-lg border-b border-white/10">
-        <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <Logo size="md" showText variant="light" />
+<nav className="fixed top-0 z-50 w-full bg-[#0d1f33]/90 backdrop-blur-lg border-b border-white/10">
+  <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+    {/* Logo */}
+    <Link href="/" className="flex items-center gap-3">
+      <Logo size="md" showText variant="light" />
+    </Link>
+
+    {/* Desktop Navigation */}
+    <div className="hidden md:flex items-center gap-8">
+      {/* Menu Links */}
+      {NAV_LINKS.map((l) => (
+        <Link key={l.href} href={l.href} className="text-slate-200 hover:text-white transition-colors">
+          {l.label}
+        </Link>
+      ))}
+
+      {/* Connexion (contraste renforcé) */}
+      <Link href="/login">
+        <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
+          Connexion
+        </Button>
+      </Link>
+
+      {/* Mon espace → /app (placeholder) */}
+      <Link href="/app">
+        <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
+          Mon Espace
+        </Button>
+      </Link>
+
+      {/* Diagnostic → Calendly (nouvel onglet) */}
+      <Link
+        href="https://calendly.com/declic-entrepreneurs/diagnostic"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
+          Diagnostic gratuit
+        </Button>
+      </Link>
+    </div>
+
+    {/* Mobile toggle */}
+    <button
+      className="md:hidden p-2 text-slate-200"
+      aria-label="Ouvrir le menu"
+      onClick={() => setMobileMenuOpen((v) => !v)}
+    >
+      {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+    </button>
+  </div>
+
+  {/* Mobile Menu */}
+  {mobileMenuOpen && (
+    <div className="md:hidden bg-[#0d1f33]/95 backdrop-blur-lg border-t border-white/10">
+      <div className="px-4 py-4 space-y-3">
+        {NAV_LINKS.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="block text-slate-200 hover:text-white py-2"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            {l.label}
+          </Link>
+        ))}
+
+        <div className="flex flex-col gap-3 mt-4">
+          {/* Connexion */}
+          <Link href="/login">
+            <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">Connexion</Button>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {/* Menu Links */}
-            {NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="text-slate-200 hover:text-white transition-colors">
-                {l.label}
-              </Link>
-            ))}
+          {/* Mon espace */}
+          <Link href="/app">
+            <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">Mon Espace</Button>
+          </Link>
 
-            {/* Connexion */}
-            <Link href="/login">
-              <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 px-4">
-                Connexion
-              </Button>
-            </Link>
-
-            {/* Mon espace */}
-            <Link href="/app">
-              <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">Mon Espace</Button>
-            </Link>
-
-            {/* Diagnostic */}
-            <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
-              <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
-                Diagnostic gratuit
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden p-2 text-slate-200"
-            aria-label="Ouvrir le menu"
-            onClick={() => setMobileMenuOpen((v) => !v)}
+          {/* Diagnostic */}
+          <Link
+            href="https://calendly.com/declic-entrepreneurs/diagnostic"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-          </button>
+            <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">Diagnostic gratuit</Button>
+          </Link>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-[#0d1f33]/95 backdrop-blur-lg border-t border-white/10">
-            <div className="px-4 py-4 space-y-3">
-              {NAV_LINKS.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="block text-slate-200 hover:text-white py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {l.label}
-                </Link>
-              ))}
-
-              <div className="flex flex-col gap-3 mt-4">
-                {/* Connexion */}
-                <Link href="/login">
-                  <Button variant="outline" className="w-full text-white border-white/20 hover:bg-white/10">
-                    Connexion
-                  </Button>
-                </Link>
-
-                {/* Mon espace */}
-                <Link href="/app">
-                  <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">Mon Espace</Button>
-                </Link>
-
-                {/* Diagnostic */}
-                <Link
-                  href="https://calendly.com/declic-entrepreneurs/diagnostic"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">Diagnostic gratuit</Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
+      </div>
+    </div>
+  )}
+</nav>
 
       {/* HERO PREMIUM */}
       <header className="pt-28 md:pt-32 pb-16 md:pb-20 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
@@ -442,7 +446,7 @@ export default function HomePage() {
       </section>
 
       {/* OFFRES D’ACCOMPAGNEMENT */}
-      <section className="py-16 bg-white">
+      <section id="tarifs" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionTitle
             title="Nos accompagnements"
@@ -542,30 +546,75 @@ export default function HomePage() {
         </div>
       </section>
       {/* FAQ */}
-      <section id="faq" className="py-16 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle title="Questions fréquentes" />
-          <div className="mt-8 divide-y rounded-2xl border border-slate-200 bg-white">
-            {[
-              "Combien puis‑je économiser en passant de micro à SASU ?",
-              "Est‑ce que le passage en société est compliqué ?",
-              "Quel est le meilleur moment pour quitter la micro‑entreprise ?",
-              "Quelle est la différence entre SASU et EURL ?",
-              "Combien coûte un expert‑comptable ?",
-            ].map((q) => (
-              <details key={q} className="group open:bg-slate-50 px-6 py-4 transition-colors">
-                <summary className="flex cursor-pointer list-none items-center justify-between">
-                  <span className="font-medium text-[#123055] text-lg">{q}</span>
-                  <span className="transition-transform duration-300 text-slate-500 group-open:rotate-180">⌄</span>
-                </summary>
-                <p className="mt-3 text-slate-600 leading-relaxed">
-                  Réponse personnalisée selon votre situation. Réservez un diagnostic gratuit pour obtenir un plan d’action adapté.
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
+<section id="faq" className="py-16 bg-white">
+  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <SectionTitle title="Questions fréquentes" />
+    <div className="mt-8 divide-y rounded-2xl border border-slate-200 bg-white">
+      {[
+        {
+          q: "Combien puis‑je économiser en passant de micro à SASU ?",
+          a: (
+            <>
+              Ça dépend de votre <b>bénéfice</b> et de vos <b>frais réels</b>. À CA et charges équivalents,
+              la SASU permet de <b>déduire les frais</b> (véhicule, bureau, repas…), d’optimiser
+              <b> salaire/dividendes</b> et donc d’augmenter le net. En pratique, nos clients voient souvent
+              entre <b>5 000€ et 20 000€ d’économies/an</b> dès que le bénéfice dépasse ~30–40 k€.
+            </>
+          ),
+        },
+        {
+          q: "Est‑ce que le passage en société est compliqué ?",
+          a: (
+            <>
+              Non si vous êtes accompagnés. On s’occupe du <b>choix du statut</b>, de la rédaction des
+              <b>statuts</b>, de l’immatriculation, de la <b>banque</b> et de la mise en place comptable.
+              Vous repartez avec une société <b>opérationnelle</b> et un plan d’action clair.
+            </>
+          ),
+        },
+        {
+          q: "Quel est le meilleur moment pour quitter la micro‑entreprise ?",
+          a: (
+            <>
+              Quand votre <b>bénéfice</b> devient significatif (≈ <b>30–40 k€</b>), que vous avez des
+              <b> frais réels</b> ou que vous approchez des <b>plafonds de CA</b>. Un diagnostic permet de
+              trancher en 20 minutes.
+            </>
+          ),
+        },
+        {
+          q: "Quelle est la différence entre SASU et EURL ?",
+          a: (
+            <>
+              <b>SASU</b> : président assimilé salarié, grande flexibilité sur les <b>dividendes</b>, entrée
+              d’associés facile. <b>EURL</b> : gérant TNS (charges plus basses si rémunération faible),
+              possibilité d’<b>IR</b>. Le bon choix dépend de votre <b>rémunération cible</b> et de vos projets
+              (investissement, embauches).
+            </>
+          ),
+        },
+        {
+          q: "Combien coûte un expert‑comptable ?",
+          a: (
+            <>
+              Pour une TPE, comptez <b>80–250€ / mois</b> selon le volume (factures, paie) et les options
+              (conseil, bilan). Dans nos offres, on vous oriente vers le partenaire <b>adapté</b> à votre
+              activité.
+            </>
+          ),
+        },
+      ].map((item) => (
+        <details key={item.q} className="group open:bg-slate-50 px-6 py-4 transition-colors">
+          <summary className="flex cursor-pointer list-none items-center justify-between">
+            <span className="font-medium text-[#123055] text-lg">{item.q}</span>
+            <span className="transition-transform duration-300 text-slate-500 group-open:rotate-180">⌄</span>
+          </summary>
+          <p className="mt-3 text-slate-600 leading-relaxed">{item.a}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* CTA FINAL + FOOTER */}
       <section className="py-16 bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white">

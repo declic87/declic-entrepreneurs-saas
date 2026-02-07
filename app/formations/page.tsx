@@ -451,11 +451,13 @@ export default function FormationsIndex() {
             <Link href="/formations/agent-immobilier">
               <Button
                 variant="outline"
-                className="h-12 rounded-xl border-white/40 text-white hover:bg-white/10"
-              >
-                Formation Agent Immo — En savoir plus
-              </Button>
-            </Link>
+                
+className="w-full h-12 rounded-xl font-semibold border border-white text-white hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60"
+>
+  Formation Agent Immo — En savoir plus
+</Button>
+</Link>
+
           </div>
           <p className="text-white/60 text-xs mt-6">
             Paiement sécurisé • Accès à vie • Mises à jour incluses

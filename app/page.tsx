@@ -67,7 +67,7 @@ const OFFRES = [
   {
     name: "Starter",
     price: "3 600€",
-    bullets: ["Audit fiscal complet","Création de société","2 RDV de suivi","Support email 3 mois"],
+    bullets: ["Audit fiscal complet","Création de société","3 RDV de suivi","Support email 3 mois"],
     // 👉 Remplace par ton Payment Link Stripe exact (copie l’URL “Pay link” depuis Stripe)
     payLink: "https://buy.stripe.com/00weVcdi72ou8D34eX9fW06", 
     cta: "/signup?plan=starter",
@@ -150,38 +150,42 @@ export default function HomePage() {
 
     {/* Desktop Navigation */}
     <div className="hidden md:flex items-center gap-8">
-      {/* Menu Links */}
       {NAV_LINKS.map((l) => (
         <Link key={l.href} href={l.href} className="text-slate-200 hover:text-white transition-colors">
           {l.label}
         </Link>
       ))}
 
-      {/* Connexion — contraste renforcé */}
-      <Link href="/login">
-        <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
+      {/* Connexion — BLANC plein pour contraste */}
+      <Link href="/login" aria-label="Se connecter">
+        <Button className="px-4 bg-white text-[#123055] hover:bg-slate-100 border-0 shadow-sm">
           Connexion
         </Button>
       </Link>
 
-      {/* Mon espace */}
-      <Link href="/app">
-        <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">
+      {/* Mon Espace */}
+      <Link href="/app" aria-label="Accéder à mon espace">
+        <Button className="px-4 bg-white text-[#123055] hover:bg-slate-100 border-0 shadow-sm">
           Mon Espace
         </Button>
       </Link>
 
-      {/* Diagnostic — Calendly en nouvel onglet */}
-      <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
-        <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
+      {/* Diagnostic — ORANGE plein */}
+      <a
+        href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Prendre un diagnostic gratuit"
+      >
+        <Button className="px-4 bg-[#F59E0B] text-white hover:bg-[#D97706] shadow-lg shadow-amber-500/20">
           Diagnostic gratuit
         </Button>
-      </Link>
+      </a>
     </div>
 
     {/* Mobile toggle */}
     <button
-      className="md:hidden p-2 text-slate-200"
+      className="md:hidden p-2 text-white/90 hover:text-white"
       aria-label="Ouvrir le menu"
       onClick={() => setMobileMenuOpen((v) => !v)}
     >
@@ -205,74 +209,76 @@ export default function HomePage() {
         ))}
 
         <div className="flex flex-col gap-3 mt-4">
-          {/* Connexion */}
-          <Link href="/login">
-            <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">Connexion</Button>
+          <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+            <Button className="w-full bg-white text-[#123055] hover:bg-slate-100 border-0 shadow-sm">Connexion</Button>
           </Link>
 
-          {/* Mon espace */}
-          <Link href="/app">
-            <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">Mon Espace</Button>
+          <Link href="/app" onClick={() => setMobileMenuOpen(false)}>
+            <Button className="w-full bg-white text-[#123055] hover:bg-slate-100 border-0 shadow-sm">Mon Espace</Button>
           </Link>
 
-          {/* Diagnostic */}
-          <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">Diagnostic gratuit</Button>
-          </Link>
+          <a
+            href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Button className="w-full bg-[#F59E0B] text-white hover:bg-[#D97706] shadow">Diagnostic gratuit</Button>
+          </a>
         </div>
       </div>
     </div>
   )}
 </nav>
 
-      {/* HERO PREMIUM */}
-      <header className="pt-28 md:pt-32 pb-16 md:pb-20 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Title */}
-          <h1 className="text-center font-extrabold leading-tight tracking-tight text-4xl md:text-6xl">
-            Indépendants, libérez votre potentiel fiscal
-            <span className="block text-[#F59E0B]">Optimisez, déduisez, gagnez plus</span>
-          </h1>
+{/* HERO PREMIUM */}
+<header className="pt-28 md:pt-32 pb-16 md:pb-20 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    {/* Title */}
+    <h1 className="text-center font-extrabold leading-tight tracking-tight text-4xl md:text-6xl">
+      Indépendants, libérez votre potentiel fiscal
+      <span className="block text-[#F59E0B]">Optimisez, déduisez, gagnez plus</span>
+    </h1>
 
-          {/* Subtitle */}
-          <p className="text-center text-lg md:text-xl text-slate-200 mt-6 max-w-3xl mx-auto">
-            Passez de micro‑entrepreneur à chef d’entreprise. Nos experts vous accompagnent de A à Z pour
-            maximiser vos revenus nets.
-          </p>
+    {/* Subtitle */}
+    <p className="text-center text-lg md:text-xl text-slate-200 mt-6 max-w-3xl mx-auto">
+      Passez de micro‑entrepreneur à chef d’entreprise. Nos experts vous accompagnent de A à Z pour
+      maximiser vos revenus nets.
+    </p>
 
-          {/* CTA buttons */}
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="https://calendly.com/declic-entrepreneurs/diagnostic"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-6 py-6 rounded-xl text-[15px]">
-                <Calendar className="mr-2" size={18} />
-                Diagnostic gratuit (45 min)
-              </Button>
-            </Link>
+    {/* CTA buttons */}
+    <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+      <a
+        href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-6 py-6 rounded-xl text-[15px] shadow-lg shadow-amber-500/20">
+          <Calendar className="mr-2" size={18} />
+          Diagnostic gratuit (45 min)
+        </Button>
+      </a>
 
-            <Link href="/simulateurs/economies">
-              <Button
-                variant="outline"
-                className="bg-white text-[#123055] hover:bg-white/90 border-0 px-6 py-6 rounded-xl text-[15px]"
-              >
-                <Calculator className="mr-2" size={18} />
-                Simuler mes économies
-              </Button>
-            </Link>
-          </div>
+      <Link href="/simulateurs/economies">
+        <Button
+          variant="outline"
+          className="bg-white text-[#123055] hover:bg-white/90 border-0 px-6 py-6 rounded-xl text-[15px]"
+        >
+          <Calculator className="mr-2" size={18} />
+          Simuler mes économies
+        </Button>
+      </Link>
+    </div>
 
-          {/* Stats */}
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-            <Stat value="2014" label="Depuis" />
-            <Stat value="500+" label="Clients accompagnés" />
-            <Stat value="30,7M€" label="Économisés au total" />
-            <Stat value="4.9/5" label="Satisfaction client" />
-          </div>
-        </div>
-      </header>
+    {/* Stats */}
+    <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+      <Stat value="2014" label="Depuis" />
+      <Stat value="500+" label="Clients accompagnés" />
+      <Stat value="30,7M€" label="Économisés au total" />
+      <Stat value="4.9/5" label="Satisfaction client" />
+    </div>
+  </div>
+</header>
       {/* BANDEAU ÉCONOMIES */}
       <section className="py-12 bg-[linear-gradient(90deg,#F59E0B_0%,#22C55E_100%)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -399,101 +405,169 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FORMATIONS PREMIUM */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            title="Nos formations"
-            subtitle="Apprenez à optimiser votre fiscalité par vous‑même"
-          />
+{/* FORMATIONS PREMIUM */}
+<section className="py-16 bg-slate-50">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <SectionTitle
+      title="Nos formations"
+      subtitle="Apprenez à optimiser votre fiscalité par vous‑même"
+    />
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          {FORMATIONS.map((f) => (
-            <div
-              key={f.name}
-              className={`rounded-2xl border p-6 bg-white shadow-sm ${
-                f.highlighted ? "border-amber-300 shadow-amber-200/40" : "border-slate-200"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-[#123055]">{f.name}</h3>
-                  <p className="text-3xl font-extrabold mt-2">{f.price}</p>
-                </div>
-              </div>
+    <div className="mt-10 grid gap-6 md:grid-cols-2">
+      {/* ==== Formation Créateur (ex-Essentielle) ==== */}
+      <div className="rounded-2xl border p-6 bg-white shadow-sm border-slate-200">
+        <div>
+          <h3 className="text-xl font-semibold text-[#123055]">Formation Créateur</h3>
+          <p className="text-3xl font-extrabold mt-2">497€</p>
+        </div>
 
-              <ul className="mt-4 space-y-2">
-                {f.bullets.map((b) => (
-                  <Bullet key={b}>{b}</Bullet>
-                ))}
-              </ul>
+        <ul className="mt-4 space-y-2">
+          <Bullet>Choisir le bon statut juridique</Bullet>
+          <Bullet>Optimiser sa fiscalité dès le départ</Bullet>
+          <Bullet>Les erreurs à éviter</Bullet>
+          <Bullet>Accès à vie aux mises à jour</Bullet>
+        </ul>
 
-              <Link href={f.cta}>
-                <Button className="mt-6 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
-                  En savoir plus
-                  <ArrowRight className="ml-2" size={16} />
-                </Button>
-              </Link>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {/* 👉 En savoir plus → route DÉTAIL qui doit exister */}
+          <Link href="/formations/createur">
+            <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
+              En savoir plus
+            </Button>
+          </Link>
+
+          {/* 👉 Acheter (Stripe Payment Link) */}
+          <a
+            href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="outline" className="rounded-xl border-slate-300">
+              Acheter — 497€
+            </Button>
+          </a>
+        </div>
+      </div>
+
+      {/* ==== Formation Agent Immobilier ==== */}
+      <div className="rounded-2xl border p-6 bg-white shadow-sm border-amber-300 shadow-amber-200/40">
+        <div>
+          <h3 className="text-xl font-semibold text-[#123055]">Formation Agent Immobilier</h3>
+          <p className="text-3xl font-extrabold mt-2">897€</p>
+        </div>
+
+        <ul className="mt-4 space-y-2">
+          <Bullet>Optimisation spécifique immobilier</Bullet>
+          <Bullet>Régime fiscal optimal</Bullet>
+          <Bullet>Frais réels vs micro</Bullet>
+          <Bullet>Stratégies avancées</Bullet>
+        </ul>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          {/* 👉 En savoir plus → route DÉTAIL qui doit exister */}
+          <Link href="/formations/agent-immobilier">
+            <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
+              En savoir plus
+            </Button>
+          </Link>
+
+          {/* 👉 Acheter (Stripe Payment Link) */}
+          <a
+            href="https://buy.stripe.com/4gM3cu5PFd382eF5j19fW02"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="outline" className="rounded-xl border-slate-300">
+              Acheter — 897€
+            </Button>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{/* RDV STRATÉGIQUES */}
+<section
+  id="rdv"
+  className="py-16 bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white"
+>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <SectionTitle
+      title="RDV Stratégiques"
+      subtitle="Un échange personnalisé avec un expert pour débloquer votre situation"
+      center
+    />
+
+    <div className="mt-10 grid gap-6 md:grid-cols-2">
+      {[
+        {
+          name: "Appel Expert",
+          duration: "45 minutes",
+          price: "250€",
+          bullets: [
+            "Analyse de votre situation",
+            "Recommandations personnalisées",
+            "Plan d’action concret",
+            "Réponses à toutes vos questions",
+          ],
+          premium: false,
+          cta: "https://calendly.com/contact-jj-conseil/rdv-analyste",
+        },
+        {
+          name: "Appel avec Jérôme",
+          duration: "60 minutes",
+          price: "800€",
+          bullets: [
+            "Expertise de 10+ ans",
+            "Stratégies avancées",
+            "Cas complexes et holdings",
+            "Suivi post‑appel inclus",
+          ],
+          premium: true,
+          cta: "https://calendly.com/contact-jj-conseil/rdv-analyste",
+        },
+      ].map((r) => (
+        <div
+          key={r.name}
+          className={`rounded-2xl p-6 border ${
+            r.premium ? "bg-white/5 border-white/10 ring-1 ring-amber-400/40" : "bg-white/5 border-white/10"
+          }`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-2xl font-extrabold">{r.name}</p>
+              <p className="text-white/80">{r.duration}</p>
             </div>
-          ))}
-        </div>
-        </div>
-      </section>
-      {/* RDV STRATÉGIQUES */}
-      <section
-        id="rdv"
-        className="py-16 bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            title="RDV Stratégiques"
-            subtitle="Un échange personnalisé avec un expert pour débloquer votre situation"
-            center
-          />
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {RDV.map((r) => (
-              <div
-                key={r.name}
-                className={`rounded-2xl p-6 border ${
-                  r.premium ? "bg-white/5 border-white/10 ring-1 ring-amber-400/40" : "bg-white/5 border-white/10"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-2xl font-extrabold">{r.name}</p>
-                    <p className="text-white/80">{r.duration}</p>
-                  </div>
-
-                  {r.premium && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/20 text-amber-200">
-                      PREMIUM
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-3xl font-extrabold mt-3">{r.price}</p>
-
-                <ul className="mt-4 space-y-2">
-                  {r.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-2">
-                      <CheckCircle2 className="text-emerald-400 mt-1" size={18} />
-                      <span className="text-white/90">{b}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href={r.cta} target="_blank" rel="noopener noreferrer">
-                  <Button className="mt-6 bg-white text-[#123055] hover:bg-slate-100 rounded-xl">
-                    Réserver {r.name === "Appel Expert" ? "mon appel" : "avec Jérôme"}
-                    <ArrowRight className="ml-2" size={16} />
-                  </Button>
-                </Link>
-              </div>
-            ))}
+            {r.premium && (
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/20 text-amber-200">
+                PREMIUM
+              </span>
+            )}
           </div>
+
+          <p className="text-3xl font-extrabold mt-3">{r.price}</p>
+
+          <ul className="mt-4 space-y-2">
+            {r.bullets.map((b) => (
+              <li key={b} className="flex items-start gap-2">
+                <CheckCircle2 className="text-emerald-400 mt-1" size={18} />
+                <span className="text-white/90">{b}</span>
+              </li>
+            ))}
+          </ul>
+
+          <a href={r.cta} target="_blank" rel="noopener noreferrer">
+            <Button className="mt-6 bg-white text-[#123055] hover:bg-slate-100 rounded-xl">
+              Réserver {r.name === "Appel Expert" ? "mon appel" : "avec Jérôme"}
+              <ArrowRight className="ml-2" size={16} />
+            </Button>
+          </a>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
 {/* OFFRES D’ACCOMPAGNEMENT */}
 <section id="tarifs" className="py-16 bg-white">
@@ -680,64 +754,68 @@ export default function HomePage() {
   </div>
 </section>
 
-      {/* CTA FINAL + FOOTER */}
-      <section className="py-16 bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl md:text-4xl font-extrabold">Prêt à optimiser votre fiscalité ?</h3>
-          <p className="text-white/90 mt-3">
-            Réservez un diagnostic gratuit de 45 minutes avec un expert. Sans engagement, 100% personnalisé.
-          </p>
-          <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
-            <Button className="mt-6 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
-              Réserver mon diagnostic gratuit (45 min)
-            </Button>
-          </Link>
-        </div>
+{/* CTA FINAL + FOOTER */}
+<section className="py-16 bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white">
+  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h3 className="text-3xl md:text-4xl font-extrabold">Prêt à optimiser votre fiscalité ?</h3>
+    <p className="text-white/90 mt-3">
+      Réservez un diagnostic gratuit de 45 minutes avec un expert. Sans engagement, 100% personnalisé.
+    </p>
+    <a
+      href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button className="mt-6 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">
+        Réserver mon diagnostic gratuit (45 min)
+      </Button>
+    </a>
+  </div>
 
-        <footer className="mt-14 border-t border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8 text-slate-200">
-            <div>
-              <Logo size="md" showText variant="light" />
-              <p className="text-sm mt-3">Optimisation fiscale pour indépendants & entrepreneurs depuis 2014.</p>
-              <p className="text-emerald-300 text-sm mt-2">+30M€ économisés pour nos clients</p>
-            </div>
+  <footer className="mt-14 border-t border-white/10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8 text-slate-200">
+      <div>
+        <Logo size="md" showText variant="light" />
+        <p className="text-sm mt-3">Optimisation fiscale pour indépendants & entrepreneurs depuis 2014.</p>
+        <p className="text-emerald-300 text-sm mt-2">+30M€ économisés pour nos clients</p>
+      </div>
 
-            <div>
-              <p className="font-semibold text-white mb-3">Simulateurs</p>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/simulateurs/comparateur" className="hover:text-white">Comparateur statuts</Link></li>
-                <li><Link href="/simulateurs/economies" className="hover:text-white">Simulateur économies</Link></li>
-                <li><Link href="/simulateurs/ik" className="hover:text-white">Indemnités kilométriques</Link></li>
-                <li><Link href="/simulateurs/immobilier" className="hover:text-white">Investissement immobilier</Link></li>
-              </ul>
-            </div>
+      <div>
+        <p className="font-semibold text-white mb-3">Simulateurs</p>
+        <ul className="space-y-2 text-sm">
+          <li><Link href="/simulateurs/comparateur" className="hover:text-white">Comparateur statuts</Link></li>
+          <li><Link href="/simulateurs/economies" className="hover:text-white">Simulateur économies</Link></li>
+          <li><Link href="/simulateurs/ik" className="hover:text-white">Indemnités kilométriques</Link></li>
+          <li><Link href="/simulateurs/immobilier" className="hover:text-white">Investissement immobilier</Link></li>
+        </ul>
+      </div>
 
-            <div>
-              <p className="font-semibold text-white mb-3">Ressources</p>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/formations/essentielle" className="hover:text-white">Formation Essentielle</Link></li>
-                <li><Link href="/formations/agent-immobilier" className="hover:text-white">Formation Agent Immo</Link></li>
-                <li><Link href="#faq" className="hover:text-white">FAQ</Link></li>
-              </ul>
-            </div>
+      <div>
+        <p className="font-semibold text-white mb-3">Ressources</p>
+        <ul className="space-y-2 text-sm">
+          <li><Link href="/formations/createur" className="hover:text-white">Formation Créateur</Link></li>
+          <li><Link href="/formations/agent-immobilier" className="hover:text-white">Formation Agent Immo</Link></li>
+          <li><Link href="#faq" className="hover:text-white">FAQ</Link></li>
+        </ul>
+      </div>
 
-            <div>
-              <p className="font-semibold text-white mb-3">Contact</p>
-              <ul className="space-y-2 text-sm">
-                <li><a href="mailto:contact@declic-entrepreneur.fr" className="hover:text-white">contact@declic-entrepreneur.fr</a></li>
-                <li><a href="tel:+33123456789" className="hover:text-white">01 23 45 67 89</a></li>
-              </ul>
-            </div>
-          </div>
+      <div>
+        <p className="font-semibold text-white mb-3">Contact</p>
+        <ul className="space-y-2 text-sm">
+          <li><a href="mailto:contact@declic-entrepreneur.fr" className="hover:text-white">contact@declic-entrepreneur.fr</a></li>
+          <li><a href="tel:+33123456789" className="hover:text-white">01 23 45 67 89</a></li>
+        </ul>
+      </div>
+    </div>
 
-          <div className="text-center text-xs text-slate-400 pb-8">
-            © {new Date().getFullYear()} Déclic‑Entrepreneur. Tous droits réservés. •{" "}
-            <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>{" "}•{" "}
-            <Link href="/cgv" className="hover:text-white">CGV</Link>{" "}•{" "}
-            <Link href="/confidentialite" className="hover:text-white">Confidentialité</Link>
-          </div>
-        </footer>
-      </section>
+    <div className="text-center text-xs text-slate-400 pb-8">
+      © {new Date().getFullYear()} Déclic‑Entrepreneur. Tous droits réservés. •{" "}
+      <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>{" "}•{" "}
+      <Link href="/cgv" className="hover:text-white">CGV</Link>{" "}•{" "}
+      <Link href="/confidentialite" className="hover:text-white">Confidentialité</Link>
+    </div>
+  </footer>
+</section>
     </div>
   );
 }

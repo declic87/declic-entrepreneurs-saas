@@ -1,25 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
-import { TrendingUp, Info, CheckCircle2, Euro, Home, PieChart } from 'lucide-react';
+import React, { useMemo, useState } from "react";
 
-/**
- * INTERFACE POUR LE BOUTON
- */
+/** ----------------------------------------------
+ *  Bouton local (léger) – tu peux remplacer par shadcn/ui si tu veux
+ *  ---------------------------------------------- */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   className?: string;
-  size?: 'md' | 'lg';
+  size?: "md" | "lg";
 }
-
-/**
- * COMPOSANT BOUTON RÉUTILISABLE CORRIGÉ
- */
 const Button = ({ children, className = "", size = "md", ...props }: ButtonProps) => {
-  const sizeClasses = size === 'lg' ? 'px-8 py-4 text-lg' : 'px-4 py-2 text-sm';
+  const sizeClasses = size === "lg" ? "px-6 py-3 text-base" : "px-4 py-2 text-sm";
   return (
-    <button 
-      className={`font-bold rounded-xl transition-all active:scale-95 ${sizeClasses} ${className}`}
+    <button
+      className={`inline-flex items-center justify-center rounded-xl font-semibold transition-all active:scale-95 ${sizeClasses} ${className}`}
       {...props}
     >
       {children}
@@ -27,160 +22,419 @@ const Button = ({ children, className = "", size = "md", ...props }: ButtonProps
   );
 };
 
-/**
- * SIMULATEUR FISCAL IMMOBILIER COMPLET
- */
-export default function TaxSimulator() {
-  // --- ÉTATS (Variables modifiables) ---
-  const [valeurBien, setValeurBien] = useState(200000);
-  const [loyerMensuel, setLoyerMensuel] = useState(1000);
-  const [chargesAnnuelles, setChargesAnnuelles] = useState(2000);
-  const [taxeFonciere, setTaxeFonciere] = useState(800);
-  const [tmi, setTmi] = useState(30);
-  const [travaux, setTravaux] = useState(0);
-  const [mobilier, setMobilier] = useState(5000);
+/** ----------------------------------------------
+ *  Helpers
+ *  ---------------------------------------------- */
+const euro = (n: number) =>
+  isFinite(n) ? n.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €" : "—";
 
-  // --- LOGIQUE DE CALCUL ---
-  const calculs = useMemo(() => {
-    const loyerAnnuel = loyerMensuel * 12;
-    const chargesDeductiblesBase = chargesAnnuelles + taxeFonciere;
-    const microFoncierPossible = loyerAnnuel <= 15000;
-    const rendementBrut = (loyerAnnuel / valeurBien) * 100;
+function annuiteMensuelle(montant: number, tauxAnnuelPct: number, dureeAns: number) {
+  const r = Math.max(0, tauxAnnuelPct) / 100 / 12;
+  const n = Math.max(1, dureeAns) * 12;
+  if (r === 0) return montant / n;
+  return (montant * r) / (1 - Math.pow(1 + r, -n));
+}
 
-    // Amortissements (Base LMNP / SCI IS)
-    const amortissementImmeuble = (valeurBien * 0.85) / 25;
-    const amortissementMobilier = mobilier / 10;
-    const amortissementTravaux = travaux / 10;
-    const totalAmortissement = amortissementImmeuble + amortissementMobilier + amortissementTravaux;
+/** ----------------------------------------------
+ *  Page
+ *  ---------------------------------------------- */
+export default function ImmobilierSimulatorPage() {
+  /** Inputs principaux */
+  const [valeurBien, setValeurBien] = useState<number>(200_000);
+  const [loyerMensuel, setLoyerMensuel] = useState<number>(1_000);
+  const [chargesAnnuelles, setChargesAnnuelles] = useState<number>(2_000);
+  const [taxeFonciere, setTaxeFonciere] = useState<number>(800);
+  const [tmi, setTmi] = useState<number>(30); // taux marginal IR
+  const [travaux, setTravaux] = useState<number>(0);
+  const [mobilier, setMobilier] = useState<number>(5_000);
 
-    // 1. Nu - Micro Foncier
-    const baseMicroFoncier = loyerAnnuel * 0.7;
-    const irMicroFoncier = baseMicroFoncier * (tmi / 100);
-    const pssMicroFoncier = baseMicroFoncier * 0.172;
-    const netNueMicro = loyerAnnuel - chargesDeductiblesBase - irMicroFoncier - pssMicroFoncier;
+  /** Crédit */
+  const [apportPct, setApportPct] = useState<number>(10);
+  const [tauxCredit, setTauxCredit] = useState<number>(4.0);
+  const [duree, setDuree] = useState<number>(20);
 
-    // 2. Nu - Réel
-    const baseReelFoncier = Math.max(0, loyerAnnuel - chargesDeductiblesBase);
-    const impotsReelFoncier = baseReelFoncier * (tmi / 100 + 0.172);
-    const netNueReel = loyerAnnuel - chargesDeductiblesBase - impotsReelFoncier;
+  /** Hypothèses pédagogiques (simplifiées) */
+  const PRELEV_SOC = 0.172; // 17,2%
+  const MICRO_FONCIER_ABATT = 0.30; // abattement micro foncier (si loyers fonciers <= 15k)
+  const MICRO_SEUIL = 15000;
+  // Amortissements LMNP/SCI IS (très simplifiés) :
+  const PART_IMMEUBLE_AMORT = 0.85; // 85% du prix ≈ immeuble (hors terrain)
+  const DUREE_IMMEUBLE = 25; // ans
+  const DUREE_MOBILIER = 10; // ans
+  const DUREE_TRAVAUX = 10; // ans
+  // IS :
+  const IS_SEUIL_15 = 42500;
+  const IS_TAUX_REDUIT = 0.15;
+  const IS_TAUX_NORMAL = 0.25;
 
-    // 3. LMNP - Réel
-    const baseReelLMNP = Math.max(0, loyerAnnuel - chargesDeductiblesBase - totalAmortissement);
-    const impotsLMNPReel = baseReelLMNP * (tmi / 100 + 0.172);
-    const netLMNPReel = loyerAnnuel - chargesDeductiblesBase - impotsLMNPReel;
+  const calc = useMemo(() => {
+    /** Bases communes */
+    const loyerAnnuel = Math.max(0, loyerMensuel) * 12;
+    const chargesBase = Math.max(0, chargesAnnuelles) + Math.max(0, taxeFonciere);
+    const rendementBrut = valeurBien > 0 ? (loyerAnnuel / valeurBien) * 100 : 0;
 
-    // 4. SCI IS
-    const resultatSCIIS = loyerAnnuel - chargesDeductiblesBase - totalAmortissement;
-    const isSCIIS = resultatSCIIS <= 42500 
-      ? Math.max(0, resultatSCIIS) * 0.15 
-      : (42500 * 0.15) + (resultatSCIIS - 42500) * 0.25;
-    const tresorerieSCIIS = loyerAnnuel - chargesDeductiblesBase - isSCIIS;
+    /** Crédit */
+    const apport = (Math.max(0, Math.min(100, apportPct)) / 100) * Math.max(0, valeurBien);
+    const montantEmprunte = Math.max(0, valeurBien - apport);
+    const mensualite = annuiteMensuelle(montantEmprunte, Math.max(0, tauxCredit), Math.max(1, duree));
+    const annuite = mensualite * 12;
+    // Approche pédagogique : intérêts ~ part du coût lié au taux (approx sur première année)
+    // Ici on prend une approx simple : intérêts ~ montantEmprunte * taux (majoration) – à affiner si on veut l’AMORT EXACT.
+    const interetsAnnuelApprox = (montantEmprunte * Math.max(0, tauxCredit)) / 100;
+
+    /** Amortissements (LMNP/SCI IS – simplifiés) */
+    const amortImmeuble = (Math.max(0, valeurBien) * PART_IMMEUBLE_AMORT) / DUREE_IMMEUBLE;
+    const amortMobilier = Math.max(0, mobilier) / DUREE_MOBILIER;
+    const amortTravaux = Math.max(0, travaux) / DUREE_TRAVAUX;
+    const amortTotal = amortImmeuble + amortMobilier + amortTravaux;
+
+    /** 1) NU – MICRO FONCIER */
+    const microPossible = loyerAnnuel <= MICRO_SEUIL;
+    const baseMicro = loyerAnnuel * (1 - MICRO_FONCIER_ABATT);
+    const irMicro = baseMicro * (Math.max(0, tmi) / 100);
+    const psMicro = baseMicro * PRELEV_SOC;
+    // net = loyers - charges réelles (charges & TF non prises en compte dans micro) - IR - PS
+    // pédagogiquement, on montre ce que perçoit le bailleur après impôts/PS et charges réelles factuelles
+    // (tu peux décider de ne pas soustraire charges réelles pour micro ; ici, on les montre pour cash-flow).
+    const netNueMicro = loyerAnnuel - chargesBase - irMicro - psMicro;
+
+    /** 2) NU – RÉEL */
+    const baseReelFoncier = Math.max(0, loyerAnnuel - chargesBase - interetsAnnuelApprox); // intérêts déductibles au réel
+    const irReel = baseReelFoncier * (Math.max(0, tmi) / 100);
+    const psReel = baseReelFoncier * PRELEV_SOC;
+    const impotsReelFoncier = irReel + psReel;
+    const netNueReel = loyerAnnuel - chargesBase - interetsAnnuelApprox - impotsReelFoncier;
+
+    /** 3) LMNP – RÉEL (BIC) */
+    // Résultat BIC = loyers - charges - intérêts - amortissements
+    const resultatLMNP = Math.max(0, loyerAnnuel - chargesBase - interetsAnnuelApprox - amortTotal);
+    const impotLMNP = resultatLMNP * (Math.max(0, tmi) / 100 + PRELEV_SOC); // simplifié
+    const netLMNP = loyerAnnuel - chargesBase - interetsAnnuelApprox - impotLMNP;
+
+    /** 4) SCI IS */
+    // Résultat avant IS = loyers - charges - intérêts - amortissements
+    const benefAvantIS = loyerAnnuel - chargesBase - interetsAnnuelApprox - amortTotal;
+    const is =
+      benefAvantIS <= 0
+        ? 0
+        : Math.min(benefAvantIS, IS_SEUIL_15) * IS_TAUX_REDUIT +
+          Math.max(0, benefAvantIS - IS_SEUIL_15) * IS_TAUX_NORMAL;
+    const tresoSCIIS = loyerAnnuel - chargesBase - interetsAnnuelApprox - is;
+
+    /** Cash-flow mensuel (après mensualité de crédit) */
+    const cfMicro = (netNueMicro - annuite) / 12;
+    const cfNueReel = (netNueReel - annuite) / 12;
+    const cfLMNP = (netLMNP - annuite) / 12;
+    const cfSCIIS = (tresoSCIIS - annuite) / 12;
+
+    const results = [
+      {
+        name: "Nu (Micro)",
+        enabled: microPossible,
+        netAnnuel: netNueMicro,
+        impots: irMicro + psMicro,
+        cashflow: cfMicro,
+      },
+      {
+        name: "Nu (Réel)",
+        enabled: true,
+        netAnnuel: netNueReel,
+        impots: impotsReelFoncier,
+        cashflow: cfNueReel,
+      },
+      {
+        name: "LMNP (Réel)",
+        enabled: true,
+        netAnnuel: netLMNP,
+        impots: impotLMNP,
+        cashflow: cfLMNP,
+      },
+      {
+        name: "SCI IS",
+        enabled: true,
+        netAnnuel: tresoSCIIS,
+        impots: is,
+        cashflow: cfSCIIS,
+      },
+    ]
+      .filter((r) => r.enabled)
+      .sort((a, b) => b.netAnnuel - a.netAnnuel);
 
     return {
       loyerAnnuel,
-      chargesDeductiblesBase,
+      chargesBase,
       rendementBrut,
-      totalAmortissement,
-      microFoncierPossible,
-      results: [
-        { name: "Nu (Micro)", net: microFoncierPossible ? netNueMicro : -1, impots: irMicroFoncier + pssMicroFoncier },
-        { name: "Nu (Réel)", net: netNueReel, impots: impotsReelFoncier },
-        { name: "LMNP (Réel)", net: netLMNPReel, impots: impotsLMNPReel },
-        { name: "SCI IS", net: tresorerieSCIIS, impots: isSCIIS }
-      ].sort((a, b) => b.net - a.net)
+      amortImmeuble,
+      amortMobilier,
+      amortTravaux,
+      amortTotal,
+      mensualite,
+      annuite,
+      interetsAnnuelApprox,
+      microPossible,
+      results,
     };
-  }, [valeurBien, loyerMensuel, chargesAnnuelles, taxeFonciere, tmi, travaux, mobilier]);
-
-  const formatEuro = (val: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+  }, [
+    valeurBien,
+    loyerMensuel,
+    chargesAnnuelles,
+    taxeFonciere,
+    tmi,
+    travaux,
+    mobilier,
+    apportPct,
+    tauxCredit,
+    duree,
+  ]);
 
   return (
-    <div className="bg-slate-50 min-h-screen p-4 md:p-8 font-sans text-slate-900">
-      <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* HEADER SECTION */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight uppercase">Optimiseur Fiscal Immo</h1>
-            <p className="text-slate-500 text-sm">Comparez les régimes et maximisez votre cash-flow</p>
+    <div className="min-h-screen bg-white font-sans">
+      {/* Header bandeau simple */}
+      <header className="pt-10 pb-6 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Optimiseur Fiscal Immobilier</h1>
+          <p className="text-slate-200 mt-2 max-w-2xl">
+            Comparez <b>Nu (Micro/Réel)</b>, <b>LMNP</b> et <b>SCI IS</b>, avec mensualité de crédit, amortissements
+            et <b>cash-flow net</b>.
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-10">
+        {/* KPIs rapides */}
+        <div className="grid sm:grid-cols-3 gap-4 mb-6">
+          <div className="rounded-2xl p-4 border border-slate-200 bg-white">
+            <p className="text-xs text-slate-500 uppercase font-semibold">Loyers / an</p>
+            <p className="text-2xl font-extrabold text-[#123055]">{euro(calc.loyerAnnuel)}</p>
           </div>
-          <div className="flex gap-4">
-            <div className="text-right">
-              <p className="text-xs text-slate-400 uppercase font-bold">Rendement Brut</p>
-              <p className="text-2xl font-black text-blue-600">{calculs.rendementBrut.toFixed(2)}%</p>
-            </div>
+          <div className="rounded-2xl p-4 border border-slate-200 bg-white">
+            <p className="text-xs text-slate-500 uppercase font-semibold">Rendement brut</p>
+            <p className="text-2xl font-extrabold text-[#123055]">
+              {isFinite(calc.rendementBrut) ? calc.rendementBrut.toFixed(2) + " %" : "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl p-4 border border-slate-200 bg-white">
+            <p className="text-xs text-slate-500 uppercase font-semibold">Mensualité crédit</p>
+            <p className="text-2xl font-extrabold text-[#123055]">{euro(calc.mensualite)}</p>
           </div>
         </div>
 
-        {/* INPUTS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <label className="text-xs font-bold text-slate-400 uppercase">Valeur du bien</label>
-                <input type="number" value={valeurBien} onChange={(e) => setValeurBien(Number(e.target.value))} className="w-full text-lg font-bold outline-none" />
+        {/* Inputs */}
+        <section className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="rounded-2xl p-6 border border-slate-200 bg-white space-y-4">
+            <p className="text-sm font-semibold text-[#123055]">Bien & loyers</p>
+            <div>
+              <label className="text-xs font-medium text-slate-600">Valeur du bien (€)</label>
+              <input
+                type="number"
+                min={0}
+                value={valeurBien}
+                onChange={(e) => setValeurBien(Number(e.target.value || 0))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+              />
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <label className="text-xs font-bold text-slate-400 uppercase">Loyer Mensuel HC</label>
-                <input type="number" value={loyerMensuel} onChange={(e) => setLoyerMensuel(Number(e.target.value))} className="w-full text-lg font-bold outline-none text-green-600" />
+            <div>
+              <label className="text-xs font-medium text-slate-600">Loyer mensuel HC (€)</label>
+              <input
+                type="number"
+                min={0}
+                value={loyerMensuel}
+                onChange={(e) => setLoyerMensuel(Number(e.target.value || 0))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+              />
             </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <label className="text-xs font-bold text-slate-400 uppercase">Votre TMI (%)</label>
-                <select value={tmi} onChange={(e) => setTmi(Number(e.target.value))} className="w-full text-lg font-bold outline-none bg-transparent">
-                    <option value={0}>0%</option>
-                    <option value={11}>11%</option>
-                    <option value={30}>30%</option>
-                    <option value={41}>41%</option>
-                    <option value={45}>45%</option>
-                </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-600">Charges annuelles (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={chargesAnnuelles}
+                  onChange={(e) => setChargesAnnuelles(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Taxe foncière (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={taxeFonciere}
+                  onChange={(e) => setTaxeFonciere(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
             </div>
-        </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">TMI (%)</label>
+              <select
+                value={tmi}
+                onChange={(e) => setTmi(Number(e.target.value))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300 bg-white"
+              >
+                <option value={0}>0%</option>
+                <option value={11}>11%</option>
+                <option value={30}>30%</option>
+                <option value={41}>41%</option>
+                <option value={45}>45%</option>
+              </select>
+            </div>
+          </div>
 
-        {/* CARDS COMPARATIVES */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {calculs.results.map((res, idx) => (
-            <div key={res.name} className={`relative bg-white p-6 rounded-3xl border-2 transition-all shadow-xl ${idx === 0 ? 'border-green-500 scale-105 z-10' : 'border-slate-100 hover:border-slate-300'}`}>
+          <div className="rounded-2xl p-6 border border-slate-200 bg-white space-y-4">
+            <p className="text-sm font-semibold text-[#123055]">Crédit</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-600">Apport (%)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={apportPct}
+                  onChange={(e) => setApportPct(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Taux (%)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={tauxCredit}
+                  onChange={(e) => setTauxCredit(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Durée (ans)</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={duree}
+                  onChange={(e) => setDuree(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <p className="text-xs text-slate-600">
+                Mensualité estimée : <b>{euro(calc.mensualite)}</b> — Intérêts annuels (approx) :{" "}
+                <b>{euro(calc.interetsAnnuelApprox)}</b>
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-6 border border-slate-200 bg-white space-y-4">
+            <p className="text-sm font-semibold text-[#123055]">Amortissements (LMNP / SCI IS)</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-600">Mobilier (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={mobilier}
+                  onChange={(e) => setMobilier(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600">Travaux (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={travaux}
+                  onChange={(e) => setTravaux(Number(e.target.value || 0))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 mt-1 outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm">
+                <p className="text-emerald-800">
+                  Amort total annuel ~ <b>{euro(calc.amortTotal)}</b>
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">
+              Hypothèses : immeuble 85% sur 25 ans, mobilier 10 ans, travaux 10 ans (pédagogique).
+            </p>
+          </div>
+        </section>
+
+        {/* Comparatif régimes */}
+        <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {calc.results.map((r, idx) => (
+            <div
+              key={r.name}
+              className={`relative bg-white p-6 rounded-3xl border-2 transition-all shadow-sm ${
+                idx === 0 ? "border-emerald-500 ring-2 ring-emerald-200/50" : "border-slate-200"
+              }`}
+            >
               {idx === 0 && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                  <CheckCircle2 size={12} /> MEILLEUR CHOIX
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow">
+                  MEILLEUR CHOIX
                 </div>
               )}
-              <h3 className="font-bold text-slate-400 text-sm mb-1 uppercase tracking-widest">{res.name}</h3>
-              <div className="mb-4">
-                <p className="text-3xl font-black">{res.net < 0 ? "N/A" : formatEuro(res.net)}</p>
-                <p className="text-xs text-slate-400">Net après impôts / an</p>
+              <h3 className="font-semibold text-slate-500 text-xs mb-1 uppercase tracking-widest">{r.name}</h3>
+              <div className="mb-3">
+                <p className="text-3xl font-extrabold text-[#123055]">{euro(Math.max(0, r.netAnnuel))}</p>
+                <p className="text-xs text-slate-500">Net après impôts / an</p>
               </div>
-              <div className="space-y-2 border-t pt-4">
+              <div className="space-y-2 border-t pt-3">
                 <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-400 uppercase">Impôts</span>
-                    <span className="text-red-500 font-bold">-{formatEuro(res.impots)}</span>
+                  <span className="text-slate-500 uppercase">Impôts & PS</span>
+                  <span className="text-red-600 font-bold">-{euro(Math.max(0, r.impots))}</span>
                 </div>
                 <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-400 uppercase">Net / mois</span>
-                    <span className="text-slate-900 font-bold">{res.net < 0 ? "-" : formatEuro(res.net / 12)}</span>
+                  <span className="text-slate-500 uppercase">Net / mois</span>
+                  <span className="text-slate-900 font-bold">{euro(Math.max(0, r.netAnnuel) / 12)}</span>
+                </div>
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-slate-500 uppercase">Cash-flow (après crédit)</span>
+                  <span className={`font-bold ${r.cashflow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {euro(r.cashflow)}
+                  </span>
                 </div>
               </div>
             </div>
           ))}
-        </div>
+        </section>
 
-        {/* ANALYSE DE L'AMORTISSEMENT */}
-        <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl">
-            <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20">
-                    <PieChart size={48} className="text-green-400" />
-                </div>
-                <div className="flex-1">
-                    <h2 className="text-xl font-bold mb-2">Puissance de l'amortissement comptable</h2>
-                    <p className="text-slate-400 text-sm max-w-xl">
-                        Vous gommez <span className="text-white font-bold">{formatEuro(calculs.totalAmortissement)}</span> de revenus imposables chaque année grâce à la dépréciation fictive du bien et des meubles.
-                    </p>
-                </div>
-                <Button className="bg-green-500 text-slate-900 hover:bg-green-400 whitespace-nowrap">
-                  Optimiser mon dossier
-                </Button>
+        {/* Bloc pédagogie amortissement */}
+        <section className="mt-8 rounded-3xl bg-[#123055] text-white p-6 md:p-8">
+          <div className="grid md:grid-cols-3 gap-6 items-center">
+            <div className="rounded-2xl bg-white/10 border border-white/20 p-4">
+              <p className="text-sm text-white/80">Amortissement immeuble (25 ans)</p>
+              <p className="text-2xl font-extrabold">{euro(calc.amortImmeuble)}</p>
             </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-        </div>
+            <div className="rounded-2xl bg-white/10 border border-white/20 p-4">
+              <p className="text-sm text-white/80">Amortissement mobilier (10 ans)</p>
+              <p className="text-2xl font-extrabold">{euro(calc.amortMobilier)}</p>
+            </div>
+            <div className="rounded-2xl bg-white/10 border border-white/20 p-4">
+              <p className="text-sm text-white/80">Amortissement travaux (10 ans)</p>
+              <p className="text-2xl font-extrabold">{euro(calc.amortTravaux)}</p>
+            </div>
+          </div>
+          <p className="text-sm text-white/80 mt-4">
+            En <b>LMNP/SCI IS</b>, les amortissements réduisent fortement la base imposable (souvent jusqu’à zéro
+            pendant plusieurs années), d’où le meilleur <b>net</b> et <b>cash-flow</b> dans beaucoup de cas.
+          </p>
+        </section>
 
-      </div>
+        {/* CTA final */}
+        <section className="mt-8 text-center">
+          <p className="text-xs text-slate-500 mb-3">
+            Simulation pédagogique (non contractuelle). Les règles varient selon la situation (déficit foncier,
+            micro-BIC, TVA, meublé pro/non pro, option IS/IR…).
+          </p>
+          https://calendly.com/declic-entrepreneurs/diagnostic
+            <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl" size="lg">
+              Obtenir une étude personnalisée (gratuite)
+            </Button>
+          </a>
+        </section>
+      </main>
     </div>
   );
 }

@@ -87,7 +87,7 @@ export default function SimulateurIK() {
       <nav className="fixed top-0 z-50 w-full bg-[#0d1f33]/90 backdrop-blur-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center">
             <Logo size="md" showText variant="light" />
           </Link>
 
@@ -186,7 +186,7 @@ export default function SimulateurIK() {
       {/* HEADER */}
       <header className="pt-28 md:pt-32 pb-10 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/simulateurs" className="inline-flex items-center text-white/90 hover:text-white">
+          <Link href="/simulateurs" className="inline-flex items-center text-white/80 hover:text-white">
             <ArrowLeft size={18} className="mr-2" />
             Retour aux simulateurs
           </Link>
@@ -194,7 +194,7 @@ export default function SimulateurIK() {
             Calculateur d’Indemnités Kilométriques
           </h1>
           <p className="text-slate-200 mt-2 max-w-2xl">
-            Transformez vos déplacements pro en **charges déductibles** (barème
+            Transformez vos déplacements pro en <b>charges déductibles</b> (barème
             simplifié par CV et distance).
           </p>
         </div>
@@ -242,33 +242,44 @@ export default function SimulateurIK() {
               <div className="rounded-xl bg-amber-50 text-amber-900 p-3 text-[12px] flex gap-2">
                 <Info size={14} className="text-amber-600 mt-0.5" />
                 <p>
-                  Les barèmes évoluent chaque année selon l’administration. Ce simulateur
-                  propose une estimation pédagogique basée sur un barème simplifié.
+                  Les barèmes évoluent chaque année. Ce simulateur propose une estimation pédagogique
+                  basée sur un barème simplifié (3–7 CV).
                 </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Résultats */}
-                 </p>
+          <div className="flex flex-col justify-center space-y-6">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border-2 border-[#F59E0B] text-center">
+              <p className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-2">
+                Montant déductible
+              </p>
+              <p className="text-5xl font-extrabold text-[#123055] mb-2">
+                {euro(montantIK)}
+              </p>
               <p className="text-sm text-emerald-600 font-medium">
                 Économie d’IS estimée : {euro(economieIS)}
               </p>
               <p className="text-xs text-slate-400 mt-2">
-                (Indication. L’économie réelle dépend de votre résultat et régime.)
+                (Indication — l’économie réelle dépend de votre résultat/régime.)
               </p>
             </div>
 
             <div className="bg-blue-50 p-4 rounded-xl flex gap-3">
               <Info className="text-blue-600 shrink-0" size={20} />
               <p className="text-xs text-blue-800 leading-relaxed">
-                <strong>Astuce :</strong> pour un véhicule électrique, l’indemnité
-                peut être <strong>majorée de 20%</strong> (selon barèmes en vigueur).
+                <strong>Astuce :</strong> véhicule électrique → indemnité souvent
+                <strong> majorée de 20%</strong> (références barème).
               </p>
             </div>
 
             <div className="text-center">
-              https://calendly.com/declic-entrepreneurs/diagnostic
+              <Link
+                href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-6 py-5 rounded-xl">
                   Obtenir une validation gratuite (15 min)
                 </Button>
@@ -281,7 +292,7 @@ export default function SimulateurIK() {
       {/* FOOTER PREMIUM (léger) */}
       <footer className="mt-10 border-t border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-slate-500 text-sm">
-          © {new Date().getFullYear()} Déclic‑Entrepreneur — Estimation pédagogique.  
+          © {new Date().getFullYear()} Déclic‑Entrepreneur — Estimation pédagogique.
           <br className="hidden sm:block" />
           Pour un chiffrage exact (barèmes officiels & contexte), réservez un diagnostic.
         </div>

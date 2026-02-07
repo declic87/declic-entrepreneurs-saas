@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 
 /** ----------------------------------------------
- *  Bouton local (léger) – tu peux remplacer par shadcn/ui si tu veux
+ *  Bouton local (léger)
  *  ---------------------------------------------- */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -78,8 +78,7 @@ export default function ImmobilierSimulatorPage() {
     const montantEmprunte = Math.max(0, valeurBien - apport);
     const mensualite = annuiteMensuelle(montantEmprunte, Math.max(0, tauxCredit), Math.max(1, duree));
     const annuite = mensualite * 12;
-    // Approche pédagogique : intérêts ~ part du coût lié au taux (approx sur première année)
-    // Ici on prend une approx simple : intérêts ~ montantEmprunte * taux (majoration) – à affiner si on veut l’AMORT EXACT.
+    // Approx intérêts année 1 (pédagogique)
     const interetsAnnuelApprox = (montantEmprunte * Math.max(0, tauxCredit)) / 100;
 
     /** Amortissements (LMNP/SCI IS – simplifiés) */
@@ -93,13 +92,12 @@ export default function ImmobilierSimulatorPage() {
     const baseMicro = loyerAnnuel * (1 - MICRO_FONCIER_ABATT);
     const irMicro = baseMicro * (Math.max(0, tmi) / 100);
     const psMicro = baseMicro * PRELEV_SOC;
-    // net = loyers - charges réelles (charges & TF non prises en compte dans micro) - IR - PS
-    // pédagogiquement, on montre ce que perçoit le bailleur après impôts/PS et charges réelles factuelles
-    // (tu peux décider de ne pas soustraire charges réelles pour micro ; ici, on les montre pour cash-flow).
+    // Net après impôts/PS (on soustrait charges réelles pour montrer le cash)
     const netNueMicro = loyerAnnuel - chargesBase - irMicro - psMicro;
 
     /** 2) NU – RÉEL */
-    const baseReelFoncier = Math.max(0, loyerAnnuel - chargesBase - interetsAnnuelApprox); // intérêts déductibles au réel
+    // Au réel : intérêts déductibles
+    const baseReelFoncier = Math.max(0, loyerAnnuel - chargesBase - interetsAnnuelApprox);
     const irReel = baseReelFoncier * (Math.max(0, tmi) / 100);
     const psReel = baseReelFoncier * PRELEV_SOC;
     const impotsReelFoncier = irReel + psReel;
@@ -112,7 +110,6 @@ export default function ImmobilierSimulatorPage() {
     const netLMNP = loyerAnnuel - chargesBase - interetsAnnuelApprox - impotLMNP;
 
     /** 4) SCI IS */
-    // Résultat avant IS = loyers - charges - intérêts - amortissements
     const benefAvantIS = loyerAnnuel - chargesBase - interetsAnnuelApprox - amortTotal;
     const is =
       benefAvantIS <= 0
@@ -189,7 +186,7 @@ export default function ImmobilierSimulatorPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* Header bandeau simple */}
+      {/* Header */}
       <header className="pt-10 pb-6 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Optimiseur Fiscal Immobilier</h1>
@@ -201,7 +198,7 @@ export default function ImmobilierSimulatorPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-10">
-        {/* KPIs rapides */}
+        {/* KPIs */}
         <div className="grid sm:grid-cols-3 gap-4 mb-6">
           <div className="rounded-2xl p-4 border border-slate-200 bg-white">
             <p className="text-xs text-slate-500 uppercase font-semibold">Loyers / an</p>
@@ -418,7 +415,7 @@ export default function ImmobilierSimulatorPage() {
           </div>
           <p className="text-sm text-white/80 mt-4">
             En <b>LMNP/SCI IS</b>, les amortissements réduisent fortement la base imposable (souvent jusqu’à zéro
-            pendant plusieurs années), d’où le meilleur <b>net</b> et <b>cash-flow</b> dans beaucoup de cas.
+            pendant plusieurs années), d’où le meilleur <b>net</b> et <b>cash‑flow</b> dans beaucoup de cas.
           </p>
         </section>
 
@@ -426,9 +423,13 @@ export default function ImmobilierSimulatorPage() {
         <section className="mt-8 text-center">
           <p className="text-xs text-slate-500 mb-3">
             Simulation pédagogique (non contractuelle). Les règles varient selon la situation (déficit foncier,
-            micro-BIC, TVA, meublé pro/non pro, option IS/IR…).
+            micro‑BIC, meublé pro/non pro, option IS/IR, TVA…).
           </p>
-          https://calendly.com/declic-entrepreneurs/diagnostic
+          <a
+            href="https://calendly.com/declic-entrepreneurs/diagnostic"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl" size="lg">
               Obtenir une étude personnalisée (gratuite)
             </Button>

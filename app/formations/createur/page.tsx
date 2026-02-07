@@ -10,7 +10,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  ArrowLeft,
   Home,
   Zap,
   CheckCircle2,
@@ -25,7 +24,6 @@ import {
   Shield,
   Star,
   HelpCircle,
-  ChevronRight,
 } from "lucide-react";
 
 export default function FormationCreateurPage() {
@@ -99,26 +97,10 @@ export default function FormationCreateurPage() {
   ];
 
   const bonuses = [
-    {
-      title: "Pack de Documents",
-      description: "Statuts type, PV d'AG, et tableaux de bord prêts à l'emploi.",
-      icon: FileText,
-    },
-    {
-      title: "Simulateur Excel Pro",
-      description: "Calculez vos économies d'impôts en changeant juste 3 chiffres.",
-      icon: TrendingUp,
-    },
-    {
-      title: "Cercle des Créateurs",
-      description: "Accès au groupe privé pour ne plus jamais être seul face à un doute.",
-      icon: Users,
-    },
-    {
-      title: "Mises à jour à vie",
-      description: "La loi de finance change ? La formation est mise à jour gratuitement.",
-      icon: Award,
-    },
+    { title: "Pack de Documents", description: "Statuts type, PV d'AG, et tableaux de bord prêts à l'emploi.", icon: FileText },
+    { title: "Simulateur Excel Pro", description: "Calculez vos économies d'impôts en changeant juste 3 chiffres.", icon: TrendingUp },
+    { title: "Cercle des Créateurs", description: "Accès au groupe privé pour ne plus jamais être seul face à un doute.", icon: Users },
+    { title: "Mises à jour à vie", description: "La loi de finance change ? La formation est mise à jour gratuitement.", icon: Award },
   ];
 
   const faqs = [
@@ -152,10 +134,10 @@ export default function FormationCreateurPage() {
               <Home size={16} />
               Accueil
             </Link>
-            <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03">
-                <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 hidden sm:flex">
-                    S'inscrire
-                </Button>
+            <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 hidden sm:flex">
+                S'inscrire
+              </Button>
             </a>
           </div>
         </div>
@@ -164,7 +146,6 @@ export default function FormationCreateurPage() {
       {/* Hero Section */}
       <section className="bg-slate-900 text-white py-24 px-4 overflow-hidden relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent opacity-50" />
-        
         <div className="max-w-6xl mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -178,15 +159,13 @@ export default function FormationCreateurPage() {
               <p className="text-xl text-slate-400 mb-10 leading-relaxed">
                 Maîtrisez la fiscalité, optimisez vos charges et créez votre société avec la méthode pas-à-pas utilisée par +500 indépendants.
               </p>
-              
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank" className="flex-1">
+                <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank" rel="noopener noreferrer" className="flex-1">
                   <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-lg h-16 w-full shadow-lg shadow-blue-600/20">
                     Rejoindre la formation — 497€
                   </Button>
                 </a>
               </div>
-              
               <div className="grid grid-cols-2 gap-y-4">
                 {["6 Modules HD", "Garantie 30j", "Accès à vie", "Supports PDF"].map((item) => (
                   <div key={item} className="flex items-center gap-3 text-slate-300">
@@ -200,20 +179,22 @@ export default function FormationCreateurPage() {
             <div className="relative">
               <div className="bg-gradient-to-tr from-slate-800 to-slate-800/50 rounded-3xl p-8 border border-white/10 shadow-2xl">
                 <div className="aspect-video bg-slate-900 rounded-xl mb-6 flex items-center justify-center border border-white/5 group cursor-pointer relative overflow-hidden">
-                    <div className="absolute inset-0 bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors" />
-                    <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform relative z-10">
-                        <Play className="text-white fill-white translate-x-0.5" size={24} />
-                    </div>
+                  <div className="absolute inset-0 bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors" />
+                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform relative z-10">
+                    <Play className="text-white fill-white translate-x-0.5" size={24} />
+                  </div>
                 </div>
                 <div className="space-y-6">
                   <div className="flex justify-between items-end border-b border-white/10 pb-4">
                     <div>
-                        <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">Prix Unique</p>
-                        <p className="text-4xl font-bold">497€ <span className="text-lg text-slate-500 font-normal line-through">997€</span></p>
+                      <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">Prix Unique</p>
+                      <p className="text-4xl font-bold">
+                        497€ <span className="text-lg text-slate-500 font-normal line-through">997€</span>
+                      </p>
                     </div>
                     <div className="text-right">
-                        <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">Satisfaction</p>
-                        <p className="text-2xl font-bold text-blue-400">99.2%</p>
+                      <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">Satisfaction</p>
+                      <p className="text-2xl font-bold text-blue-400">99.2%</p>
                     </div>
                   </div>
                   <p className="text-slate-400 text-sm leading-relaxed italic">
@@ -231,13 +212,15 @@ export default function FormationCreateurPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl font-bold mb-6">Conçu pour ceux qui veulent passer au niveau supérieur</h2>
-            <p className="text-slate-600">Que vous soyez au stade de l'idée ou déjà en activité, nous avons une roadmap pour vous.</p>
+            <p className="text-slate-600">
+              Que vous soyez au stade de l'idée ou déjà en activité, nous avons une roadmap pour vous.
+            </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { icon: Target, title: "Micro-entrepreneurs", text: "Vous plafonnez ou payez trop ? Apprenez à basculer en société sans douleur.", color: "bg-blue-50 text-blue-600" },
               { icon: TrendingUp, title: "Futurs Créateurs", text: "Partez sur des bases saines. Évitez les erreurs qui coûtent des milliers d'euros.", color: "bg-emerald-50 text-emerald-600" },
-              { icon: Shield, title: "Indépendants", text: "Prenez enfin le contrôle de vos chiffres au lieu de subir les appels de l'URSSAF.", color: "bg-purple-50 text-purple-600" }
+              { icon: Shield, title: "Indépendants", text: "Prenez enfin le contrôle de vos chiffres au lieu de subir les appels de l'URSSAF.", color: "bg-purple-50 text-purple-600" },
             ].map((card, i) => (
               <div key={i} className="p-8 rounded-3xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 transition-colors">
                 <div className={`w-14 h-14 rounded-2xl ${card.color} flex items-center justify-center mb-6`}>
@@ -258,17 +241,17 @@ export default function FormationCreateurPage() {
             <h2 className="text-3xl font-bold mb-4">Le programme détaillé</h2>
             <p className="text-slate-600">16 heures de formation concrète, sans blabla théorique.</p>
           </div>
-          
+
           <Accordion type="single" collapsible className="space-y-4">
             {modules.map((module, index) => (
               <AccordionItem key={index} value={`item-${index}`} className="bg-white border border-slate-200 rounded-2xl px-6">
                 <AccordionTrigger className="hover:no-underline py-6">
                   <div className="text-left">
                     <div className="flex items-center gap-3 mb-1">
-                        <span className="text-blue-600 font-bold text-sm uppercase tracking-widest">Module {index + 1}</span>
-                        <span className="text-slate-400 text-xs flex items-center gap-1">
-                            <Clock size={12} /> {module.duration}
-                        </span>
+                      <span className="text-blue-600 font-bold text-sm uppercase tracking-widest">Module {index + 1}</span>
+                      <span className="text-slate-400 text-xs flex items-center gap-1">
+                        <Clock size={12} /> {module.duration}
+                      </span>
                     </div>
                     <p className="font-bold text-lg text-slate-900">{module.title}</p>
                   </div>
@@ -313,21 +296,21 @@ export default function FormationCreateurPage() {
       {/* FAQ */}
       <section className="py-24 px-4 bg-slate-50">
         <div className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-3 justify-center mb-12">
-                <HelpCircle className="text-blue-600" size={32} />
-                <h2 className="text-3xl font-bold text-center">Questions fréquentes</h2>
-            </div>
-            <div className="space-y-8">
-                {faqs.map((faq, i) => (
-                    <div key={i} className="bg-white p-8 rounded-3xl border border-slate-200">
-                        <h3 className="font-bold text-lg mb-3 flex gap-3">
-                            <span className="text-blue-600 text-xl font-black">?</span>
-                            {faq.q}
-                        </h3>
-                        <p className="text-slate-600 leading-relaxed text-sm ml-6">{faq.a}</p>
-                    </div>
-                ))}
-            </div>
+          <div className="flex items-center gap-3 justify-center mb-12">
+            <HelpCircle className="text-blue-600" size={32} />
+            <h2 className="text-3xl font-bold text-center">Questions fréquentes</h2>
+          </div>
+          <div className="space-y-8">
+            {faqs.map((faq, i) => (
+              <div key={i} className="bg-white p-8 rounded-3xl border border-slate-200">
+                <h3 className="font-bold text-lg mb-3 flex gap-3">
+                  <span className="text-blue-600 text-xl font-black">?</span>
+                  {faq.q}
+                </h3>
+                <p className="text-slate-600 leading-relaxed text-sm ml-6">{faq.a}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -339,17 +322,17 @@ export default function FormationCreateurPage() {
           <p className="text-blue-100 text-xl mb-10 opacity-90">
             Accédez immédiatement à la formation et commencez à optimiser votre business aujourd'hui.
           </p>
-          <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank">
+          <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank" rel="noopener noreferrer">
             <Button size="lg" className="bg-white hover:bg-slate-100 text-blue-600 text-xl font-bold h-20 px-12 rounded-2xl shadow-2xl">
               Obtenir mon accès — 497€
             </Button>
           </a>
           <div className="flex items-center justify-center gap-6 mt-10">
             <div className="flex items-center gap-2 text-blue-100 text-sm">
-                <Shield size={16} /> Paiement 100% Sécurisé
+              <Shield size={16} /> Paiement 100% Sécurisé
             </div>
             <div className="flex items-center gap-2 text-blue-100 text-sm">
-                <CheckCircle2 size={16} /> Garantie Satisfait ou Remboursé
+              <CheckCircle2 size={16} /> Garantie Satisfait ou Remboursé
             </div>
           </div>
         </div>
@@ -358,38 +341,63 @@ export default function FormationCreateurPage() {
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
-                <div className="max-w-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Zap className="text-blue-500 fill-blue-500" size={24} />
-                        <span className="font-bold text-xl uppercase tracking-tighter">Déclic-Entrepreneur</span>
-                    </div>
-                    <p className="text-slate-400 text-sm leading-relaxed">
-                        La plateforme de référence pour les indépendants qui veulent allier performance entrepreneuriale et sérénité fiscale.
-                    </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-12">
-                    <div>
-                        <h4 className="font-bold mb-4 text-sm uppercase tracking-widest text-slate-500">Légal</h4>
-                        <ul className="space-y-2 text-sm text-slate-400">
-                            <li><Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</Link></li>
-                            <li><Link href="/cgv" className="hover:text-white transition-colors">CGV</Link></li>
-                            <li><Link href="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="font-bold mb-4 text-sm uppercase tracking-widest text-slate-500">Formation</h4>
-                        <ul className="space-y-2 text-sm text-slate-400">
-                            <li><Link href="#programme" className="hover:text-white transition-colors">Le Programme</Link></li>
-                            <li><Link href="#temoignages" className="hover:text-white transition-colors">Témoignages</Link></li>
-                            <li><Link href="#faq" className="hover:text-white transition-colors">FAQ</Link></li>
-                        </ul>
-                    </div>
-                </div>
+          <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
+            <div className="max-w-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="text-blue-500 fill-blue-500" size={24} />
+                <span className="font-bold text-xl uppercase tracking-tighter">Déclic-Entrepreneur</span>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                La plateforme de référence pour les indépendants qui veulent allier performance entrepreneuriale et sérénité
+                fiscale.
+              </p>
             </div>
-            <div className="pt-8 border-t border-white/5 text-center text-slate-500 text-xs">
-                © {new Date().getFullYear()} Déclic-Entrepreneur. Tous droits réservés.
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-12">
+              <div>
+                <h4 className="font-bold mb-4 text-sm uppercase tracking-widest text-slate-500">Légal</h4>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li>
+                    <Link href="/mentions-legales" className="hover:text-white transition-colors">
+                      Mentions légales
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/cgv" className="hover:text-white transition-colors">
+                      CGV
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/confidentialite" className="hover:text-white transition-colors">
+                      Confidentialité
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-bold mb-4 text-sm uppercase tracking-widest text-slate-500">Formation</h4>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li>
+                    <Link href="#programme" className="hover:text-white transition-colors">
+                      Le Programme
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#temoignages" className="hover:text-white transition-colors">
+                      Témoignages
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#faq" className="hover:text-white transition-colors">
+                      FAQ
+                    </Link>
+                  </li>
+                </ul>
+              </div>
             </div>
+          </div>
+          <div className="pt-8 border-t border-white/5 text-center text-slate-500 text-xs">
+            © {new Date().getFullYear()} Déclic-Entrepreneur. Tous droits réservés.
+          </div>
         </div>
       </footer>
     </div>

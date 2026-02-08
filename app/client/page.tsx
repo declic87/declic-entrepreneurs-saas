@@ -100,9 +100,10 @@ export default function MemberDashboard({
     );
   }
 
-  // Filtrer les onglets selon les accès (CORRIGÉ : tutosPratiques au lieu de formationsTuto)
+  // Filtrer les onglets selon les accès
   const availableTabs = [
     { id: "videos", label: "Formations", icon: <Video size={16} />, access: hasAccess.tutosPratiques },
+    { id: "tutos-pratiques", label: "Tutos Pratiques", icon: <BookOpen size={16} />, access: hasAccess.tutosPratiquesLoom },
     { id: "formations-premium", label: "Formations Premium", icon: <GraduationCap size={16} />, access: hasAccess.formationsPremium },
     { id: "coaching", label: "Coachings Live", icon: <Users size={16} />, access: hasAccess.coachings },
     { id: "ateliers", label: "Ateliers", icon: <Calendar size={16} />, access: hasAccess.ateliers },
@@ -251,6 +252,79 @@ export default function MemberDashboard({
         </div>
       )}
 
+      {/* TUTOS PRATIQUES - NOUVEAU */}
+      {activeTab === "tutos-pratiques" && (
+        <div className="space-y-6">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <h2 className="text-3xl font-black text-gray-900 mb-4">Tutos Pratiques</h2>
+            <p className="text-gray-600 leading-relaxed">
+              Guides pratiques courts avec support PDF téléchargeable pour appliquer immédiatement.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            {/* TODO: Mapper les vrais tutos depuis la DB */}
+            {[
+              {
+                id: '1',
+                title: 'Comment déclarer ses IK en 5 minutes',
+                category: 'Fiscalité',
+                duration: '8 min',
+                loom_id: 'exemple123',
+                pdf_url: '/tutos/ik-guide.pdf',
+                is_new: true
+              },
+              {
+                id: '2',
+                title: 'Optimiser son salaire vs dividendes',
+                category: 'Optimisation',
+                duration: '12 min',
+                loom_id: 'exemple456',
+                pdf_url: '/tutos/salaire-dividendes.pdf',
+                is_new: false
+              }
+            ].map((tuto) => (
+              <Card key={tuto.id} className="overflow-hidden hover:border-amber-200 shadow-sm transition-all">
+                <CardContent className="p-0">
+                  <div className="p-4 flex items-center gap-4 group cursor-pointer">
+                    <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center transition-colors group-hover:bg-blue-500 group-hover:text-white">
+                      <BookOpen size={24} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{tuto.category}</span>
+                        {tuto.is_new && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded uppercase font-black">New</span>}
+                      </div>
+                      <h3 className="font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{tuto.title}</h3>
+                      <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                        <Clock size={12} /> {tuto.duration} • Avec PDF téléchargeable
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {tuto.pdf_url && (
+                        <a 
+                          href={tuto.pdf_url} 
+                          target="_blank"
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <Download size={18} className="text-gray-600" />
+                        </a>
+                      )}
+                      <ArrowRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-all group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed">
+            <p className="text-gray-500 text-sm">Plus de tutos à venir...</p>
+          </div>
+        </div>
+      )}
+
       {/* FORMATIONS PREMIUM - AFFICHAGE CONDITIONNEL PAR PACK */}
       {activeTab === "formations-premium" && (
         <>
@@ -385,47 +459,108 @@ export default function MemberDashboard({
       {activeTab === "coaching" && (
         <>
           {hasAccess.coachings ? (
-            <div className="max-w-3xl mx-auto space-y-6">
-              {nextCoaching ? (
-                <Card className="border-none bg-slate-900 text-white overflow-hidden shadow-2xl">
-                  <div className="absolute top-0 right-0 p-8 opacity-10"><Users size={120} /></div>
-                  <CardContent className="p-8 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase mb-6 animate-pulse">
-                      Direct à venir
-                    </div>
-                    <h3 className="text-3xl font-black mb-4 leading-tight">{nextCoaching.title}</h3>
-                    <p className="text-slate-400 mb-8 text-lg">{nextCoaching.description}</p>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                      <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">Date</p>
-                        <p className="font-semibold">{formatDate(nextCoaching.session_date)}</p>
-                      </div>
-                      <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">Heure</p>
-                        <p className="font-semibold">{nextCoaching.time_slot}</p>
-                      </div>
-                    </div>
+            <div className="space-y-6">
+              {/* Sous-navigation : Live / Archives */}
+              <div className="flex gap-2 border-b">
+                <button className="px-4 py-2 border-b-2 border-amber-500 text-amber-600 font-semibold text-sm">
+                  Live à venir
+                </button>
+                {hasAccess.coachingsArchives && (
+                  <button className="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 text-sm">
+                    Archives
+                  </button>
+                )}
+              </div>
 
-                    {nextCoaching.meet_link ? (
-                      <Button size="lg" className="w-full bg-amber-500 hover:bg-amber-600 text-white text-md font-bold h-14" asChild>
-                        <a href={nextCoaching.meet_link} target="_blank" rel="noopener noreferrer">
-                          Rejoindre la session <ExternalLink size={18} className="ml-2" />
-                        </a>
-                      </Button>
-                    ) : (
-                      <div className="text-center p-4 border border-dashed border-white/20 rounded-xl text-slate-500 italic">
-                        Le lien d'accès sera activé 15 minutes avant le début.
+              <div className="max-w-3xl mx-auto">
+                {nextCoaching ? (
+                  <Card className="border-none bg-slate-900 text-white overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 p-8 opacity-10"><Users size={120} /></div>
+                    <CardContent className="p-8 relative z-10">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase mb-6 animate-pulse">
+                        Direct à venir
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed">
-                  <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Aucun coaching programmé pour le moment.</p>
-                </div>
-              )}
+                      <h3 className="text-3xl font-black mb-4 leading-tight">{nextCoaching.title}</h3>
+                      <p className="text-slate-400 mb-8 text-lg">{nextCoaching.description}</p>
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                          <p className="text-xs text-slate-500 uppercase font-bold mb-1">Date</p>
+                          <p className="font-semibold">{formatDate(nextCoaching.session_date)}</p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                          <p className="text-xs text-slate-500 uppercase font-bold mb-1">Heure</p>
+                          <p className="font-semibold">{nextCoaching.time_slot}</p>
+                        </div>
+                      </div>
+
+                      {nextCoaching.meet_link ? (
+                        <Button size="lg" className="w-full bg-amber-500 hover:bg-amber-600 text-white text-md font-bold h-14" asChild>
+                          <a href={nextCoaching.meet_link} target="_blank" rel="noopener noreferrer">
+                            Rejoindre la session <ExternalLink size={18} className="ml-2" />
+                          </a>
+                        </Button>
+                      ) : (
+                        <div className="text-center p-4 border border-dashed border-white/20 rounded-xl text-slate-500 italic">
+                          Le lien d'accès sera activé 15 minutes avant le début.
+                        </div>
+                      )}
+
+                      {/* Info durée d'accès */}
+                      {hasAccess.packDuration && (
+                        <div className="mt-6 text-center text-xs text-slate-400">
+                          Accès coachings : {hasAccess.packDuration} mois
+                          {daysRemaining && ` • ${daysRemaining} jours restants`}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed">
+                    <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500">Aucun coaching programmé pour le moment.</p>
+                  </div>
+                )}
+
+                {/* Archives Coachings (replays Fathom) */}
+                {hasAccess.coachingsArchives && (
+                  <div className="mt-8">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <Video size={20} />
+                      Replays disponibles
+                    </h3>
+                    <div className="grid gap-4">
+                      {/* TODO: Mapper les vrais replays depuis la DB */}
+                      {[
+                        {
+                          id: '1',
+                          title: 'Optimisation fiscale Q4 2025',
+                          date: '2025-12-15',
+                          fathom_id: 'replay123',
+                          duration: '1h 15min'
+                        }
+                      ].map((replay) => (
+                        <Card key={replay.id} className="hover:border-amber-200 transition-all">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                                <Video size={24} />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900">{replay.title}</h4>
+                                <p className="text-sm text-gray-500">{formatDate(replay.date)} • {replay.duration}</p>
+                              </div>
+                              <Button variant="outline" size="sm">
+                                Voir le replay
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
@@ -446,41 +581,95 @@ export default function MemberDashboard({
 
       {/* ATELIERS */}
       {activeTab === "ateliers" && (
-        <div className="grid md:grid-cols-2 gap-6">
-          {ateliers.length > 0 ? ateliers.map((atelier: Atelier) => {
-            const complet = atelier.places_prises >= atelier.max_places;
-            return (
-              <Card key={atelier.id} className="group hover:shadow-xl transition-all border-none shadow-sm bg-white ring-1 ring-gray-100">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                      <Calendar size={24} />
+        <div className="space-y-6">
+          {/* Sous-navigation : Prochains / Archives */}
+          <div className="flex gap-2 border-b">
+            <button className="px-4 py-2 border-b-2 border-emerald-500 text-emerald-600 font-semibold text-sm">
+              Prochains ateliers
+            </button>
+            {hasAccess.ateliersArchives && (
+              <button className="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 text-sm">
+                Archives
+              </button>
+            )}
+          </div>
+
+          {/* Prochains ateliers */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {ateliers.length > 0 ? ateliers.map((atelier: Atelier) => {
+              const complet = atelier.places_prises >= atelier.max_places;
+              return (
+                <Card key={atelier.id} className="group hover:shadow-xl transition-all border-none shadow-sm bg-white ring-1 ring-gray-100">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                        <Calendar size={24} />
+                      </div>
+                      {complet ? (
+                        <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold uppercase">Complet</span>
+                      ) : (
+                        <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                          {atelier.max_places - atelier.places_prises} places dispos
+                        </span>
+                      )}
                     </div>
-                    {complet ? (
-                      <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold uppercase">Complet</span>
-                    ) : (
-                      <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
-                        {atelier.max_places - atelier.places_prises} places dispos
-                      </span>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{atelier.title}</h3>
+                    <div className="space-y-2 mb-6 text-sm text-gray-500">
+                      <p className="flex items-center gap-2"><Clock size={14} className="text-amber-500" /> {formatDate(atelier.atelier_date)} à {atelier.time_slot}</p>
+                      <p className="line-clamp-2">{atelier.description}</p>
+                    </div>
+                    
+                    {!complet && (
+                      <Button className="w-full bg-gray-900 hover:bg-emerald-600 text-white rounded-xl h-12" asChild>
+                        <a href={atelier.lien_inscription || "#"}>M'inscrire gratuitement</a>
+                      </Button>
                     )}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{atelier.title}</h3>
-                  <div className="space-y-2 mb-6 text-sm text-gray-500">
-                    <p className="flex items-center gap-2"><Clock size={14} className="text-amber-500" /> {formatDate(atelier.atelier_date)} à {atelier.time_slot}</p>
-                    <p className="line-clamp-2">{atelier.description}</p>
-                  </div>
-                  
-                  {!complet && (
-                    <Button className="w-full bg-gray-900 hover:bg-emerald-600 text-white rounded-xl h-12" asChild>
-                      <a href={atelier.lien_inscription || "#"}>M'inscrire gratuitement</a>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          }) : (
-            <div className="col-span-full text-center py-10 text-gray-400 italic font-light">
-              Les prochains ateliers seront annoncés prochainement.
+                  </CardContent>
+                </Card>
+              );
+            }) : (
+              <div className="col-span-full text-center py-10 text-gray-400 italic font-light">
+                Les prochains ateliers seront annoncés prochainement.
+              </div>
+            )}
+          </div>
+
+          {/* Archives Ateliers (replays Fathom) */}
+          {hasAccess.ateliersArchives && ateliers.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Video size={20} />
+                Replays disponibles
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* TODO: Mapper les vrais replays depuis la DB */}
+                {[
+                  {
+                    id: '1',
+                    title: 'Atelier IK & Frais réels',
+                    date: '2025-11-20',
+                    fathom_id: 'atelier123',
+                    duration: '45min'
+                  }
+                ].map((replay) => (
+                  <Card key={replay.id} className="hover:border-emerald-200 transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                          <Video size={24} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{replay.title}</h4>
+                          <p className="text-sm text-gray-500">{formatDate(replay.date)} • {replay.duration}</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          Voir
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </div>

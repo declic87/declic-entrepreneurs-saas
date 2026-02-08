@@ -6,9 +6,10 @@ import { Sidebar } from "@/components/ui/sidebar";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  
   const [userName, setUserName] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,18 +20,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // On récupère le profil lié à l'authId
+          // Corrigé : auth_id au lieu de authId
           const { data: profile, error } = await supabase
             .from("users")
-            .select("name, email, role")
-            .eq("authId", session.user.id)
+            .select("first_name, last_name, email, role")
+            .eq("auth_id", session.user.id)
             .single();
 
-          if (profile) {
-            setUserName(profile.name);
+          if (profile && !error) {
+            setUserName(`${profile.first_name} ${profile.last_name}`);
             setUserEmail(profile.email || session.user.email || "");
           } else {
-            // Fallback si le profil n'existe pas encore dans la table 'users'
+            // Fallback
             setUserName("Membre");
             setUserEmail(session.user.email || "");
           }

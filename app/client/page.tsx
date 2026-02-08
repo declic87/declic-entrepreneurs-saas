@@ -60,7 +60,7 @@ export default function MemberDashboard({
   const [mounted, setMounted] = useState(false);
 
   // Hook de gestion des accès
-  const { pack, hasAccess, loading: accessLoading } = useUserAccess();
+  const { pack, hasAccess, loading: accessLoading, daysRemaining } = useUserAccess();
 
   useEffect(() => {
     setMounted(true);

@@ -100,14 +100,14 @@ export default function MemberDashboard({
     );
   }
 
-  // Filtrer les onglets selon les accès
+  // Filtrer les onglets selon les accès (CORRIGÉ : tutosPratiques au lieu de formationsTuto)
   const availableTabs = [
-    { id: "videos", label: "Formations", icon: <Video size={16} />, access: hasAccess.formationsTuto },
+    { id: "videos", label: "Formations", icon: <Video size={16} />, access: hasAccess.tutosPratiques },
     { id: "formations-premium", label: "Formations Premium", icon: <GraduationCap size={16} />, access: hasAccess.formationsPremium },
     { id: "coaching", label: "Coachings Live", icon: <Users size={16} />, access: hasAccess.coachings },
     { id: "ateliers", label: "Ateliers", icon: <Calendar size={16} />, access: hasAccess.ateliers },
-    { id: "rdv-inclus", label: "Mon RDV", icon: <Phone size={16} />, access: hasAccess.accompagnement },
-    { id: "rdv-payants", label: "Expert +", icon: <Sparkles size={16} />, access: true }
+    { id: "rdv-inclus", label: "Mon RDV", icon: <Phone size={16} />, access: hasAccess.rdvGratuit },
+    { id: "rdv-payants", label: "Expert +", icon: <Sparkles size={16} />, access: hasAccess.expertPayant }
   ].filter(tab => tab.access);
 
   return (
@@ -119,7 +119,7 @@ export default function MemberDashboard({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-amber-600 font-bold uppercase">Votre pack actuel</p>
-              <p className="text-lg font-black text-gray-900">{pack.replace('_', ' ')}</p>
+              <p className="text-lg font-black text-gray-900">{pack.replace(/_/g, ' ')}</p>
             </div>
             {hasAccess.rdvExpert > 0 && (
               <div className="text-right">
@@ -148,7 +148,7 @@ export default function MemberDashboard({
         ))}
       </nav>
 
-      {/* VIDÉOS */}
+      {/* VIDÉOS (Tutos pratiques) */}
       {activeTab === "videos" && (
         <div className="space-y-6">
           <div className="relative group">
@@ -251,91 +251,117 @@ export default function MemberDashboard({
         </div>
       )}
 
-      {/* FORMATIONS PREMIUM */}
+      {/* FORMATIONS PREMIUM - AFFICHAGE CONDITIONNEL PAR PACK */}
       {activeTab === "formations-premium" && (
         <>
           {hasAccess.formationsPremium ? (
             <div className="space-y-8">
               <div className="text-center max-w-2xl mx-auto mb-12">
-                <h2 className="text-3xl font-black text-gray-900 mb-4">Formations Premium</h2>
+                <h2 className="text-3xl font-black text-gray-900 mb-4">
+                  {hasAccess.showFormationCreateur && hasAccess.showFormationAgentImmo 
+                    ? "Formations Premium" 
+                    : "Votre Formation Premium"}
+                </h2>
                 <p className="text-gray-600 leading-relaxed">
-                  Formations complètes pour optimiser votre fiscalité et créer votre société dans les meilleures conditions.
+                  {hasAccess.showFormationCreateur && hasAccess.showFormationAgentImmo 
+                    ? "Accédez à toutes vos formations pour optimiser votre fiscalité."
+                    : "Accédez à votre formation débloquée et profitez de tous les contenus."}
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Formation Créateur */}
-                <Card className="border-2 border-slate-200 hover:border-amber-500 transition-all shadow-lg">
-                  <CardContent className="p-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                      <GraduationCap className="text-white" size={32} />
-                    </div>
-                    
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Créateur</h3>
-                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">
-                      Choix du statut (SASU/EURL), fiscalité appliquée, <strong>méthode VASE</strong>, création de société pas-à-pas.
-                    </p>
+              <div className={`grid ${hasAccess.showFormationCreateur && hasAccess.showFormationAgentImmo ? 'md:grid-cols-2' : 'md:grid-cols-1 max-w-2xl mx-auto'} gap-8`}>
+                
+                {/* Formation Créateur - Afficher si showFormationCreateur */}
+                {hasAccess.showFormationCreateur && (
+                  <Card className="border-2 border-slate-200 hover:border-amber-500 transition-all shadow-lg">
+                    <CardContent className="p-8">
+                      <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                        <GraduationCap className="text-white" size={32} />
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Créateur</h3>
+                      <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                        Choix du statut (SASU/EURL), fiscalité appliquée, <strong>méthode VASE</strong>, création de société pas-à-pas.
+                      </p>
 
-                    <ul className="space-y-3 mb-8">
-                      {[
-                        "Comparatif SASU/EURL : le bon curseur selon vos objectifs",
-                        "Salaire vs dividendes : augmenter le net, réduire le superflu",
-                        "Méthode VASE (Exclusif) : véhicule, abondement, salaire, épargne",
-                        "Pack documents + simulateurs pour décider en 30 minutes"
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                          <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                      <ul className="space-y-3 mb-8">
+                        {[
+                          "Comparatif SASU/EURL : le bon curseur selon vos objectifs",
+                          "Salaire vs dividendes : augmenter le net, réduire le superflu",
+                          "Méthode VASE (Exclusif) : véhicule, abondement, salaire, épargne",
+                          "Pack documents + simulateurs pour décider en 30 minutes"
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-                      <CheckCircle2 className="mx-auto text-green-600 mb-2" size={24} />
-                      <p className="font-bold text-green-800">Formation débloquée</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                        <CheckCircle2 className="mx-auto text-green-600 mb-2" size={24} />
+                        <p className="font-bold text-green-800">Formation débloquée</p>
+                        <Button className="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-white">
+                          Accéder à la formation
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                {/* Formation Agent Immo */}
-                <Card className="border-2 border-amber-300 hover:border-amber-500 transition-all shadow-xl ring-2 ring-amber-400/20">
-                  <CardContent className="p-8 relative overflow-hidden">
-                    <div className="absolute top-4 right-4">
-                      <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
-                        Populaire
-                      </span>
-                    </div>
+                {/* Formation Agent Immo - Afficher si showFormationAgentImmo */}
+                {hasAccess.showFormationAgentImmo && (
+                  <Card className="border-2 border-amber-300 hover:border-amber-500 transition-all shadow-xl ring-2 ring-amber-400/20">
+                    <CardContent className="p-8 relative overflow-hidden">
+                      {hasAccess.showFormationCreateur && hasAccess.showFormationAgentImmo && (
+                        <div className="absolute top-4 right-4">
+                          <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
+                            Populaire
+                          </span>
+                        </div>
+                      )}
 
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                      <BookOpen className="text-white" size={32} />
-                    </div>
-                    
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Agent Immobilier</h3>
-                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">
-                      Optimisation <strong>spécifique mandataires</strong> : IK maximisées, frais réels, cas pratiques.
-                    </p>
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                        <BookOpen className="text-white" size={32} />
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Agent Immobilier</h3>
+                      <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                        Optimisation <strong>spécifique mandataires</strong> : IK maximisées, frais réels, cas pratiques.
+                      </p>
 
-                    <ul className="space-y-3 mb-8">
-                      {[
-                        "IK & frais réels : 6 000€ à 15 000€ possibles selon usage",
-                        "Cas pratiques IAD, SAFTI, KW, etc. : décisions rapides",
-                        "Holding/SCI : structurer vos gains sans vous piéger",
-                        "Simulateur Agent Immo + tableur IK inclus"
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                          <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                      <ul className="space-y-3 mb-8">
+                        {[
+                          "IK & frais réels : 6 000€ à 15 000€ possibles selon usage",
+                          "Cas pratiques IAD, SAFTI, KW, etc. : décisions rapides",
+                          "Holding/SCI : structurer vos gains sans vous piéger",
+                          "Simulateur Agent Immo + tableur IK inclus"
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-                      <CheckCircle2 className="mx-auto text-green-600 mb-2" size={24} />
-                      <p className="font-bold text-green-800">Formation débloquée</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                        <CheckCircle2 className="mx-auto text-green-600 mb-2" size={24} />
+                        <p className="font-bold text-green-800">Formation débloquée</p>
+                        <Button className="mt-3 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
+                          Accéder à la formation
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
+
+              {/* Message si aucune formation visible (ne devrait jamais arriver) */}
+              {!hasAccess.showFormationCreateur && !hasAccess.showFormationAgentImmo && (
+                <div className="text-center py-10 text-gray-400">
+                  <p>Aucune formation disponible</p>
+                </div>
+              )}
             </div>
           ) : (
             // CTA Upgrade si pas d'accès
@@ -463,7 +489,7 @@ export default function MemberDashboard({
       {/* RDV INCLUS */}
       {activeTab === "rdv-inclus" && (
         <>
-          {hasAccess.accompagnement ? (
+          {hasAccess.rdvGratuit ? (
             <Card className="border-none shadow-2xl bg-gradient-to-br from-white to-emerald-50 overflow-hidden">
               <CardContent className="p-10 text-center">
                 <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-emerald-200">
@@ -501,7 +527,7 @@ export default function MemberDashboard({
         </>
       )}
 
-      {/* RDV PAYANTS */}
+      {/* RDV PAYANTS - Accessible à TOUS */}
       {activeTab === "rdv-payants" && (
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="grid md:grid-cols-2 gap-8">

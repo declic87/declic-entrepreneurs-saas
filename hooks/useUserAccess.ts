@@ -15,13 +15,18 @@ export type Pack =
 interface UserAccess {
   pack: Pack;
   hasAccess: {
-    simulateurs: boolean;
-    formationsTuto: boolean;
-    ateliers: boolean;
-    coachings: boolean;
-    formationsPremium: boolean;
-    accompagnement: boolean;
-    rdvExpert: number;
+    tutosPratiques: boolean; // Accessible à TOUS
+    ateliers: boolean; // Accessible à TOUS
+    simulateurs: boolean; // Accessible à TOUS
+    expertPayant: boolean; // Accessible à TOUS
+    formationsPremium: boolean; // Formations ou Accompagnement
+    coachings: boolean; // Formations ou Accompagnement
+    creationSociete: boolean; // Accompagnement uniquement
+    monDossier: boolean; // Accompagnement uniquement
+    rdvGratuit: boolean; // Accompagnement uniquement
+    rdvExpert: number; // 0, 3, 4 ou 5
+    showFormationCreateur: boolean;
+    showFormationAgentImmo: boolean;
   };
   loading: boolean;
 }
@@ -69,27 +74,40 @@ export function useUserAccess(): UserAccess {
     fetchUserPack();
   }, [supabase]);
 
+  // Packs avec formations
+  const hasFormationPack = pack === 'FORMATION_CREATEUR' || 
+                           pack === 'FORMATION_AGENT_IMMO';
+
+  // Packs avec accompagnement
+  const hasAccompagnement = pack === 'STARTER' || 
+                            pack === 'PRO' || 
+                            pack === 'EXPERT';
+
   const hasAccess = {
-    simulateurs: true,
-    formationsTuto: true,
+    // Accessible à TOUS
+    tutosPratiques: true,
     ateliers: true,
-    coachings: pack === 'FORMATION_CREATEUR' || 
-               pack === 'FORMATION_AGENT_IMMO' || 
-               pack === 'STARTER' || 
-               pack === 'PRO' || 
-               pack === 'EXPERT',
-    formationsPremium: pack === 'FORMATION_CREATEUR' || 
-                       pack === 'FORMATION_AGENT_IMMO' || 
-                       pack === 'STARTER' || 
-                       pack === 'PRO' || 
-                       pack === 'EXPERT',
-    accompagnement: pack === 'STARTER' || 
-                    pack === 'PRO' || 
-                    pack === 'EXPERT',
+    simulateurs: true,
+    expertPayant: true,
+
+    // Formations ou Accompagnement
+    formationsPremium: hasFormationPack || hasAccompagnement,
+    coachings: hasFormationPack || hasAccompagnement,
+
+    // Accompagnement UNIQUEMENT
+    creationSociete: hasAccompagnement,
+    monDossier: hasAccompagnement,
+    rdvGratuit: hasAccompagnement,
+
+    // Nombre de RDV gratuits
     rdvExpert: pack === 'STARTER' ? 3 : 
                pack === 'PRO' ? 4 : 
                pack === 'EXPERT' ? 5 : 
                0,
+
+    // Quelle formation afficher
+    showFormationCreateur: pack === 'FORMATION_CREATEUR' || hasAccompagnement,
+    showFormationAgentImmo: pack === 'FORMATION_AGENT_IMMO' || hasAccompagnement,
   };
 
   return {

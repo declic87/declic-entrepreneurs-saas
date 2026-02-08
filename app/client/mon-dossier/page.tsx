@@ -12,7 +12,7 @@ export default function MonDossierPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !hasAccess.accompagnement) {
+    if (!loading && !hasAccess.monDossier) {
       // Redirection si pas d'accès
       router.push('/client?error=access_denied');
     }
@@ -26,7 +26,7 @@ export default function MonDossierPage() {
     );
   }
 
-  if (!hasAccess.accompagnement) {
+  if (!hasAccess.monDossier) {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
@@ -50,7 +50,7 @@ export default function MonDossierPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-[#123055]">Mon Dossier</h1>
         <div className="bg-amber-100 text-amber-700 px-4 py-2 rounded-full font-semibold text-sm">
-          Pack {pack?.replace('_', ' ')}
+          Pack {pack?.replace(/_/g, ' ')}
         </div>
       </div>
 

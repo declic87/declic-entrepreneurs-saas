@@ -32,16 +32,58 @@ export default function CreationSocietePage() {
             Choix du statut juridique
           </h3>
 
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <button className="p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 transition-all text-left">
-              <h4 className="font-bold text-[#123055] mb-2">SASU</h4>
-              <p className="text-sm text-slate-600">Société par Actions Simplifiée Unipersonnelle</p>
-            </button>
-
-            <button className="p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 transition-all text-left">
-              <h4 className="font-bold text-[#123055] mb-2">EURL</h4>
-              <p className="text-sm text-slate-600">Entreprise Unipersonnelle à Responsabilité Limitée</p>
-            </button>
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            {[
+              { 
+                name: 'SASU', 
+                desc: 'Société par Actions Simplifiée Unipersonnelle',
+                popular: true 
+              },
+              { 
+                name: 'EURL', 
+                desc: 'Entreprise Unipersonnelle à Responsabilité Limitée',
+                popular: true 
+              },
+              { 
+                name: 'SAS', 
+                desc: 'Société par Actions Simplifiée' 
+              },
+              { 
+                name: 'EI', 
+                desc: 'Entreprise Individuelle' 
+              },
+              { 
+                name: 'SELARL', 
+                desc: 'Société d\'Exercice Libéral à Responsabilité Limitée' 
+              },
+              { 
+                name: 'SELARLU', 
+                desc: 'SELARL Unipersonnelle' 
+              },
+              { 
+                name: 'SELAS', 
+                desc: 'Société d\'Exercice Libéral par Actions Simplifiée' 
+              },
+              { 
+                name: 'SELASU', 
+                desc: 'SELAS Unipersonnelle' 
+              },
+            ].map((statut) => (
+              <button 
+                key={statut.name}
+                className={`p-6 border-2 rounded-xl hover:border-amber-500 transition-all text-left relative ${
+                  statut.popular ? 'border-amber-300 bg-amber-50' : 'border-slate-200'
+                }`}
+              >
+                {statut.popular && (
+                  <span className="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                    Populaire
+                  </span>
+                )}
+                <h4 className="font-bold text-[#123055] mb-2">{statut.name}</h4>
+                <p className="text-sm text-slate-600">{statut.desc}</p>
+              </button>
+            ))}
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
@@ -63,7 +105,9 @@ export default function CreationSocietePage() {
               'Projet de statuts',
               'Attestation de domiciliation',
               'Formulaire M0',
-              'Déclaration des bénéficiaires effectifs'
+              'Déclaration des bénéficiaires effectifs',
+              'Attestation de parution',
+              'Certificat de dépôt de capital'
             ].map((doc, i) => (
               <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -73,6 +117,17 @@ export default function CreationSocietePage() {
                 <span className="text-xs text-slate-500">Sera généré après validation</span>
               </div>
             ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+            <h4 className="font-bold text-[#123055] mb-2">✨ Génération automatique</h4>
+            <p className="text-sm text-slate-700 mb-3">
+              Une fois votre statut validé avec votre expert, tous ces documents seront générés automatiquement 
+              et disponibles dans l'onglet "Documents".
+            </p>
+            <Button className="bg-amber-500 hover:bg-amber-600 text-white text-sm">
+              Prendre RDV avec un expert
+            </Button>
           </div>
         </CardContent>
       </Card>

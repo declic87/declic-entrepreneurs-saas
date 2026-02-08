@@ -15,22 +15,26 @@ export type Pack =
 interface UserAccess {
   pack: Pack;
   hasAccess: {
-    tutosPratiques: boolean;      // TOUS
-    ateliers: boolean;             // TOUS
-    simulateurs: boolean;          // TOUS (3 mois pour formations, illimité pour accompagnement)
-    expertPayant: boolean;         // TOUS
-    formationsPremium: boolean;    // Formations ou Accompagnement
-    coachings: boolean;            // Formations (3 mois) ou Accompagnement (illimité)
-    creationSociete: boolean;      // Accompagnement uniquement
-    monDossier: boolean;           // Accompagnement uniquement
-    rdvGratuit: boolean;           // Accompagnement uniquement
-    rdvExpert: number;             // 0, 3, 4 ou 5
+    tutosPratiques: boolean;
+    tutosPratiquesLoom: boolean;
+    ateliers: boolean;
+    ateliersArchives: boolean;
+    simulateurs: boolean;
+    expertPayant: boolean;
+    formationsPremium: boolean;
+    coachings: boolean;
+    coachingsArchives: boolean;
+    creationSociete: boolean;
+    monDossier: boolean;
+    rdvGratuit: boolean;
+    rdvExpert: number;
+    packDuration: number | null;
     showFormationCreateur: boolean;
     showFormationAgentImmo: boolean;
   };
   loading: boolean;
-  packExpired: boolean;            // Nouveau : indique si le pack a expiré
-  daysRemaining: number | null;   // Nouveau : jours restants (null si illimité)
+  packExpired: boolean;
+  daysRemaining: number | null;
 }
 
 export function useUserAccess(): UserAccess {
@@ -97,7 +101,7 @@ export function useUserAccess(): UserAccess {
   const hasFormationPack = pack === 'FORMATION_CREATEUR' || 
                            pack === 'FORMATION_AGENT_IMMO';
 
-  // Packs avec accompagnement (durée illimitée)
+  // Packs avec accompagnement (durée 6/12/18 mois)
   const hasAccompagnement = pack === 'STARTER' || 
                             pack === 'PRO' || 
                             pack === 'EXPERT';
@@ -105,9 +109,9 @@ export function useUserAccess(): UserAccess {
   const hasAccess = {
     // ✅ Accessible à TOUS (toujours)
     tutosPratiques: true,
-    tutosPratiquesLoom: true,  // Nouveau : Tutos pratiques Loom + PDF
+    tutosPratiquesLoom: true,
     ateliers: true,
-    ateliersArchives: true,    // Nouveau : Archives ateliers
+    ateliersArchives: true,
     expertPayant: true,
 
     // ✅ Simulateurs : TOUS (3 mois pour formations, selon durée pour accompagnement)
@@ -118,7 +122,7 @@ export function useUserAccess(): UserAccess {
     
     // ✅ Coachings : Formations (3 mois) ou Accompagnement (6/12/18 mois)
     coachings: hasFormationPack || hasAccompagnement,
-    coachingsArchives: hasFormationPack || hasAccompagnement,  // Nouveau : Archives coachings
+    coachingsArchives: hasFormationPack || hasAccompagnement,
 
     // ✅ Accompagnement UNIQUEMENT (6/12/18 mois selon pack)
     creationSociete: hasAccompagnement,

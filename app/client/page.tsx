@@ -4,10 +4,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Video, Clock, Download, Calendar, Users, Sparkles, 
   ExternalLink, Phone, CheckCircle2, Star, BookOpen, 
-  ArrowRight, Search, GraduationCap, ShoppingCart
+  ArrowRight, Search, GraduationCap, ShoppingCart, Lock
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useUserAccess } from '@/hooks/useUserAccess';
 
 // --- Interfaces ---
 interface Template {
@@ -58,6 +59,9 @@ export default function MemberDashboard({
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
 
+  // Hook de gestion des accès
+  const { pack, hasAccess, loading: accessLoading } = useUserAccess();
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -87,7 +91,7 @@ export default function MemberDashboard({
     });
   };
 
-  if (!mounted || isLoading) {
+  if (!mounted || isLoading || accessLoading) {
     return (
       <div className="max-w-6xl mx-auto p-8 space-y-4">
         <div className="h-10 w-48 bg-gray-200 animate-pulse rounded" />
@@ -96,19 +100,40 @@ export default function MemberDashboard({
     );
   }
 
+  // Filtrer les onglets selon les accès
+  const availableTabs = [
+    { id: "videos", label: "Formations", icon: <Video size={16} />, access: hasAccess.formationsTuto },
+    { id: "formations-premium", label: "Formations Premium", icon: <GraduationCap size={16} />, access: hasAccess.formationsPremium },
+    { id: "coaching", label: "Coachings Live", icon: <Users size={16} />, access: hasAccess.coachings },
+    { id: "ateliers", label: "Ateliers", icon: <Calendar size={16} />, access: hasAccess.ateliers },
+    { id: "rdv-inclus", label: "Mon RDV", icon: <Phone size={16} />, access: hasAccess.accompagnement },
+    { id: "rdv-payants", label: "Expert +", icon: <Sparkles size={16} />, access: true }
+  ].filter(tab => tab.access);
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-8 animate-in fade-in duration-500">
       
+      {/* Bandeau Pack actuel */}
+      {pack && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-amber-600 font-bold uppercase">Votre pack actuel</p>
+              <p className="text-lg font-black text-gray-900">{pack.replace('_', ' ')}</p>
+            </div>
+            {hasAccess.rdvExpert > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-slate-600">RDV Expert restants</p>
+                <p className="text-2xl font-black text-amber-600">{hasAccess.rdvExpert}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Menu Navigation */}
       <nav className="flex gap-2 border-b overflow-x-auto pb-px scrollbar-hide">
-        {[
-          { id: "videos", label: "Formations", icon: <Video size={16} /> },
-          { id: "formations-premium", label: "Formations Premium", icon: <GraduationCap size={16} /> },
-          { id: "coaching", label: "Coachings Live", icon: <Users size={16} /> },
-          { id: "ateliers", label: "Ateliers", icon: <Calendar size={16} /> },
-          { id: "rdv-inclus", label: "Mon RDV", icon: <Phone size={16} /> },
-          { id: "rdv-payants", label: "Expert +", icon: <Sparkles size={16} /> }
-        ].map((tab) => (
+        {availableTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -228,173 +253,172 @@ export default function MemberDashboard({
 
       {/* FORMATIONS PREMIUM */}
       {activeTab === "formations-premium" && (
-        <div className="space-y-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">Formations Premium</h2>
-            <p className="text-gray-600 leading-relaxed">
-              Formations complètes pour optimiser votre fiscalité et créer votre société dans les meilleures conditions.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Formation Créateur */}
-            <Card className="border-2 border-slate-200 hover:border-amber-500 transition-all shadow-lg">
-              <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <GraduationCap className="text-white" size={32} />
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Créateur</h3>
-                <p className="text-gray-500 mb-6 text-sm leading-relaxed">
-                  Choix du statut (SASU/EURL), fiscalité appliquée, <strong>méthode VASE</strong>, création de société pas-à-pas. 
-                  Le programme pour arrêter de perdre de l'argent à cause d'un mauvais setup.
+        <>
+          {hasAccess.formationsPremium ? (
+            <div className="space-y-8">
+              <div className="text-center max-w-2xl mx-auto mb-12">
+                <h2 className="text-3xl font-black text-gray-900 mb-4">Formations Premium</h2>
+                <p className="text-gray-600 leading-relaxed">
+                  Formations complètes pour optimiser votre fiscalité et créer votre société dans les meilleures conditions.
                 </p>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Comparatif SASU/EURL : le bon curseur selon vos objectifs",
-                    "Salaire vs dividendes : augmenter le net, réduire le superflu",
-                    "Méthode VASE (Exclusif) : véhicule, abondement, salaire, épargne",
-                    "Pack documents + simulateurs pour décider en 30 minutes"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="text-4xl font-black text-gray-900 mb-6">
-                  497€
-                  <span className="text-sm font-normal text-gray-400 ml-2">accès à vie</span>
-                </div>
-
-                <Button className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-base" asChild>
-                  <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart size={20} className="mr-2" />
-                    Acheter maintenant
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Formation Agent Immo */}
-            <Card className="border-2 border-amber-300 hover:border-amber-500 transition-all shadow-xl ring-2 ring-amber-400/20">
-              <CardContent className="p-8 relative overflow-hidden">
-                <div className="absolute top-4 right-4">
-                  <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
-                    Populaire
-                  </span>
-                </div>
-
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <BookOpen className="text-white" size={32} />
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Agent Immobilier</h3>
-                <p className="text-gray-500 mb-6 text-sm leading-relaxed">
-                  Optimisation <strong>spécifique mandataires</strong> : indemnités kilométriques (IK) maximisées, 
-                  frais réels, cas pratiques par paliers de CA, holdings & SCI pour réinvestir sereinement.
-                </p>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "IK & frais réels : 6 000€ à 15 000€ possibles selon usage",
-                    "Cas pratiques IAD, SAFTI, KW, etc. : décisions rapides",
-                    "Holding/SCI : structurer vos gains sans vous piéger",
-                    "Simulateur Agent Immo + tableur IK inclus"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="text-4xl font-black text-gray-900 mb-6">
-                  897€
-                  <span className="text-sm font-normal text-gray-400 ml-2">accès à vie</span>
-                </div>
-
-                <Button className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-base shadow-lg" asChild>
-                  <a href="https://buy.stripe.com/4gM3cu5PFd382eF5j19fW02" target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart size={20} className="mr-2" />
-                    Acheter maintenant
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="bg-gradient-to-br from-slate-50 to-amber-50 rounded-2xl p-8 border border-slate-200">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="text-white" size={24} />
               </div>
-              <div>
-                <h4 className="font-bold text-gray-900 mb-2">Garantie satisfait ou remboursé 30 jours</h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Si vous n'êtes pas satisfait de la formation, nous vous remboursons intégralement sous 30 jours, sans condition.
-                </p>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Formation Créateur */}
+                <Card className="border-2 border-slate-200 hover:border-amber-500 transition-all shadow-lg">
+                  <CardContent className="p-8">
+                    <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                      <GraduationCap className="text-white" size={32} />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Créateur</h3>
+                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                      Choix du statut (SASU/EURL), fiscalité appliquée, <strong>méthode VASE</strong>, création de société pas-à-pas.
+                    </p>
+
+                    <ul className="space-y-3 mb-8">
+                      {[
+                        "Comparatif SASU/EURL : le bon curseur selon vos objectifs",
+                        "Salaire vs dividendes : augmenter le net, réduire le superflu",
+                        "Méthode VASE (Exclusif) : véhicule, abondement, salaire, épargne",
+                        "Pack documents + simulateurs pour décider en 30 minutes"
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                      <CheckCircle2 className="mx-auto text-green-600 mb-2" size={24} />
+                      <p className="font-bold text-green-800">Formation débloquée</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Formation Agent Immo */}
+                <Card className="border-2 border-amber-300 hover:border-amber-500 transition-all shadow-xl ring-2 ring-amber-400/20">
+                  <CardContent className="p-8 relative overflow-hidden">
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
+                        Populaire
+                      </span>
+                    </div>
+
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                      <BookOpen className="text-white" size={32} />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900">Formation Agent Immobilier</h3>
+                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                      Optimisation <strong>spécifique mandataires</strong> : IK maximisées, frais réels, cas pratiques.
+                    </p>
+
+                    <ul className="space-y-3 mb-8">
+                      {[
+                        "IK & frais réels : 6 000€ à 15 000€ possibles selon usage",
+                        "Cas pratiques IAD, SAFTI, KW, etc. : décisions rapides",
+                        "Holding/SCI : structurer vos gains sans vous piéger",
+                        "Simulateur Agent Immo + tableur IK inclus"
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <CheckCircle2 size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                      <CheckCircle2 className="mx-auto text-green-600 mb-2" size={24} />
+                      <p className="font-bold text-green-800">Formation débloquée</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* COACHING (avec Fathom) */}
-      {activeTab === "coaching" && (
-        <div className="max-w-3xl mx-auto space-y-6">
-          {nextCoaching ? (
-            <Card className="border-none bg-slate-900 text-white overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 p-8 opacity-10"><Users size={120} /></div>
-              <CardContent className="p-8 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase mb-6 animate-pulse">
-                  Direct à venir
-                </div>
-                <h3 className="text-3xl font-black mb-4 leading-tight">{nextCoaching.title}</h3>
-                <p className="text-slate-400 mb-8 text-lg">{nextCoaching.description}</p>
-                
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Date</p>
-                    <p className="font-semibold">{formatDate(nextCoaching.session_date)}</p>
-                  </div>
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Heure</p>
-                    <p className="font-semibold">{nextCoaching.time_slot}</p>
-                  </div>
-                </div>
-
-                {nextCoaching.meet_link ? (
-                  <Button size="lg" className="w-full bg-amber-500 hover:bg-amber-600 text-white text-md font-bold h-14" asChild>
-                    <a href={nextCoaching.meet_link} target="_blank" rel="noopener noreferrer">
-                      Rejoindre la session <ExternalLink size={18} className="ml-2" />
-                    </a>
-                  </Button>
-                ) : (
-                  <div className="text-center p-4 border border-dashed border-white/20 rounded-xl text-slate-500 italic">
-                    Le lien d'accès sera activé 15 minutes avant le début.
-                  </div>
-                )}
-
-                {nextCoaching.fathom_id && (
-                  <div className="mt-6">
-                    <p className="text-xs text-slate-400 mb-3 uppercase font-bold">Replay disponible après la session</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           ) : (
-            <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed">
-              <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">Aucun coaching programmé pour le moment.</p>
-            </div>
+            // CTA Upgrade si pas d'accès
+            <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
+              <CardContent className="p-12 text-center">
+                <Lock className="mx-auto text-amber-500 mb-6" size={64} />
+                <h2 className="text-3xl font-black text-gray-900 mb-4">Formations Premium</h2>
+                <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+                  Accédez aux formations complètes pour optimiser votre fiscalité et créer votre société dans les meilleures conditions.
+                </p>
+                <Button className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12 text-lg" asChild>
+                  <a href="/formations">Découvrir les formations</a>
+                </Button>
+              </CardContent>
+            </Card>
           )}
-        </div>
+        </>
       )}
 
-      {/* ATELIERS (inchangé) */}
+      {/* COACHING */}
+      {activeTab === "coaching" && (
+        <>
+          {hasAccess.coachings ? (
+            <div className="max-w-3xl mx-auto space-y-6">
+              {nextCoaching ? (
+                <Card className="border-none bg-slate-900 text-white overflow-hidden shadow-2xl">
+                  <div className="absolute top-0 right-0 p-8 opacity-10"><Users size={120} /></div>
+                  <CardContent className="p-8 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase mb-6 animate-pulse">
+                      Direct à venir
+                    </div>
+                    <h3 className="text-3xl font-black mb-4 leading-tight">{nextCoaching.title}</h3>
+                    <p className="text-slate-400 mb-8 text-lg">{nextCoaching.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">Date</p>
+                        <p className="font-semibold">{formatDate(nextCoaching.session_date)}</p>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">Heure</p>
+                        <p className="font-semibold">{nextCoaching.time_slot}</p>
+                      </div>
+                    </div>
+
+                    {nextCoaching.meet_link ? (
+                      <Button size="lg" className="w-full bg-amber-500 hover:bg-amber-600 text-white text-md font-bold h-14" asChild>
+                        <a href={nextCoaching.meet_link} target="_blank" rel="noopener noreferrer">
+                          Rejoindre la session <ExternalLink size={18} className="ml-2" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <div className="text-center p-4 border border-dashed border-white/20 rounded-xl text-slate-500 italic">
+                        Le lien d'accès sera activé 15 minutes avant le début.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed">
+                  <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">Aucun coaching programmé pour le moment.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
+              <CardContent className="p-12 text-center">
+                <Lock className="mx-auto text-amber-500 mb-6" size={64} />
+                <h2 className="text-3xl font-black text-gray-900 mb-4">Coachings Live</h2>
+                <p className="text-gray-600 mb-8">
+                  Accédez aux coachings live avec les packs Formation ou Accompagnement.
+                </p>
+                <Button className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12" asChild>
+                  <a href="/formations">Voir les offres</a>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* ATELIERS */}
       {activeTab === "ateliers" && (
         <div className="grid md:grid-cols-2 gap-6">
           {ateliers.length > 0 ? ateliers.map((atelier: Atelier) => {
@@ -436,52 +460,75 @@ export default function MemberDashboard({
         </div>
       )}
 
-      {/* RDV (inchangé) */}
-      {(activeTab === "rdv-inclus" || activeTab === "rdv-payants") && (
-        <div className="max-w-4xl mx-auto space-y-6">
-          {activeTab === "rdv-inclus" ? (
+      {/* RDV INCLUS */}
+      {activeTab === "rdv-inclus" && (
+        <>
+          {hasAccess.accompagnement ? (
             <Card className="border-none shadow-2xl bg-gradient-to-br from-white to-emerald-50 overflow-hidden">
-               <CardContent className="p-10 text-center">
-                  <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-emerald-200">
-                    <Phone size={32} />
-                  </div>
-                  <h2 className="text-3xl font-black text-gray-900 mb-4">Votre Session Stratégique</h2>
-                  <p className="text-gray-600 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
-                    Un point privé de 30 minutes avec un expert pour valider votre structure et optimiser votre fiscalité.
+              <CardContent className="p-10 text-center">
+                <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-emerald-200">
+                  <Phone size={32} />
+                </div>
+                <h2 className="text-3xl font-black text-gray-900 mb-4">Votre Session Stratégique</h2>
+                <p className="text-gray-600 text-lg max-w-lg mx-auto mb-6 leading-relaxed">
+                  Un point privé de 30 minutes avec un expert pour valider votre structure et optimiser votre fiscalité.
+                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 inline-block">
+                  <p className="text-sm text-amber-800">
+                    <strong>{hasAccess.rdvExpert}</strong> RDV expert(s) restant(s)
                   </p>
-                  <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold shadow-xl shadow-emerald-200/50" asChild>
-                    <a href="https://calendly.com/contact-jj-conseil/rdv-analyste" target="_blank">Réserver maintenant</a>
-                  </Button>
-                  <p className="mt-6 text-xs text-gray-400 font-medium uppercase tracking-widest italic">Inclus dans votre accompagnement</p>
-               </CardContent>
+                </div>
+                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold shadow-xl shadow-emerald-200/50" asChild>
+                  <a href="https://calendly.com/contact-jj-conseil/rdv-analyste" target="_blank">Réserver maintenant</a>
+                </Button>
+                <p className="mt-6 text-xs text-gray-400 font-medium uppercase tracking-widest italic">Inclus dans votre accompagnement</p>
+              </CardContent>
             </Card>
           ) : (
-            <div className="grid md:grid-cols-2 gap-8">
-               <Card className="border-2 border-transparent hover:border-amber-500 transition-all bg-white shadow-lg">
-                  <CardContent className="p-8">
-                    <Star className="text-amber-500 mb-4" fill="currentColor" size={28} />
-                    <h3 className="text-2xl font-bold mb-2 text-gray-900">Expertise Fiscale Immobilière</h3>
-                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">Analyse complète de votre patrimoine, montage LMNP/LMP ou passage en société.</p>
-                    <div className="text-3xl font-black text-gray-900 mb-8">149€ <span className="text-sm font-normal text-gray-400">/ session</span></div>
-                    <Button className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl" asChild>
-                      <a href="https://calendly.com/contact-jj-conseil/expertise-immo" target="_blank">Réserver un créneau</a>
-                    </Button>
-                  </CardContent>
-               </Card>
-
-               <Card className="border-2 border-transparent hover:border-blue-500 transition-all bg-white shadow-lg">
-                  <CardContent className="p-8">
-                    <BookOpen className="text-blue-500 mb-4" size={28} />
-                    <h3 className="text-2xl font-bold mb-2 text-gray-900">Audit Holding & SCI</h3>
-                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">Optimisation de la transmission et de l'imposition des dividendes.</p>
-                    <div className="text-3xl font-black text-gray-900 mb-8">290€ <span className="text-sm font-normal text-gray-400">/ audit</span></div>
-                    <Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl" asChild>
-                      <a href="https://calendly.com/contact-jj-conseil/audit-holding" target="_blank">Commander l'audit</a>
-                    </Button>
-                  </CardContent>
-               </Card>
-            </div>
+            <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
+              <CardContent className="p-12 text-center">
+                <Lock className="mx-auto text-amber-500 mb-6" size={64} />
+                <h2 className="text-3xl font-black text-gray-900 mb-4">RDV Expert</h2>
+                <p className="text-gray-600 mb-8">
+                  Les RDV experts sont disponibles avec les packs Starter, Pro ou Expert.
+                </p>
+                <Button className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12" asChild>
+                  <a href="/formations">Voir les packs</a>
+                </Button>
+              </CardContent>
+            </Card>
           )}
+        </>
+      )}
+
+      {/* RDV PAYANTS */}
+      {activeTab === "rdv-payants" && (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="border-2 border-transparent hover:border-amber-500 transition-all bg-white shadow-lg">
+              <CardContent className="p-8">
+                <Star className="text-amber-500 mb-4" fill="currentColor" size={28} />
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">Expertise Fiscale Immobilière</h3>
+                <p className="text-gray-500 mb-6 text-sm leading-relaxed">Analyse complète de votre patrimoine, montage LMNP/LMP ou passage en société.</p>
+                <div className="text-3xl font-black text-gray-900 mb-8">149€ <span className="text-sm font-normal text-gray-400">/ session</span></div>
+                <Button className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl" asChild>
+                  <a href="https://calendly.com/contact-jj-conseil/expertise-immo" target="_blank">Réserver un créneau</a>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-transparent hover:border-blue-500 transition-all bg-white shadow-lg">
+              <CardContent className="p-8">
+                <BookOpen className="text-blue-500 mb-4" size={28} />
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">Audit Holding & SCI</h3>
+                <p className="text-gray-500 mb-6 text-sm leading-relaxed">Optimisation de la transmission et de l'imposition des dividendes.</p>
+                <div className="text-3xl font-black text-gray-900 mb-8">290€ <span className="text-sm font-normal text-gray-400">/ audit</span></div>
+                <Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl" asChild>
+                  <a href="https://calendly.com/contact-jj-conseil/audit-holding" target="_blank">Commander l'audit</a>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>

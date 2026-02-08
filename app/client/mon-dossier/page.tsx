@@ -2,12 +2,57 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, CheckCircle2, Clock, FileText } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Lock } from 'lucide-react';
+import { useUserAccess } from '@/hooks/useUserAccess';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function MonDossierPage() {
+  const { hasAccess, loading, pack } = useUserAccess();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !hasAccess.accompagnement) {
+      // Redirection si pas d'accès
+      router.push('/client?error=access_denied');
+    }
+  }, [hasAccess, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-slate-600">Vérification des accès...</div>
+      </div>
+    );
+  }
+
+  if (!hasAccess.accompagnement) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
+          <CardContent className="p-12 text-center">
+            <Lock className="mx-auto text-amber-500 mb-6" size={64} />
+            <h2 className="text-3xl font-black text-gray-900 mb-4">Accès Réservé</h2>
+            <p className="text-gray-600 mb-8">
+              Le suivi de dossier est disponible avec les packs Starter, Pro ou Expert.
+            </p>
+            <Button className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12" onClick={() => router.push('/formations')}>
+              Voir les packs
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-8">
-      <h1 className="text-3xl font-bold text-[#123055] mb-8">Mon Dossier</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-[#123055]">Mon Dossier</h1>
+        <div className="bg-amber-100 text-amber-700 px-4 py-2 rounded-full font-semibold text-sm">
+          Pack {pack?.replace('_', ' ')}
+        </div>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Colonne gauche : RDV */}
@@ -16,7 +61,7 @@ export default function MonDossierPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold text-[#123055] mb-4 flex items-center gap-2">
                 <Calendar size={20} />
-                Mes rendez-vous expert
+                Mes rendez-vous expert ({hasAccess.rdvExpert} RDV)
               </h2>
 
               <div className="space-y-4">
@@ -39,12 +84,32 @@ export default function MonDossierPage() {
                   </Button>
                 </div>
 
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-slate-600">RDV 3 - Validation finale</span>
-                    <span className="text-xs text-slate-500">Non programmé</span>
+                {hasAccess.rdvExpert >= 3 && (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-slate-600">RDV 3 - Validation finale</span>
+                      <span className="text-xs text-slate-500">Non programmé</span>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {hasAccess.rdvExpert >= 4 && (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-slate-600">RDV 4 - Suivi avancé</span>
+                      <span className="text-xs text-slate-500">Non programmé</span>
+                    </div>
+                  </div>
+                )}
+
+                {hasAccess.rdvExpert >= 5 && (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-slate-600">RDV 5 - Optimisation finale</span>
+                      <span className="text-xs text-slate-500">Non programmé</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

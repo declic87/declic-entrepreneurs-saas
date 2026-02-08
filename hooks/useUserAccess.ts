@@ -21,7 +21,7 @@ interface UserAccess {
     coachings: boolean;
     formationsPremium: boolean;
     accompagnement: boolean;
-    rdvExpert: number; // Nombre de RDV disponibles
+    rdvExpert: number;
   };
   loading: boolean;
 }
@@ -48,7 +48,6 @@ export function useUserAccess(): UserAccess {
             .single();
 
           if (userData?.pack) {
-            // Vérifier si le pack n'est pas expiré
             if (userData.pack_expires_at) {
               const expiresAt = new Date(userData.pack_expires_at);
               if (expiresAt < new Date()) {
@@ -70,11 +69,10 @@ export function useUserAccess(): UserAccess {
     fetchUserPack();
   }, [supabase]);
 
-  // Définir les accès selon le pack
   const hasAccess = {
-    simulateurs: true, // Accessible à tous
-    formationsTuto: true, // Accessible à tous
-    ateliers: true, // Accessible à tous
+    simulateurs: true,
+    formationsTuto: true,
+    ateliers: true,
     coachings: pack === 'FORMATION_CREATEUR' || 
                pack === 'FORMATION_AGENT_IMMO' || 
                pack === 'STARTER' || 

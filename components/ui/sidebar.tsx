@@ -60,12 +60,12 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
   client: [
     { label: "Dashboard", href: "/client", icon: LayoutDashboard },
     { label: "Création Société", href: "/client/creation-societe", icon: Building },
-    { label: "Mon Dossier", href: "/client/dossier", icon: FileText },
+    { label: "Mon Dossier", href: "/client/mon-dossier", icon: FileText },
     { label: "Paiements", href: "/client/paiements", icon: CreditCard },
     { label: "Documents", href: "/client/documents", icon: FileText },
     { label: "Simulateur", href: "/client/simulateur", icon: Calculator },
     { label: "Messages", href: "/client/messages", icon: MessageSquare },
-    { label: "Paramètres", href: "/client/settings", icon: Settings },
+    { label: "Paramètres", href: "/client/parametres", icon: Settings },
   ],
 };
 

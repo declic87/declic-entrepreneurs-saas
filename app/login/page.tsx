@@ -46,14 +46,18 @@ export default function LoginPage() {
 
       const role = userData?.role || 'CLIENT';
 
-      const routes = {
-        ADMIN: '/admin',
-        HOS: '/commercial',
-        CLOSER: '/commercial',
-        SETTER: '/commercial',
-        EXPERT: '/expert',
-        CLIENT: '/client'
-      };
+      const role = userData?.role?.toLowerCase() || 'client';
+
+const routes: Record<string, string> = {
+  admin: '/admin',
+  hos: '/commercial',
+  closer: '/commercial',
+  setter: '/commercial',
+  expert: '/expert/clients',
+  client: '/client'
+};
+
+router.push(routes[role] || '/client');
 
       router.push(routes[role as keyof typeof routes] || '/client');
       router.refresh();

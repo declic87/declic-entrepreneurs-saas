@@ -240,11 +240,12 @@ export default function ValiderStatutPage() {
       alert("Veuillez sélectionner un statut juridique");
       return;
     }
-
+  
     setSaving(true);
-
+  
     try {
-      const { error } = await supabase
+      // 1. Essayer de mettre à jour
+      const { error: updateError } = await supabase
         .from("company_creation_data")
         .update({
           company_type: selectedStatut,
@@ -252,8 +253,19 @@ export default function ValiderStatutPage() {
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", clientId);
-
-      if (error) throw error;
+  
+      // 2. Si erreur (pas de ligne trouvée), créer l'entrée
+      if (updateError || !companyData) {
+        const { error: insertError } = await supabase
+          .from("company_creation_data")
+          .insert({
+            user_id: clientId,
+            company_type: selectedStatut,
+            step: "info_collection",
+          });
+  
+        if (insertError) throw insertError;
+      }
 
       alert(`✅ Statut ${selectedStatut} validé pour ${client?.first_name} ${client?.last_name}`);
       router.push(`/expert/clients`);

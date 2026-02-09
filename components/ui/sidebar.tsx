@@ -89,14 +89,23 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   // Récupérer l'ID utilisateur
   useEffect(() => {
     async function fetchUserId() {
+      console.log("🔍 Sidebar - Fetching userId...");
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("🔍 Sidebar - Auth user:", user?.id);
+      
       if (user) {
         const { data: userData } = await supabase
           .from("users")
           .select("id")
           .eq("auth_id", user.id)
           .single();
-        if (userData) setUserId(userData.id);
+        
+        console.log("🔍 Sidebar - User data:", userData);
+        
+        if (userData) {
+          setUserId(userData.id);
+          console.log("✅ Sidebar - UserId set:", userData.id);
+        }
       }
     }
     fetchUserId();
@@ -104,6 +113,10 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   // Hook pour les messages non lus
   const { unreadCount } = useUnreadMessages(userId);
+  
+  // ⭐ LOGS DE DEBUG
+  console.log("🔍 Sidebar - Current userId:", userId);
+  console.log("🔍 Sidebar - Current unreadCount:", unreadCount);
 
   async function handleLogout() {
     await supabase.auth.signOut();

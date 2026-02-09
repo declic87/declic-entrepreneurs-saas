@@ -12,7 +12,12 @@ export function useUnreadMessages(userId: string | null) {
   );
 
   useEffect(() => {
-    if (!userId) return;
+    console.log("🔔 useUnreadMessages - UserId:", userId);
+    
+    if (!userId) {
+      console.log("❌ Pas de userId, skip");
+      return;
+    }
 
     loadUnreadCount();
     subscribeToMessages();
@@ -25,55 +30,61 @@ export function useUnreadMessages(userId: string | null) {
   async function loadUnreadCount() {
     if (!userId) return;
 
-    // Compter les messages non lus pour cet utilisateur
-    // 1. Messages dans les conversations où l'utilisateur est client
-    const { data: clientConvs } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("client_id", userId);
+    try {
+      console.log("📊 Chargement des messages non lus pour userId:", userId);
 
-    const clientConvIds = clientConvs?.map((c) => c.id) || [];
+      // 1. Conversations où l'user est client
+      const { data: clientConvs, error: clientError } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("client_id", userId);
 
-    // 2. Messages dans les conversations où l'utilisateur est expert
-    const { data: expertConvs } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("expert_id", userId);
+      console.log("👤 Conversations client:", clientConvs);
 
-    const expertConvIds = expertConvs?.map((c) => c.id) || [];
+      // 2. Conversations où l'user est expert
+      const { data: expertConvs, error: expertError } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("expert_id", userId);
 
-    const allConvIds = [...clientConvIds, ...expertConvIds];
+      console.log("👨‍💼 Conversations expert:", expertConvs);
 
-    if (allConvIds.length === 0) {
-      setUnreadCount(0);
-      return;
+      const clientConvIds = clientConvs?.map((c) => c.id) || [];
+      const expertConvIds = expertConvs?.map((c) => c.id) || [];
+      const allConvIds = [...clientConvIds, ...expertConvIds];
+
+      console.log("📝 Toutes les conversations IDs:", allConvIds);
+
+      let totalUnread = 0;
+
+      if (allConvIds.length > 0) {
+        const { count, error } = await supabase
+          .from("messages")
+          .select("*", { count: "exact", head: true })
+          .in("conversation_id", allConvIds)
+          .eq("is_read", false)
+          .neq("sender_id", userId);
+
+        console.log("📬 Messages non lus trouvés:", count);
+        console.log("❌ Erreur?", error);
+
+        totalUnread = count || 0;
+      }
+
+      console.log("✅ Total messages non lus:", totalUnread);
+      setUnreadCount(totalUnread);
+    } catch (error) {
+      console.error("❌ Erreur chargement:", error);
     }
-
-    // Compter les messages non lus dans ces conversations
-    const { count: clientMessages } = await supabase
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .in("conversation_id", allConvIds)
-      .eq("is_read", false)
-      .neq("sender_id", userId); // Ne pas compter ses propres messages
-
-    // Compter les messages non lus dans les channels staff
-    const { count: staffMessages } = await supabase
-      .from("staff_messages")
-      .select("*", { count: "exact", head: true })
-      .neq("sender_id", userId)
-      .gt("created_at", await getLastReadTime()); // Seulement les nouveaux
-
-    const total = (clientMessages || 0) + (staffMessages || 0);
-    setUnreadCount(total);
   }
 
   function subscribeToMessages() {
     if (!userId) return;
 
-    // S'abonner aux nouveaux messages
+    console.log("🔔 Abonnement temps réel activé");
+
     supabase
-      .channel("unread-messages")
+      .channel("unread-messages-realtime")
       .on(
         "postgres_changes",
         {
@@ -82,40 +93,37 @@ export function useUnreadMessages(userId: string | null) {
           table: "messages",
         },
         (payload) => {
-          // Si le message n'est pas de l'utilisateur, incrémenter
+          console.log("🆕 Nouveau message:", payload);
           if (payload.new.sender_id !== userId) {
-            setUnreadCount((prev) => prev + 1);
+            setUnreadCount((prev) => {
+              console.log("➕ Incrémentation:", prev, "→", prev + 1);
+              return prev + 1;
+            });
           }
         }
       )
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "UPDATE",
           schema: "public",
-          table: "staff_messages",
+          table: "messages",
         },
         (payload) => {
-          // Si le message n'est pas de l'utilisateur, incrémenter
-          if (payload.new.sender_id !== userId) {
-            setUnreadCount((prev) => prev + 1);
+          console.log("🔄 Message mis à jour:", payload);
+          if (payload.new.is_read && !payload.old.is_read) {
+            setUnreadCount((prev) => {
+              console.log("➖ Décrémentation:", prev, "→", Math.max(0, prev - 1));
+              return Math.max(0, prev - 1);
+            });
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("📡 Statut subscription:", status);
+      });
   }
 
-  async function getLastReadTime() {
-    // Récupérer la dernière connexion de l'utilisateur
-    // Pour simplifier, on prend les messages des dernières 24h
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString();
-  }
-
-  async function markAllAsRead() {
-    setUnreadCount(0);
-  }
-
-  return { unreadCount, markAllAsRead };
+  console.log("🎯 Hook retourne unreadCount:", unreadCount);
+  return { unreadCount };
 }

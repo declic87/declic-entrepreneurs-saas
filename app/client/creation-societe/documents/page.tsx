@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { useRouter } from "next/navigation";
 import { useDocumentUpload } from "@/hooks/useDocumentUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import {
   Loader2,
   Trash2,
   Eye,
+  ArrowRight,
 } from "lucide-react";
 
 interface Document {
@@ -46,9 +48,11 @@ const DOCUMENT_TYPES = [
 ];
 
 export default function DocumentsUploadPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [validating, setValidating] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,6 +71,13 @@ export default function DocumentsUploadPage() {
       loadDocuments();
     }
   }, [userId]);
+
+  // ⭐ AUTO-VALIDATION quand tous les documents sont uploadés
+  useEffect(() => {
+    if (allDocumentsUploaded && !validating) {
+      autoValidate();
+    }
+  }, [documents]);
 
   async function fetchUser() {
     const {
@@ -122,6 +133,39 @@ export default function DocumentsUploadPage() {
     if (url) {
       window.open(url, "_blank");
     }
+  }
+
+  // ⭐ AUTO-VALIDATION : Passer à l'étape suivante
+  async function autoValidate() {
+    if (!userId) return;
+    
+    setValidating(true);
+    
+    try {
+      console.log("🚀 Auto-validation : Passage à l'étape documents_generation");
+      
+      const { error } = await supabase
+        .from("company_creation_data")
+        .update({ 
+          step: "documents_generation",
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("❌ Erreur auto-validation:", error);
+      } else {
+        console.log("✅ Auto-validation réussie !");
+      }
+    } catch (err) {
+      console.error("❌ Erreur:", err);
+    } finally {
+      setValidating(false);
+    }
+  }
+
+  async function handleContinue() {
+    router.push("/client/creation-societe");
   }
 
   function getDocumentByType(type: string) {
@@ -306,15 +350,18 @@ export default function DocumentsUploadPage() {
               <CheckCircle2 className="text-green-600" size={32} />
               <div className="flex-1">
                 <h3 className="font-bold text-green-900 text-lg">
-                  Tous les documents sont uploadés !
+                  ✅ Tous les documents sont uploadés !
                 </h3>
                 <p className="text-sm text-green-700 mt-1">
-                  Notre équipe va vérifier vos documents et générer
-                  automatiquement vos statuts et formulaire M0.
+                  Vos documents ont été transmis. La génération automatique va commencer.
                 </p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700">
-                Passer à l'étape suivante
+              <Button 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={handleContinue}
+              >
+                Retour au tableau de bord
+                <ArrowRight className="ml-2" size={16} />
               </Button>
             </div>
           </CardContent>

@@ -215,20 +215,40 @@ export default function ExpertClientsPage() {
                       </p>
                     </div>
 
-                    {!client.company_data.company_type && (
-                      <Button
-                        className="w-full bg-amber-500 hover:bg-amber-600 mb-2"
-                        onClick={() =>
-                          router.push(
-                            `/expert/clients/${client.id}/valider-statut`
-                          )
-                        }
-                      >
-                        <FileText size={16} className="mr-2" />
-                        Valider le statut
-                      </Button>
-                    )}
-                  </>
+                    <div className="space-y-2">
+  {!client.company_data.company_type ? (
+    <Button
+      className="w-full bg-amber-500 hover:bg-amber-600"
+      onClick={() =>
+        router.push(`/expert/clients/${client.id}/valider-statut`)
+      }
+    >
+      <FileText size={16} className="mr-2" />
+      Valider le statut
+    </Button>
+  ) : (
+    <Button
+      className="w-full bg-blue-500 hover:bg-blue-600"
+      onClick={() =>
+        router.push(`/expert/clients/${client.id}/valider-statut`)
+      }
+    >
+      <FileText size={16} className="mr-2" />
+      Modifier le statut
+    </Button>
+  )}
+
+  <Button
+    variant="outline"
+    className="w-full"
+    onClick={() => {
+      // Se connecter en tant que client (impersonation)
+      window.open(`/client?impersonate=${client.id}`, '_blank');
+    }}
+  >
+    👤 Accès client
+  </Button>
+</div>        </>
                 ) : (
                   <Button
                     className="w-full bg-amber-500 hover:bg-amber-600"

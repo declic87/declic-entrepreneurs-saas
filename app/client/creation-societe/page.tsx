@@ -194,7 +194,7 @@ export default function CreationSocietePage() {
       case "rdv_expert":
   return {
     label: "Prendre RDV avec un expert",
-    href: "https://calendly.com/contact-jj-conseil/rdv-analyste",
+    href: "https://calendly.com/contact-jj-conseil/rdv-expert",
     disabled: false,
   };
 

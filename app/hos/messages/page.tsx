@@ -80,7 +80,11 @@ export default function StaffMessagingPage() {
 
   async function loadChannels() {
     setLoading(true);
-    const { data } = await supabase.from("staff_channels").select("*").order("name");
+    const { data } = await supabase
+      .from("staff_channels")
+      .select("*")
+      .in("name", ["général", "hos-team", "admin", "closers", "setters", "experts"])
+      .order("name");
     setChannels(data || []);
     if (data && data.length > 0) setActiveChannel(data[0]);
     setLoading(false);

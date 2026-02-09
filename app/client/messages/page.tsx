@@ -37,6 +37,13 @@ export default function ClientMessagesPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Marquer les messages comme lus quand la conversation change
+  useEffect(() => {
+    if (conversation && userId) {
+      markMessagesAsRead();
+    }
+  }, [conversation]);
+
   async function fetchUser() {
     const {
       data: { user },
@@ -57,6 +64,16 @@ export default function ClientMessagesPage() {
 
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function markMessagesAsRead() {
+    if (!conversation || !userId) return;
+    
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversation.id)
+      .neq("sender_id", userId);
   }
 
   async function handleSendMessage(e: React.FormEvent) {

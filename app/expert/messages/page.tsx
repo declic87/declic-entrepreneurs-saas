@@ -74,6 +74,13 @@ export default function ExpertMessagesPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Marquer les messages comme lus quand la conversation change
+  useEffect(() => {
+    if (selectedConv && userId) {
+      markMessagesAsRead();
+    }
+  }, [selectedConv]);
+
   async function fetchUser() {
     const {
       data: { user },
@@ -143,6 +150,16 @@ export default function ExpertMessagesPage() {
         }
       )
       .subscribe();
+  }
+
+  async function markMessagesAsRead() {
+    if (!selectedConv || !userId) return;
+    
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", selectedConv.id)
+      .neq("sender_id", userId);
   }
 
   async function handleSendMessage(e: React.FormEvent) {

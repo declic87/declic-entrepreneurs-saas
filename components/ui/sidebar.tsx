@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
@@ -75,6 +76,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
 export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -83,6 +85,25 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   
   const currentRole = role?.toLowerCase() || "client";
   const items = navItemsByRole[currentRole] || [];
+
+  // Récupérer l'ID utilisateur
+  useEffect(() => {
+    async function fetchUserId() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("id")
+          .eq("auth_id", user.id)
+          .single();
+        if (userData) setUserId(userData.id);
+      }
+    }
+    fetchUserId();
+  }, []);
+
+  // Hook pour les messages non lus
+  const { unreadCount } = useUnreadMessages(userId);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -103,7 +124,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
       <div className="p-6 border-b border-white/5 bg-slate-900/50">
         <div className="flex items-center justify-between mb-2">
           <Logo variant="light" size="sm" />
-          {/* Cloche de notifications (visible pour tous les rôles) */}
           <NotificationBell />
         </div>
         <div className="inline-block px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
@@ -117,8 +137,10 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto py-6 space-y-1 custom-scrollbar">
         {items.map((item) => {
           const Icon = item.icon;
-          // Logique d'activation précise
           const isActive = pathname === item.href || (item.href !== `/${currentRole}` && pathname.startsWith(item.href));
+          
+          // Vérifier si c'est l'item Messages
+          const isMessagesItem = item.label.includes("Messages");
           
           return (
             <Link
@@ -136,10 +158,20 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
                 <div className="absolute left-0 top-0 h-full w-1 bg-orange-500 rounded-r-full shadow-[0_0_10px_rgba(230,126,34,0.5)]" />
               )}
               
-              <Icon size={18} className={cn(
-                "transition-transform duration-200 group-hover:scale-110",
-                isActive ? "text-orange-500" : "text-slate-500 group-hover:text-slate-300"
-              )} />
+              {/* Icône avec badge notification */}
+              <div className="relative">
+                <Icon size={18} className={cn(
+                  "transition-transform duration-200 group-hover:scale-110",
+                  isActive ? "text-orange-500" : "text-slate-500 group-hover:text-slate-300"
+                )} />
+                
+                {/* Badge de notification pour Messages */}
+                {isMessagesItem && unreadCount > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 animate-pulse shadow-lg">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </div>
+                )}
+              </div>
               
               <span className="flex-1">{item.label}</span>
               

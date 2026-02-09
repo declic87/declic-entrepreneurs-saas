@@ -217,15 +217,6 @@ export default function ValiderStatutPage() {
       .eq("user_id", clientId)
       .single();
 
-    if (!company) {
-      const { data: newCompany } = await supabase
-        .from("company_creation_data")
-        .insert({ user_id: clientId, step: "rdv_expert" })
-        .select()
-        .single();
-      company = newCompany;
-    }
-
     setCompanyData(company);
 
     if (company?.company_type) {
@@ -240,38 +231,38 @@ export default function ValiderStatutPage() {
       alert("Veuillez sélectionner un statut juridique");
       return;
     }
-  
+
     setSaving(true);
-  
+
     try {
-      // 1. Essayer de mettre à jour
-      const { error: updateError } = await supabase
+      console.log("🔄 Validation statut:", selectedStatut, "pour client:", clientId);
+
+      // UPSERT : Update si existe, Insert sinon
+      const { data, error } = await supabase
         .from("company_creation_data")
-        .update({
+        .upsert({
+          user_id: clientId,
           company_type: selectedStatut,
           step: "info_collection",
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
         })
-        .eq("user_id", clientId);
-  
-      // 2. Si erreur (pas de ligne trouvée), créer l'entrée
-      if (updateError || !companyData) {
-        const { error: insertError } = await supabase
-          .from("company_creation_data")
-          .insert({
-            user_id: clientId,
-            company_type: selectedStatut,
-            step: "info_collection",
-          });
-  
-        if (insertError) throw insertError;
+        .select();
+
+      if (error) {
+        console.error("❌ Erreur upsert:", error);
+        throw error;
       }
+
+      console.log("✅ Statut validé:", data);
 
       alert(`✅ Statut ${selectedStatut} validé pour ${client?.first_name} ${client?.last_name}`);
       router.push(`/expert/clients`);
-    } catch (err) {
-      console.error("Erreur:", err);
-      alert("Erreur lors de la validation");
+    } catch (err: any) {
+      console.error("❌ Erreur validation:", err);
+      alert(`Erreur lors de la validation: ${err.message}`);
     } finally {
       setSaving(false);
     }

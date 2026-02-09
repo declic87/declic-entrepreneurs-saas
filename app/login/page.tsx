@@ -41,25 +41,21 @@ export default function LoginPage() {
       const { data: userData } = await supabase
         .from('users')
         .select('role')
-        .eq('auth_id', data.session?.user.id)  // ← CORRIGÉ ICI
+        .eq('auth_id', data.session?.user.id)
         .single();
-
-      const role = userData?.role || 'CLIENT';
 
       const role = userData?.role?.toLowerCase() || 'client';
 
-const routes: Record<string, string> = {
-  admin: '/admin',
-  hos: '/commercial',
-  closer: '/commercial',
-  setter: '/commercial',
-  expert: '/expert/clients',
-  client: '/client'
-};
+      const routes: Record<string, string> = {
+        admin: '/admin',
+        hos: '/commercial',
+        closer: '/commercial',
+        setter: '/commercial',
+        expert: '/expert/clients',
+        client: '/client'
+      };
 
-router.push(routes[role] || '/client');
-
-      router.push(routes[role as keyof typeof routes] || '/client');
+      router.push(routes[role] || '/client');
       router.refresh();
 
     } catch (err) {

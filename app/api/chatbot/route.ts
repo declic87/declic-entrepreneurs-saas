@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -36,13 +36,25 @@ const SYSTEM_PROMPT = `Tu es l'assistant IA de DÉCLIC Entrepreneurs, une platef
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
 
     // Vérifier l'authentification
     const {
       data: { session },
     } = await supabase.auth.getSession();
+    
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
@@ -130,7 +142,7 @@ export async function POST(req: NextRequest) {
     const { error: aiMsgError } = await supabase.from("messages").insert([
       {
         conversation_id: conversation.id,
-        sender_id: userId, // On utilise userId car l'IA n'est pas un "user"
+        sender_id: userId,
         sender_type: "ai",
         content: aiResponse,
         is_read: false,

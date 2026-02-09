@@ -5,9 +5,10 @@ import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { publishAndNotify } from "@/lib/notifications";
 import { 
   Video, Plus, Trash2, Save, X, FileText, Calendar, 
-  Users, Link as LinkIcon, Upload, CheckCircle2
+  Users, Link as LinkIcon, Upload, CheckCircle2, Send
 } from "lucide-react";
 
 type Tab = "formations" | "tutos" | "coachings" | "ateliers";
@@ -78,7 +79,7 @@ export default function AdminContenus() {
 }
 
 // ============================================
-// ONGLET 1 : FORMATIONS (Code existant conservé)
+// ONGLET 1 : FORMATIONS
 // ============================================
 function FormationsTab({ supabase }: any) {
   const [videos, setVideos] = useState<any[]>([]);
@@ -119,6 +120,15 @@ function FormationsTab({ supabase }: any) {
   async function deleteVideo(id: string) {
     await supabase.from("videos").delete().eq("id", id);
     fetchVideos();
+  }
+
+  async function handlePublish(video: any) {
+    const result = await publishAndNotify("formation", video.title, "/client/formations");
+    if (result.success) {
+      alert("✅ Notification envoyée à tous les clients !");
+    } else {
+      alert("❌ Erreur lors de l'envoi");
+    }
   }
 
   return (
@@ -173,6 +183,14 @@ function FormationsTab({ supabase }: any) {
                 <p className="text-sm text-slate-600">{video.category} • {video.duration}</p>
               </div>
               <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => handlePublish(video)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Send size={16} className="mr-1" />
+                  Publier
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => { setFormData(video); setEditingId(video.id); }}>
                   Modifier
                 </Button>
@@ -189,7 +207,7 @@ function FormationsTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 2 : TUTOS PRATIQUES (Loom + PDF)
+// ONGLET 2 : TUTOS PRATIQUES
 // ============================================
 function TutosPratiquesTab({ supabase }: any) {
   const [tutos, setTutos] = useState<any[]>([]);
@@ -231,6 +249,15 @@ function TutosPratiquesTab({ supabase }: any) {
   async function deleteTuto(id: string) {
     await supabase.from("tutos_pratiques").delete().eq("id", id);
     fetchTutos();
+  }
+
+  async function handlePublish(tuto: any) {
+    const result = await publishAndNotify("tuto", tuto.title, "/client/tutos");
+    if (result.success) {
+      alert("✅ Notification envoyée à tous les clients !");
+    } else {
+      alert("❌ Erreur lors de l'envoi");
+    }
   }
 
   return (
@@ -286,6 +313,14 @@ function TutosPratiquesTab({ supabase }: any) {
                 </p>
               </div>
               <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => handlePublish(tuto)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Send size={16} className="mr-1" />
+                  Publier
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => { setFormData(tuto); setEditingId(tuto.id); }}>
                   Modifier
                 </Button>
@@ -302,7 +337,7 @@ function TutosPratiquesTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 3 : COACHINGS (Lives + Archives)
+// ONGLET 3 : COACHINGS
 // ============================================
 function CoachingsTab({ supabase }: any) {
   const [subTab, setSubTab] = useState<"lives" | "archives">("lives");
@@ -351,11 +386,19 @@ function CoachingsTab({ supabase }: any) {
     fetchCoachings();
   }
 
+  async function handlePublish(coaching: any) {
+    const result = await publishAndNotify("coaching", coaching.title, "/client/coachings");
+    if (result.success) {
+      alert("✅ Notification envoyée à tous les clients !");
+    } else {
+      alert("❌ Erreur lors de l'envoi");
+    }
+  }
+
   const currentData = subTab === "lives" ? lives : archives;
 
   return (
     <div className="space-y-6">
-      {/* Sous-navigation */}
       <div className="flex gap-2 border-b">
         <button
           onClick={() => setSubTab("lives")}
@@ -425,6 +468,16 @@ function CoachingsTab({ supabase }: any) {
                 </p>
               </div>
               <div className="flex gap-2">
+                {subTab === "lives" && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => handlePublish(item)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Send size={16} className="mr-1" />
+                    Publier
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => { setFormData(item); setEditingId(item.id); }}>
                   Modifier
                 </Button>
@@ -441,7 +494,7 @@ function CoachingsTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 4 : ATELIERS (Lives + Archives)
+// ONGLET 4 : ATELIERS
 // ============================================
 function AteliersTab({ supabase }: any) {
   const [subTab, setSubTab] = useState<"lives" | "archives">("lives");
@@ -490,6 +543,15 @@ function AteliersTab({ supabase }: any) {
     const table = subTab === "lives" ? "ateliers" : "atelier_archives";
     await supabase.from(table).delete().eq("id", id);
     fetchAteliers();
+  }
+
+  async function handlePublish(atelier: any) {
+    const result = await publishAndNotify("atelier", atelier.title, "/client/ateliers");
+    if (result.success) {
+      alert("✅ Notification envoyée à tous les clients !");
+    } else {
+      alert("❌ Erreur lors de l'envoi");
+    }
   }
 
   const currentData = subTab === "lives" ? lives : archives;
@@ -566,6 +628,16 @@ function AteliersTab({ supabase }: any) {
                 </p>
               </div>
               <div className="flex gap-2">
+                {subTab === "lives" && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => handlePublish(item)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Send size={16} className="mr-1" />
+                    Publier
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => { setFormData(item); setEditingId(item.id); }}>
                   Modifier
                 </Button>

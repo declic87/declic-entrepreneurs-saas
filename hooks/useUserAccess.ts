@@ -15,33 +15,40 @@ export type Pack =
 interface UserAccess {
   pack: Pack;
   hasAccess: {
+    // ✅ Accessible à TOUS
     tutosPratiques: boolean;
-    tutosPratiquesLoom: boolean;
     ateliers: boolean;
     ateliersArchives: boolean;
     simulateurs: boolean;
     expertPayant: boolean;
-    formationsPremium: boolean;
+    
+    // ✅ Formations spécifiques
+    formationCreateur: boolean;        // Pack FORMATION_CREATEUR uniquement
+    formationAgentImmo: boolean;       // Pack FORMATION_AGENT_IMMO uniquement
+    formationsAccompagnement: boolean; // Packs STARTER/PRO/EXPERT uniquement (contenu spécifique)
+    
+    // ✅ Coachings
     coachings: boolean;
     coachingsArchives: boolean;
+    
+    // ✅ Accompagnement uniquement
     creationSociete: boolean;
     monDossier: boolean;
     rdvGratuit: boolean;
-    rdvExpert: number;
-    packDuration: number | null;
-    showFormationCreateur: boolean;
-    showFormationAgentImmo: boolean;
+    messagerie: boolean; // 🔒 RÉSERVÉ ACCOMPAGNEMENT
+    
+    // ✅ Nombre de RDV
+    rdvExpert: number; // 0, 3, 4 ou 5
   };
   loading: boolean;
-  packExpired: boolean;
-  daysRemaining: number | null;
+  packDuration: number | null; // Durée en mois (null si illimité/mensuel)
+  daysRemaining: number | null; // Jours restants (null si pas de date d'expiration)
 }
 
 export function useUserAccess(): UserAccess {
   const [pack, setPack] = useState<Pack>(null);
+  const [packExpiresAt, setPackExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [packExpired, setPackExpired] = useState(false);
-  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -61,29 +68,17 @@ export function useUserAccess(): UserAccess {
             .single();
 
           if (userData?.pack) {
-            // Vérifier expiration pour les packs avec durée limitée
+            // Vérifier si le pack n'est pas expiré
             if (userData.pack_expires_at) {
               const expiresAt = new Date(userData.pack_expires_at);
-              const now = new Date();
-              
-              if (expiresAt < now) {
-                // Pack expiré
+              if (expiresAt < new Date()) {
                 setPack(null);
-                setPackExpired(true);
-                setDaysRemaining(0);
+                setPackExpiresAt(null);
                 setLoading(false);
                 return;
               }
-              
-              // Calculer jours restants
-              const diffTime = expiresAt.getTime() - now.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              setDaysRemaining(diffDays);
-            } else {
-              // Pack sans expiration (packs accompagnement)
-              setDaysRemaining(null);
+              setPackExpiresAt(userData.pack_expires_at);
             }
-            
             setPack(userData.pack as Pack);
           }
         }
@@ -97,61 +92,67 @@ export function useUserAccess(): UserAccess {
     fetchUserPack();
   }, [supabase]);
 
-  // Packs avec formations (durée 3 mois)
-  const hasFormationPack = pack === 'FORMATION_CREATEUR' || 
-                           pack === 'FORMATION_AGENT_IMMO';
+  // Packs avec formations spécifiques
+  const hasFormationCreateur = pack === 'FORMATION_CREATEUR';
+  const hasFormationAgentImmo = pack === 'FORMATION_AGENT_IMMO';
+  const hasFormationPack = hasFormationCreateur || hasFormationAgentImmo;
 
-  // Packs avec accompagnement (durée 6/12/18 mois)
-  const hasAccompagnement = pack === 'STARTER' || 
-                            pack === 'PRO' || 
-                            pack === 'EXPERT';
+  // Packs avec accompagnement
+  const hasAccompagnement = pack === 'STARTER' || pack === 'PRO' || pack === 'EXPERT';
+
+  // Durée du pack en mois
+  const packDuration = 
+    pack === 'FORMATION_CREATEUR' || pack === 'FORMATION_AGENT_IMMO' ? 3 :
+    pack === 'STARTER' ? 6 :
+    pack === 'PRO' ? 12 :
+    pack === 'EXPERT' ? 18 :
+    null; // null pour PLATEFORME (mensuel)
+
+  // Calcul jours restants
+  let daysRemaining: number | null = null;
+  if (packExpiresAt) {
+    const expiresAt = new Date(packExpiresAt);
+    const now = new Date();
+    const diffTime = expiresAt.getTime() - now.getTime();
+    daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
 
   const hasAccess = {
-    // ✅ Accessible à TOUS (toujours)
+    // ✅ Accessible à TOUS (même sans pack)
     tutosPratiques: true,
-    tutosPratiquesLoom: true,
     ateliers: true,
     ateliersArchives: true,
+    simulateurs: true,
     expertPayant: true,
 
-    // ✅ Simulateurs : TOUS (3 mois pour formations, selon durée pour accompagnement)
-    simulateurs: pack === 'PLATEFORME' || hasFormationPack || hasAccompagnement,
+    // ✅ Formations spécifiques
+    formationCreateur: hasFormationCreateur || hasAccompagnement,
+    formationAgentImmo: hasFormationAgentImmo || hasAccompagnement,
+    formationsAccompagnement: hasAccompagnement, // Contenu spécifique aux packs accompagnement
 
-    // ✅ Formations ou Accompagnement
-    formationsPremium: hasFormationPack || hasAccompagnement,
-    
-    // ✅ Coachings : Formations (3 mois) ou Accompagnement (6/12/18 mois)
+    // ✅ Coachings (Formations OU Accompagnement)
     coachings: hasFormationPack || hasAccompagnement,
     coachingsArchives: hasFormationPack || hasAccompagnement,
 
-    // ✅ Accompagnement UNIQUEMENT (6/12/18 mois selon pack)
+    // ✅ Accompagnement UNIQUEMENT
     creationSociete: hasAccompagnement,
     monDossier: hasAccompagnement,
     rdvGratuit: hasAccompagnement,
+    messagerie: hasAccompagnement, // 🔒 MESSAGERIE RÉSERVÉE ACCOMPAGNEMENT
 
-    // Nombre de RDV gratuits
-    rdvExpert: pack === 'STARTER' ? 3 : 
-               pack === 'PRO' ? 4 : 
-               pack === 'EXPERT' ? 5 : 
-               0,
-
-    // Durée du pack (en mois)
-    packDuration: pack === 'FORMATION_CREATEUR' || pack === 'FORMATION_AGENT_IMMO' ? 3 :
-                  pack === 'STARTER' ? 6 :
-                  pack === 'PRO' ? 12 :
-                  pack === 'EXPERT' ? 18 :
-                  null,
-
-    // Quelle formation afficher
-    showFormationCreateur: pack === 'FORMATION_CREATEUR' || hasAccompagnement,
-    showFormationAgentImmo: pack === 'FORMATION_AGENT_IMMO' || hasAccompagnement,
+    // ✅ Nombre de RDV gratuits
+    rdvExpert: 
+      pack === 'STARTER' ? 3 : 
+      pack === 'PRO' ? 4 : 
+      pack === 'EXPERT' ? 5 : 
+      0,
   };
 
   return {
     pack,
     hasAccess,
     loading,
-    packExpired,
+    packDuration,
     daysRemaining,
   };
 }

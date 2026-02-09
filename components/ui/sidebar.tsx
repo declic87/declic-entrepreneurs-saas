@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
+import { NotificationBell } from "@/components/ui/notification-bell";
 import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
@@ -96,9 +97,13 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0F172A] text-white flex flex-col z-50 shadow-2xl border-r border-white/5">
-      {/* Header avec nouveau Logo */}
+      {/* Header avec Logo et Notifications */}
       <div className="p-6 border-b border-white/5 bg-slate-900/50">
-        <Logo variant="light" size="sm" className="mb-2" />
+        <div className="flex items-center justify-between mb-2">
+          <Logo variant="light" size="sm" />
+          {/* Cloche de notifications (visible pour tous les rôles) */}
+          <NotificationBell />
+        </div>
         <div className="inline-block px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
           <p className="text-[10px] uppercase tracking-widest text-orange-400 font-bold">
             {roleLabels[currentRole] || currentRole}

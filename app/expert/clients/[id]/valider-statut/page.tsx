@@ -235,28 +235,25 @@ export default function ValiderStatutPage() {
     setSaving(true);
 
     try {
-      console.log("🔄 Validation statut:", selectedStatut, "pour client:", clientId);
+      console.log("🔄 Appel API validation:", selectedStatut, "pour client:", clientId);
 
-      // UPSERT : Update si existe, Insert sinon
-      const { data, error } = await supabase
-        .from("company_creation_data")
-        .upsert({
-          user_id: clientId,
-          company_type: selectedStatut,
-          step: "info_collection",
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
+      // Appeler l'API côté serveur (bypass RLS)
+      const response = await fetch('/api/expert/validate-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId,
+          statutType: selectedStatut
         })
-        .select();
+      });
 
-      if (error) {
-        console.error("❌ Erreur upsert:", error);
-        throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de la validation');
       }
 
-      console.log("✅ Statut validé:", data);
+      console.log("✅ Validation réussie:", result);
 
       alert(`✅ Statut ${selectedStatut} validé pour ${client?.first_name} ${client?.last_name}`);
       router.push(`/expert/clients`);

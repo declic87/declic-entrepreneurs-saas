@@ -153,13 +153,13 @@ export default function ExpertClientsPage() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="text-green-600" size={24} />
                 <div>
-                  <p className="text-2xl font-bold text-green-900">
-                    {
-                      clients.filter((c) => c.company_data?.step === "completed")
-                        .length
-                    }
-                  </p>
-                  <p className="text-xs text-green-600">Onboarding</p>
+                <p className="text-2xl font-bold text-green-900">
+  {
+    clients.filter((c) => c.company_data?.company_type !== null)
+      .length
+  }
+</p>
+<p className="text-xs text-green-600">Onboarding</p>
                 </div>
               </div>
             </CardContent>

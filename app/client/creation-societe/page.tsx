@@ -90,6 +90,13 @@ export default function CreationSocietePage() {
   useEffect(() => {
     if (userId) {
       loadData();
+      
+      // Auto-refresh toutes les 3 secondes
+      const interval = setInterval(() => {
+        loadData();
+      }, 3000);
+      
+      return () => clearInterval(interval);
     }
   }, [userId]);
 
@@ -185,11 +192,11 @@ export default function CreationSocietePage() {
 
     switch (companyData.step) {
       case "rdv_expert":
-        return {
-          label: "Prendre RDV avec un expert",
-          href: "/client/agenda",
-          disabled: false,
-        };
+  return {
+    label: "Prendre RDV avec un expert",
+    href: "https://calendly.com/contact-jj-conseil/rdv-analyste",
+    disabled: false,
+  };
 
       case "info_collection":
         return {

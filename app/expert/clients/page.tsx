@@ -241,13 +241,13 @@ export default function ExpertClientsPage() {
                   </Button>
                 )}
 
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => router.push(`/expert/clients/${client.id}`)}
-                >
-                  Voir le dossier
-                </Button>
+<Button
+  variant="outline"
+  className="w-full"
+  onClick={() => router.push(`/expert/clients/${client.id}/valider-statut`)}
+>
+  Modifier le statut
+</Button>
               </CardContent>
             </Card>
           ))}

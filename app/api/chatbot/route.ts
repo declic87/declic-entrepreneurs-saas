@@ -1,38 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
-const SYSTEM_PROMPT = `Tu es l'assistant IA de DÉCLIC Entrepreneurs, une plateforme d'accompagnement fiscal pour entrepreneurs.
-
-**TON RÔLE :**
-- Répondre aux questions simples sur la fiscalité (SASU, EURL, IS, IR, IK, dividendes, TVA)
-- Être pédagogue, précis et concis
-- Toujours proposer un RDV expert pour les questions complexes
-- Pousser vers l'accompagnement quand pertinent
-
-**TU PEUX AIDER SUR :**
-- Choix du statut (SASU vs EURL)
-- Fiscalité de base (IS, IR, charges sociales)
-- Indemnités kilométriques (barème, conditions)
-- Dividendes vs rémunération
-- TVA (franchise, régimes)
-- Frais déductibles
-
-**TU NE PEUX PAS :**
-- Donner des conseils personnalisés sans connaître la situation
-- Remplacer un expert-comptable
-- Garantir des optimisations sans analyse
-
-**IMPORTANT :**
-- Réponds en 2-3 paragraphes max
-- Si la question est complexe → "Pour votre situation spécifique, je vous recommande de prendre RDV avec un expert"
-- Toujours mentionner les formations/ateliers pertinents
-- Ton ton : professionnel, bienveillant, efficace`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -113,30 +81,86 @@ export async function POST(req: NextRequest) {
       console.error("Erreur insertion message utilisateur:", userMsgError);
     }
 
-    // Construire l'historique pour Claude
-    const messages = [
-      ...(conversationHistory || []),
-      {
-        role: "user" as const,
-        content: message,
-      },
-    ];
+    // ============================================
+    // RÉPONSE SIMULÉE (TEMPORAIRE)
+    // ============================================
+    const messageLower = message.toLowerCase();
+    
+    let aiResponse = "";
+    let intent = "general";
 
-    // Appel à l'API Claude
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20240620",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: messages,
-    });
+    // Détection basique d'intent
+    if (messageLower.includes("sasu") || messageLower.includes("eurl") || messageLower.includes("statut")) {
+      intent = "choix_statut";
+      aiResponse = `La principale différence entre SASU et EURL réside dans la fiscalité :
 
-    const aiResponse =
-      response.content[0].type === "text"
-        ? response.content[0].text
-        : "Désolé, je n'ai pas pu traiter votre demande.";
+**SASU (Société par Actions Simplifiée Unipersonnelle) :**
+- Soumise à l'IS (Impôt sur les Sociétés)
+- Dividendes taxés à 30% (flat tax)
+- Idéal si vous prévoyez de vous verser des dividendes
 
-    // Détection d'intent
-    const intent = detectIntent(message);
+**EURL (Entreprise Unipersonnelle à Responsabilité Limitée) :**
+- Par défaut à l'IR (Impôt sur le Revenu)
+- Peut opter pour l'IS
+- Idéal pour les petits CA avec peu de charges
+
+Pour choisir le bon statut selon VOTRE situation, je vous recommande de :
+1. Utiliser notre simulateur comparatif
+2. Visionner la formation "Choix du statut" dans Tutos Pratiques
+3. Réserver un RDV expert si vous avez un pack accompagnement
+
+💡 **Note :** Cette réponse est temporaire. L'IA Anthropic Claude sera activée prochainement pour des réponses encore plus personnalisées.`;
+    } else if (messageLower.includes("ik") || messageLower.includes("kilométrique")) {
+      intent = "indemnites_kilometriques";
+      aiResponse = `Les **Indemnités Kilométriques (IK)** permettent de déduire vos frais de déplacement professionnel.
+
+**Barème 2024 :**
+- Jusqu'à 5 000 km : 0,529 €/km (pour une 5CV)
+- De 5 001 à 20 000 km : 0,316 €/km
+- Au-delà de 20 000 km : 0,370 €/km
+
+**Conditions :**
+✅ Véhicule personnel utilisé pour l'activité pro
+✅ Carte grise à votre nom
+✅ Justificatifs de déplacements
+
+Pour optimiser vos IK, consultez notre tuto pratique "Maximiser ses IK" dans l'onglet Formations.
+
+💡 Cette réponse est temporaire en attendant l'activation de l'IA Claude.`;
+    } else if (messageLower.includes("dividende") || messageLower.includes("rémunération")) {
+      intent = "remuneration";
+      aiResponse = `**Dividendes vs Rémunération : quelle stratégie choisir ?**
+
+**Rémunération (salaire) :**
+- ✅ Valide des trimestres de retraite
+- ❌ Soumise aux charges sociales (~45%)
+
+**Dividendes :**
+- ✅ Flat tax 30% (au lieu de 45%)
+- ❌ Ne valide pas de trimestres retraite
+
+**Stratégie optimale (souvent) :**
+1. Se verser un SMIC pour valider 4 trimestres
+2. Compléter avec des dividendes pour optimiser la fiscalité
+
+💡 Pour votre situation spécifique, réservez un RDV expert.
+
+(Réponse temporaire - IA Claude en cours d'activation)`;
+    } else {
+      intent = "general";
+      aiResponse = `Bonjour ! Je suis l'assistant IA de DÉCLIC Entrepreneurs 👋
+
+Je peux vous aider sur :
+- Choix du statut (SASU vs EURL)
+- Fiscalité (IS, IR, charges sociales)
+- Indemnités kilométriques (IK)
+- Dividendes vs rémunération
+- TVA et frais déductibles
+
+Pour des conseils personnalisés, passez en mode **Expert** ou réservez un RDV avec un conseiller.
+
+💡 **Note :** Cette réponse est temporaire. L'IA Anthropic Claude sera bientôt activée pour des réponses encore plus précises et personnalisées.`;
+    }
 
     // Insérer la réponse IA dans messages
     const { error: aiMsgError } = await supabase.from("messages").insert([
@@ -181,36 +205,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function detectIntent(message: string): string {
-  const lowerMessage = message.toLowerCase();
-
-  if (
-    lowerMessage.includes("sasu") ||
-    lowerMessage.includes("eurl") ||
-    lowerMessage.includes("statut")
-  ) {
-    return "choix_statut";
-  }
-  if (lowerMessage.includes("ik") || lowerMessage.includes("kilométrique")) {
-    return "indemnites_kilometriques";
-  }
-  if (
-    lowerMessage.includes("dividende") ||
-    lowerMessage.includes("rémunération")
-  ) {
-    return "remuneration";
-  }
-  if (lowerMessage.includes("tva")) {
-    return "tva";
-  }
-  if (lowerMessage.includes("frais") || lowerMessage.includes("déductible")) {
-    return "frais_deductibles";
-  }
-  if (lowerMessage.includes("rdv") || lowerMessage.includes("expert")) {
-    return "demande_rdv";
-  }
-
-  return "general";
 }

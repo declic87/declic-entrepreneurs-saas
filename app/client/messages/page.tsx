@@ -12,7 +12,6 @@ import {
   Loader2,
   MessageCircle,
   Sparkles,
-  CheckCircle2,
 } from "lucide-react";
 
 export default function ClientMessagesPage() {
@@ -78,8 +77,9 @@ export default function ClientMessagesPage() {
           body: JSON.stringify({
             message: messageContent,
             userId,
+            // ⭐ CORRECTION : Ne prendre QUE les messages IA et client
             conversationHistory: messages
-              .filter((m) => m.sender_type !== "expert")
+              .filter((m) => m.sender_type === "ai" || m.sender_type === "client")
               .map((m) => ({
                 role: m.sender_type === "ai" ? "assistant" : "user",
                 content: m.content,
@@ -93,7 +93,6 @@ export default function ClientMessagesPage() {
           throw new Error(data.error);
         }
 
-        // Le message utilisateur et la réponse IA sont déjà insérés côté API
         setAiLoading(false);
       } else {
         // Mode Expert : envoyer directement
@@ -208,7 +207,7 @@ export default function ClientMessagesPage() {
                       ? "bg-amber-500 text-white"
                       : msg.sender_type === "ai"
                       ? "bg-gradient-to-br from-purple-50 to-blue-50 text-slate-900 border border-purple-200"
-                      : "bg-slate-100 text-slate-900"
+                      : "bg-emerald-100 text-slate-900 border border-emerald-200"
                   }`}
                 >
                   {/* Badge type */}
@@ -268,7 +267,7 @@ export default function ClientMessagesPage() {
               placeholder={
                 isAIMode
                   ? "Posez votre question à l'IA..."
-                  : "Écrivez votre message..."
+                  : "Écrivez votre message à l'expert..."
               }
               className="flex-1 px-4 py-3 border rounded-xl focus:ring-2 ring-amber-500/20 outline-none"
               disabled={sending || aiLoading}

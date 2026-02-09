@@ -21,163 +21,87 @@ interface CompanyData {
 }
 
 type StatutType = 
-  | "EI"
-  | "LMNP"
-  | "SCI"
-  | "SAS"
-  | "SASU"
-  | "SARL"
-  | "EURL"
-  | "SASU_IS"
-  | "SASU_IR"
-  | "SELARLU"
-  | "SELARL"
-  | "SELAS"
-  | "SELASU";
+  | "EI" | "LMNP" | "SCI" | "SAS" | "SASU" | "SARL" | "EURL"
+  | "SASU_IS" | "SASU_IR" | "SELARLU" | "SELARL" | "SELAS" | "SELASU";
 
 const STATUTS = [
   {
     type: "EI" as StatutType,
     name: "EI - Entreprise Individuelle",
     description: "Simplicité maximale, patrimoine confondu",
-    avantages: [
-      "Aucun capital requis",
-      "Création gratuite et rapide",
-      "Comptabilité simplifiée",
-      "Régime micro possible",
-    ],
+    avantages: ["Aucun capital requis", "Création gratuite et rapide", "Comptabilité simplifiée"],
   },
   {
     type: "LMNP" as StatutType,
     name: "LMNP - Loueur Meublé Non Professionnel",
     description: "Location meublée, revenus complémentaires",
-    avantages: [
-      "Amortissement du bien",
-      "Déficit imputable",
-      "Régime micro-BIC possible",
-      "Pas de TVA",
-    ],
+    avantages: ["Amortissement du bien", "Déficit imputable", "Régime micro-BIC possible"],
   },
   {
     type: "SCI" as StatutType,
     name: "SCI - Société Civile Immobilière",
     description: "Gestion immobilière à plusieurs",
-    avantages: [
-      "Transmission facilitée",
-      "Gestion collective",
-      "Option IS possible",
-      "Protection du patrimoine",
-    ],
+    avantages: ["Transmission facilitée", "Gestion collective", "Option IS possible"],
   },
   {
     type: "SAS" as StatutType,
     name: "SAS - Société par Actions Simplifiée",
     description: "Flexibilité et croissance, plusieurs associés",
-    avantages: [
-      "Grande liberté statutaire",
-      "Pas de plafond d'associés",
-      "Président assimilé salarié",
-      "Cession d'actions facilitée",
-    ],
+    avantages: ["Grande liberté statutaire", "Pas de plafond d'associés", "Président assimilé salarié"],
   },
   {
     type: "SASU" as StatutType,
     name: "SASU - SAS Unipersonnelle",
     description: "SAS avec un seul associé",
-    avantages: [
-      "Président assimilé salarié",
-      "Pas de cotisations si pas de rémunération",
-      "Dividendes flat tax 30%",
-      "Grande liberté statutaire",
-    ],
+    avantages: ["Président assimilé salarié", "Pas de cotisations si pas de rémunération", "Dividendes flat tax 30%"],
   },
   {
     type: "SARL" as StatutType,
     name: "SARL - Société À Responsabilité Limitée",
     description: "Statut classique, cadre sécurisé",
-    avantages: [
-      "Cadre légal bien défini",
-      "Gérant majoritaire TNS",
-      "Protection sociale complète",
-      "Capital minimum 1€",
-    ],
+    avantages: ["Cadre légal bien défini", "Gérant majoritaire TNS", "Protection sociale complète"],
   },
   {
     type: "EURL" as StatutType,
     name: "EURL - SARL Unipersonnelle",
     description: "SARL avec un seul associé",
-    avantages: [
-      "Gérant majoritaire TNS",
-      "Cotisations sociales faibles",
-      "Simplicité de gestion",
-      "Option IS ou IR",
-    ],
+    avantages: ["Gérant majoritaire TNS", "Cotisations sociales faibles", "Simplicité de gestion"],
   },
   {
     type: "SASU_IS" as StatutType,
     name: "SASU IS - SASU à l'Impôt sur les Sociétés",
     description: "SASU avec imposition sur les bénéfices",
-    avantages: [
-      "IS à 15% jusqu'à 42 500€",
-      "Optimisation fiscale possible",
-      "Charges déductibles",
-      "Dividendes flat tax 30%",
-    ],
+    avantages: ["IS à 15% jusqu'à 42 500€", "Optimisation fiscale possible", "Charges déductibles"],
   },
   {
     type: "SASU_IR" as StatutType,
     name: "SASU IR - SASU à l'Impôt sur le Revenu",
     description: "SASU avec imposition sur le dirigeant (5 ans max)",
-    avantages: [
-      "Déficit imputable sur revenus",
-      "Option pendant 5 ans",
-      "Pas d'IS la première année",
-      "Idéal pour démarrage",
-    ],
+    avantages: ["Déficit imputable sur revenus", "Option pendant 5 ans", "Pas d'IS la première année"],
   },
   {
     type: "SELARLU" as StatutType,
     name: "SELARLU - SELARL Unipersonnelle",
     description: "Professions libérales réglementées, associé unique",
-    avantages: [
-      "Réservé aux professions libérales",
-      "Protection du patrimoine",
-      "Gérant TNS",
-      "Cotisations CIPAV/CARPIMKO",
-    ],
+    avantages: ["Réservé aux professions libérales", "Protection du patrimoine", "Gérant TNS"],
   },
   {
     type: "SELARL" as StatutType,
     name: "SELARL - Société d'Exercice Libéral À Responsabilité Limitée",
     description: "SELARL avec plusieurs associés",
-    avantages: [
-      "Professions libérales réglementées",
-      "Cadre juridique SARL",
-      "Plusieurs associés possibles",
-      "Protection responsabilité",
-    ],
+    avantages: ["Professions libérales réglementées", "Cadre juridique SARL", "Plusieurs associés possibles"],
   },
   {
     type: "SELAS" as StatutType,
     name: "SELAS - Société d'Exercice Libéral par Actions Simplifiée",
     description: "Professions libérales, cadre SAS",
-    avantages: [
-      "Grande flexibilité",
-      "Président assimilé salarié",
-      "Professions libérales",
-      "Transmission facilitée",
-    ],
+    avantages: ["Grande flexibilité", "Président assimilé salarié", "Professions libérales"],
   },
   {
     type: "SELASU" as StatutType,
     name: "SELASU - SELAS Unipersonnelle",
     description: "SELAS avec un seul associé",
-    avantages: [
-      "Président assimilé salarié",
-      "Professions libérales",
-      "Associé unique",
-      "Protection sociale salariée",
-    ],
+    avantages: ["Président assimilé salarié", "Professions libérales", "Associé unique"],
   },
 ];
 
@@ -235,31 +159,27 @@ export default function ValiderStatutPage() {
     setSaving(true);
 
     try {
-      console.log("🔄 Appel API validation:", selectedStatut, "pour client:", clientId);
+      console.log("🔄 UPDATE SQL direct:", selectedStatut, "pour client:", clientId);
 
-      // Appeler l'API côté serveur (bypass RLS)
-      const response = await fetch('/api/expert/validate-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId,
-          statutType: selectedStatut
-        })
+      // Utiliser RPC pour bypass RLS
+      const { data, error } = await supabase.rpc('update_company_status', {
+        p_user_id: clientId,
+        p_company_type: selectedStatut,
+        p_step: 'info_collection'
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de la validation');
+      if (error) {
+        console.error("❌ Erreur RPC:", error);
+        throw error;
       }
 
-      console.log("✅ Validation réussie:", result);
+      console.log("✅ Statut validé via RPC");
 
       alert(`✅ Statut ${selectedStatut} validé pour ${client?.first_name} ${client?.last_name}`);
       router.push(`/expert/clients`);
     } catch (err: any) {
       console.error("❌ Erreur validation:", err);
-      alert(`Erreur lors de la validation: ${err.message}`);
+      alert(`Erreur: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -280,7 +200,6 @@ export default function ValiderStatutPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-8 space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#123055] flex items-center gap-2">
           <Building size={32} />
@@ -291,7 +210,6 @@ export default function ValiderStatutPage() {
         </p>
       </div>
 
-      {/* Statut actuel */}
       {companyData?.company_type && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">
@@ -310,7 +228,6 @@ export default function ValiderStatutPage() {
         </Card>
       )}
 
-      {/* Recherche */}
       <div className="relative">
         <Search className="absolute left-3 top-3 text-slate-400" size={20} />
         <input
@@ -322,7 +239,6 @@ export default function ValiderStatutPage() {
         />
       </div>
 
-      {/* Liste des statuts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto">
         {filteredStatuts.map((statut) => (
           <Card
@@ -372,7 +288,6 @@ export default function ValiderStatutPage() {
         </p>
       )}
 
-      {/* Actions */}
       <div className="flex gap-4 sticky bottom-0 bg-white pt-4 border-t">
         <Button
           variant="outline"

@@ -125,10 +125,13 @@ export function useUserAccess(): UserAccess {
     simulateurs: true,
     expertPayant: true,
 
-    // ✅ Formations spécifiques
-    formationCreateur: hasFormationCreateur || hasAccompagnement,
-    formationAgentImmo: hasFormationAgentImmo || hasAccompagnement,
-    formationsAccompagnement: hasAccompagnement, // Contenu spécifique aux packs accompagnement
+    // ✅ Formations spécifiques - CORRECTION ICI
+    // UNIQUEMENT le pack concerné peut y accéder (pas les accompagnements)
+    formationCreateur: hasFormationCreateur,
+    formationAgentImmo: hasFormationAgentImmo,
+    
+    // ✅ Formations accompagnement (contenu exclusif STARTER/PRO/EXPERT)
+    formationsAccompagnement: hasAccompagnement,
 
     // ✅ Coachings (Formations OU Accompagnement)
     coachings: hasFormationPack || hasAccompagnement,

@@ -10,7 +10,6 @@ import {
   Upload,
   FileText,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   Trash2,
   Eye,
@@ -72,13 +71,6 @@ export default function DocumentsUploadPage() {
     }
   }, [userId]);
 
-  // ⭐ AUTO-VALIDATION quand tous les documents sont uploadés
-  useEffect(() => {
-    if (allDocumentsUploaded && !validating) {
-      autoValidate();
-    }
-  }, [documents]);
-
   async function fetchUser() {
     const {
       data: { user },
@@ -112,6 +104,17 @@ export default function DocumentsUploadPage() {
     const result = await uploadDocument(file, type);
     if (result.success) {
       await loadDocuments();
+      
+      // Vérifier si tous les documents sont uploadés
+      const updatedDocs = await supabase
+        .from("company_documents")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("source", "upload");
+      
+      if (updatedDocs.data && updatedDocs.data.length === 3) {
+        await autoValidate();
+      }
     } else {
       alert(`Erreur: ${result.error}`);
     }
@@ -135,9 +138,8 @@ export default function DocumentsUploadPage() {
     }
   }
 
-  // ⭐ AUTO-VALIDATION : Passer à l'étape suivante
   async function autoValidate() {
-    if (!userId) return;
+    if (!userId || validating) return;
     
     setValidating(true);
     
@@ -162,10 +164,6 @@ export default function DocumentsUploadPage() {
     } finally {
       setValidating(false);
     }
-  }
-
-  async function handleContinue() {
-    router.push("/client/creation-societe");
   }
 
   function getDocumentByType(type: string) {
@@ -230,9 +228,7 @@ export default function DocumentsUploadPage() {
                   {/* Icon */}
                   <div
                     className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      existingDoc
-                        ? "bg-green-100"
-                        : "bg-slate-100"
+                      existingDoc ? "bg-green-100" : "bg-slate-100"
                     }`}
                   >
                     {existingDoc ? (
@@ -300,10 +296,7 @@ export default function DocumentsUploadPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              handleFileUpload(
-                                file,
-                                docType.type as any
-                              );
+                              handleFileUpload(file, docType.type as any);
                             }
                           }}
                           disabled={uploading}
@@ -358,7 +351,10 @@ export default function DocumentsUploadPage() {
               </div>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
-                onClick={handleContinue}
+                onClick={() => {
+                  console.log("🔄 Redirection vers dashboard...");
+                  router.push("/client/creation-societe");
+                }}
               >
                 Retour au tableau de bord
                 <ArrowRight className="ml-2" size={16} />

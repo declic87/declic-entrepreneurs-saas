@@ -155,26 +155,26 @@ export default function ValiderStatutPage() {
       alert("Veuillez sélectionner un statut juridique");
       return;
     }
-
+  
     setSaving(true);
-
+  
     try {
-      console.log("🔄 UPDATE SQL direct:", selectedStatut, "pour client:", clientId);
-
-      // Utiliser RPC pour bypass RLS
+      console.log("🔄 Appel RPC update_company_status:", selectedStatut, "pour client:", clientId);
+  
+      // Appeler la fonction SQL
       const { data, error } = await supabase.rpc('update_company_status', {
         p_user_id: clientId,
         p_company_type: selectedStatut,
         p_step: 'info_collection'
       });
-
+  
       if (error) {
         console.error("❌ Erreur RPC:", error);
         throw error;
       }
-
-      console.log("✅ Statut validé via RPC");
-
+  
+      console.log("✅ Statut validé via RPC:", data);
+  
       alert(`✅ Statut ${selectedStatut} validé pour ${client?.first_name} ${client?.last_name}`);
       router.push(`/expert/clients`);
     } catch (err: any) {

@@ -28,12 +28,12 @@ const DOCUMENTS_TO_GENERATE = [
     description: "Document juridique définissant les règles de fonctionnement"
   },
   {
-    type: "m0",
-    label: "Formulaire M0",
-    description: "Déclaration de création d'entreprise"
+    type: "attestation_souscription",
+    label: "Attestation de souscription",
+    description: "Attestation du dépôt du capital social"
   },
   {
-    type: "actes",
+    type: "pv_constitution",
     label: "Procès-verbal de constitution",
     description: "Acte actant la création de la société"
   },
@@ -74,7 +74,6 @@ export default function DocumentGenerationPage() {
 
       setUserId(userData.id);
 
-      // Charger les documents générés
       const { data: docs, error: docsError } = await supabase
         .from("company_documents")
         .select("*")
@@ -109,67 +108,30 @@ export default function DocumentGenerationPage() {
     setError(null);
 
     try {
-      console.log("🚀 Lancement de la génération automatique...");
+      console.log("🚀 Appel API de génération...");
 
-      // Simuler la génération de documents (à remplacer par votre API de génération)
-      for (const docType of DOCUMENTS_TO_GENERATE) {
-        // Vérifier si le document existe déjà
-        const existingDoc = generatedDocs.find(d => d.document_type === docType.type);
-        
-        if (!existingDoc) {
-          console.log(`📄 Génération de ${docType.label}...`);
+      const response = await fetch('/api/generate-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
 
-          // TODO: Remplacer par votre vraie logique de génération
-          // Ici on crée juste une entrée en base de données
-          const { data: newDoc, error: insertError } = await supabase
-            .from("company_documents")
-            .insert({
-              user_id: userId,
-              document_type: docType.type,
-              file_name: `${docType.type}_${Date.now()}.pdf`,
-              file_path: `${userId}/generated/${docType.type}_${Date.now()}.pdf`,
-              source: "generated",
-              status: "pending",
-              generated_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
+      const result = await response.json();
 
-          if (insertError) {
-            console.error(`Erreur génération ${docType.type}:`, insertError);
-            throw new Error(`Échec de génération: ${docType.label}`);
-          }
-
-          console.log(`✅ ${docType.label} généré`);
-
-          // Petite pause pour simuler le traitement
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur de génération');
       }
 
-      // Recharger les documents
+      console.log("✅ Génération réussie:", result);
+
       await loadUserAndDocuments();
 
-      // Mettre à jour le workflow vers l'étape suivante
-      const { error: workflowError } = await supabase
-        .from("company_creation_data")
-        .update({
-          step: "signature",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId)
-        .eq("step", "documents_generation");
-
-      if (workflowError) {
-        console.error("Erreur mise à jour workflow:", workflowError);
-      } else {
-        console.log("✅ Workflow mis à jour vers 'signature'");
-      }
-
-      alert("✅ Tous les documents ont été générés avec succès !");
+      alert(`✅ ${result.message}`);
       
       // Rediriger vers la page principale du workflow
-      window.location.href = "/client/creation-societe";
+      setTimeout(() => {
+        window.location.href = "/client/creation-societe";
+      }, 1500);
 
     } catch (err: any) {
       console.error("❌ Erreur génération:", err);
@@ -219,7 +181,6 @@ export default function DocumentGenerationPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-2xl text-slate-900">
@@ -257,7 +218,6 @@ export default function DocumentGenerationPage() {
         </CardContent>
       </Card>
 
-      {/* Erreur globale */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle size={18} />
@@ -265,7 +225,6 @@ export default function DocumentGenerationPage() {
         </Alert>
       )}
 
-      {/* Liste des documents */}
       <div className="grid gap-4">
         {DOCUMENTS_TO_GENERATE.map((docType) => {
           const doc = docsMap[docType.type];
@@ -325,7 +284,6 @@ export default function DocumentGenerationPage() {
         })}
       </div>
 
-      {/* Bouton de génération */}
       {!allGenerated && (
         <Card className="border-blue-300 bg-blue-50">
           <CardContent className="p-6">
@@ -361,7 +319,6 @@ export default function DocumentGenerationPage() {
         </Card>
       )}
 
-      {/* Message final */}
       {allGenerated && (
         <Alert className="border-green-300 bg-green-50">
           <CheckCircle2 className="text-green-600" size={18} />

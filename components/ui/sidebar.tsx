@@ -34,6 +34,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Remboursements", href: "/admin/remboursements", icon: RefreshCw },
     { label: "Tâches", href: "/admin/taches", icon: CheckCircle },
     { label: "Agendas", href: "/admin/agendas", icon: Calendar },
+    { label: "Validation Documents", href: "/admin/documents-validation", icon: FileText },
     { label: "Messages", href: "/admin/messages", icon: MessageSquare },
     { label: "Statistiques", href: "/admin/stats", icon: BarChart3 },
     { label: "Paramètres", href: "/admin/settings", icon: Settings },

@@ -51,6 +51,12 @@ export default function DocumentUploadPage() {
     loadUserAndDocuments();
   }, []);
 
+  useEffect(() => {
+    if (documents.length > 0 && userId) {
+      checkAndUpdateWorkflow();
+    }
+  }, [documents, userId]);
+
   async function loadUserAndDocuments() {
     try {
       setLoading(true);
@@ -94,6 +100,39 @@ export default function DocumentUploadPage() {
       setError("Une erreur est survenue");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function checkAndUpdateWorkflow() {
+    if (!userId) return;
+
+    const uploadedDocs = documents.reduce((acc, doc) => {
+      acc[doc.document_type] = doc;
+      return acc;
+    }, {} as Record<string, CompanyDocument>);
+
+    const allApproved = REQUIRED_DOCUMENTS.every(docType => {
+      const doc = uploadedDocs[docType.type];
+      return doc && doc.status === 'approved';
+    });
+
+    if (allApproved) {
+      console.log("✅ Tous les documents validés, mise à jour du workflow...");
+      
+      const { error } = await supabase
+        .from('company_creation_data')
+        .update({ 
+          step: 'documents_generation',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('step', 'documents_upload');
+
+      if (error) {
+        console.error("Erreur mise à jour workflow:", error);
+      } else {
+        console.log("✅ Workflow mis à jour vers 'documents_generation'");
+      }
     }
   }
 

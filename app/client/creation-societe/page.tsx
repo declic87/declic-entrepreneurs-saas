@@ -192,11 +192,11 @@ export default function CreationSocietePage() {
 
     switch (companyData.step) {
       case "rdv_expert":
-  return {
-    label: "Prendre RDV avec un expert",
-    href: "https://calendly.com/contact-jj-conseil/rdv-expert",
-    disabled: false,
-  };
+        return {
+          label: "Prendre RDV avec un expert",
+          href: "https://calendly.com/contact-jj-conseil/rdv-expert",
+          disabled: false,
+        };
 
       case "info_collection":
         return {
@@ -214,9 +214,9 @@ export default function CreationSocietePage() {
 
       case "documents_generation":
         return {
-          label: "Génération en cours...",
-          href: "#",
-          disabled: true,
+          label: "Générer les documents",
+          href: "/client/creation-societe/generation",
+          disabled: false,
         };
 
       case "signature":

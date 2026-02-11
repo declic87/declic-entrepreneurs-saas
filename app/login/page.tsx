@@ -4,10 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Logo } from '@/components/ui/logo';
-import { Loader2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,7 +12,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -38,100 +34,129 @@ export default function LoginPage() {
         return;
       }
 
-      const { data: userData } = await supabase
+      // ✅ CORRECTION : Récupération du rôle avec auth_id (pas authId)
+      const { data: userData, error: roleError } = await supabase
         .from('users')
         .select('role')
-        .eq('auth_id', data.session?.user.id)
+        .eq('auth_id', data.session?.user.id) // ✅ auth_id au lieu de authId
         .single();
 
-      const role = userData?.role?.toLowerCase() || 'client';
+      if (roleError) {
+        console.error("Erreur rôle:", roleError);
+      }
 
+      const role = (userData?.role || 'CLIENT').toUpperCase(); // ✅ Normaliser en majuscules
+
+      console.log("🔍 Login - Rôle détecté:", role);
+
+      // ✅ CORRECTION : Mapping complet avec tous les rôles
       const routes: Record<string, string> = {
-        admin: '/admin',
-        hos: '/commercial',
-        closer: '/commercial',
-        setter: '/commercial',
-        expert: '/expert/clients',
-        client: '/client'
+        ADMIN: '/admin',
+        HOS: '/commercial',
+        CLOSER: '/commercial',
+        SETTER: '/commercial',
+        COMMERCIAL: '/commercial',
+        EXPERT: '/expert',
+        CLIENT: '/client'
       };
 
-      router.push(routes[role] || '/client');
+      const redirectUrl = routes[role] || '/client';
+      console.log("🔍 Login - Redirection vers:", redirectUrl);
+
+      router.push(redirectUrl);
       router.refresh();
 
     } catch (err) {
+      console.error("Erreur login:", err);
       setError('Erreur système. Réessayez plus tard.');
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
-      <div className="mb-8">
-        <Link href="/">
-          <Logo size="lg" showText variant="dark" />
-        </Link>
-      </div>
-
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <h1 className="text-2xl font-bold text-[#123055] text-center mb-6">
-          Connexion
-        </h1>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-slate-700">Email</label>
-            <Input
-              type="email"
-              placeholder="contact@jj-conseil.fr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Mot de passe
-            </label>
-            <Input
-              type="password"
-              placeholder="••••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
-
-          <Button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white py-5 text-base"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-2" size={18} />
-                Connexion...
-              </>
-            ) : (
-              'Se connecter'
-            )}
-          </Button>
-        </form>
-
-        <p className="text-center text-sm text-slate-600 mt-6">
-          Pas encore de compte ?{" "}
-          <Link href="https://calendly.com/contact-jj-conseil/rdv-analyste" target="_blank" className="text-[#F59E0B] hover:underline">
-            Réserver un diagnostic
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 font-sans">
+      <div className="w-full max-w-md">
+        {/* Logo / Branding */}
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-block group">
+            <span className="text-4xl font-black italic tracking-tighter uppercase">
+              Declic<span className="text-orange-500 group-hover:text-black transition-colors">-Studio</span>
+            </span>
           </Link>
-        </p>
+          <div className="h-1.5 w-20 bg-black mx-auto mt-2"></div>
+        </div>
+
+        {/* Card de Connexion Brutaliste */}
+        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+          <h2 className="text-2xl font-black text-black mb-8 uppercase italic">Connexion_Espace</h2>
+          
+          {error && (
+            <div className="mb-6 p-4 border-2 border-red-500 bg-red-50 text-red-600 text-xs font-black uppercase">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                <Mail size={12} /> Email de travail
+              </label>
+              <input 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+                placeholder="nom@declic.studio" 
+                className="w-full px-0 py-3 text-lg font-bold border-b-4 border-gray-100 focus:border-orange-500 outline-none transition-all placeholder:text-gray-200"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                <Lock size={12} /> Mot de passe
+              </label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                placeholder="••••••••" 
+                className="w-full px-0 py-3 text-lg font-bold border-b-4 border-gray-100 focus:border-orange-500 outline-none transition-all placeholder:text-gray-200"
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full group relative bg-black hover:bg-orange-500 text-white font-black py-4 uppercase italic transition-all disabled:opacity-50 flex items-center justify-center gap-3 overflow-hidden"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <>
+                  Entrer dans le studio
+                  <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col gap-4">
+            <a 
+              href="https://calendly.com/contact-jj-conseil/rdv-analyste" 
+              target="_blank"
+              className="text-[10px] font-black text-orange-500 hover:text-black uppercase text-center tracking-tighter transition-colors"
+            >
+              Pas de compte ? Réserver un diagnostic gratuit →
+            </a>
+          </div>
+        </div>
+
+        <div className="text-center mt-10">
+          <Link href="/" className="text-[10px] font-black text-gray-300 hover:text-black uppercase tracking-widest transition-colors">
+            ← Retourner à l'accueil
+          </Link>
+        </div>
       </div>
     </div>
   );

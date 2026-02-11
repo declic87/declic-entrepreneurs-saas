@@ -18,11 +18,10 @@ interface CompanyDocument {
   file_name: string;
   file_path: string;
   uploaded_at: string;
-  status: string; // 'pending', 'approved', 'rejected'
+  status: string;
   rejection_reason?: string;
 }
 
-// Types de documents requis pour l'upload manuel (pas les docs auto-générés)
 const REQUIRED_DOCUMENTS = [
   { 
     type: "piece_identite", 
@@ -56,7 +55,6 @@ export default function DocumentUploadPage() {
     try {
       setLoading(true);
       
-      // 1️⃣ Récupérer l'utilisateur connecté
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
@@ -64,7 +62,6 @@ export default function DocumentUploadPage() {
         return;
       }
 
-      // 2️⃣ Récupérer l'ID user depuis la table users
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("id")
@@ -78,12 +75,11 @@ export default function DocumentUploadPage() {
 
       setUserId(userData.id);
 
-      // 3️⃣ Charger les documents existants (seulement les uploadés manuellement)
       const { data: docs, error: docsError } = await supabase
         .from("company_documents")
         .select("*")
         .eq("user_id", userData.id)
-        .eq("source", "upload") // Filtrer uniquement les documents uploadés
+        .eq("source", "upload")
         .order("uploaded_at", { ascending: false });
 
       if (docsError) {
@@ -111,8 +107,7 @@ export default function DocumentUploadPage() {
     setError(null);
 
     try {
-      // 1️⃣ Valider le fichier
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         throw new Error("Le fichier ne doit pas dépasser 10MB");
       }
@@ -129,7 +124,6 @@ export default function DocumentUploadPage() {
         throw new Error("Format non autorisé. Utilisez PDF, JPG ou PNG");
       }
 
-      // 2️⃣ Générer un nom de fichier unique
       const fileExtension = file.name.split('.').pop();
       const timestamp = Date.now();
       const fileName = `${documentType}_${timestamp}.${fileExtension}`;
@@ -137,7 +131,6 @@ export default function DocumentUploadPage() {
 
       console.log("📤 Upload vers company-documents:", filePath);
 
-      // 3️⃣ Upload vers Supabase Storage (bucket company-documents)
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('company-documents')
         .upload(filePath, file, {
@@ -152,7 +145,6 @@ export default function DocumentUploadPage() {
 
       console.log("✅ Fichier uploadé:", uploadData);
 
-      // 4️⃣ Enregistrer dans la base de données
       const { data: dbData, error: dbError } = await supabase
         .from("company_documents")
         .insert({
@@ -171,14 +163,12 @@ export default function DocumentUploadPage() {
 
       if (dbError) {
         console.error("❌ Erreur DB:", dbError);
-        // Nettoyer le fichier uploadé si l'insertion DB échoue
         await supabase.storage.from('company-documents').remove([filePath]);
         throw new Error("Erreur lors de l'enregistrement en base");
       }
 
       console.log("✅ Document enregistré en DB:", dbData);
 
-      // 5️⃣ Recharger les documents
       await loadUserAndDocuments();
 
       alert(`✅ Document "${file.name}" uploadé avec succès !`);
@@ -195,7 +185,6 @@ export default function DocumentUploadPage() {
     if (!confirm(`Supprimer ${doc.file_name} ?`)) return;
 
     try {
-      // 1️⃣ Supprimer du storage
       const { error: storageError } = await supabase.storage
         .from('company-documents')
         .remove([doc.file_path]);
@@ -204,7 +193,6 @@ export default function DocumentUploadPage() {
         console.error("Erreur suppression storage:", storageError);
       }
 
-      // 2️⃣ Supprimer de la DB
       const { error: dbError } = await supabase
         .from("company_documents")
         .delete()
@@ -214,7 +202,6 @@ export default function DocumentUploadPage() {
         throw new Error("Erreur lors de la suppression");
       }
 
-      // 3️⃣ Recharger
       await loadUserAndDocuments();
       alert("✅ Document supprimé");
     } catch (err: any) {
@@ -250,7 +237,6 @@ export default function DocumentUploadPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-2xl text-slate-900">
@@ -290,7 +276,6 @@ export default function DocumentUploadPage() {
         </CardContent>
       </Card>
 
-      {/* Erreur globale */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle size={18} />
@@ -298,7 +283,6 @@ export default function DocumentUploadPage() {
         </Alert>
       )}
 
-      {/* Liste des documents */}
       <div className="grid gap-4">
         {REQUIRED_DOCUMENTS.map((docType) => {
           const doc = uploadedDocs[docType.type];
@@ -308,14 +292,12 @@ export default function DocumentUploadPage() {
             <Card key={docType.type} className="border-slate-200">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
-                  {/* Info document */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-bold text-slate-900">{docType.label}</h3>
                     </div>
                     <p className="text-sm text-slate-600 mb-3">{docType.description}</p>
 
-                    {/* État du document */}
                     {doc ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -355,7 +337,6 @@ export default function DocumentUploadPage() {
                     )}
                   </div>
 
-                  {/* Bouton upload */}
                   <div className="flex-shrink-0">
                     <label className="block">
                       <input
@@ -367,7 +348,7 @@ export default function DocumentUploadPage() {
                           if (file) {
                             handleFileUpload(docType.type, file);
                           }
-                          e.target.value = ''; // Reset input
+                          e.target.value = '';
                         }}
                         className="hidden"
                       />
@@ -412,7 +393,6 @@ export default function DocumentUploadPage() {
         })}
       </div>
 
-      {/* Message final */}
       {allRequiredUploaded && (
         <Alert className="border-amber-300 bg-amber-50">
           <AlertCircle className="text-amber-600" size={18} />

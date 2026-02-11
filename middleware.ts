@@ -37,7 +37,15 @@ export async function middleware(request: NextRequest) {
 
   // 2. Intelligence des Rôles (RBAC)
   if (session) {
-    const role = session.user.user_metadata?.role?.toUpperCase() || 'CLIENT'
+    // ✅ CORRECTION : Récupérer le rôle depuis la table users
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('auth_id', session.user.id)
+      .single()
+
+    const role = (userData?.role || 'CLIENT').toUpperCase()
+    console.log("🔍 Middleware - Rôle détecté:", role, "pour path:", path)
 
     // Redirection automatique depuis le login ou le dashboard racine
     if (path === '/auth/login' || path === '/dashboard' || path === '/login') {
@@ -46,15 +54,24 @@ export async function middleware(request: NextRequest) {
         HOS: '/commercial',
         CLOSER: '/commercial',
         SETTER: '/commercial',
+        COMMERCIAL: '/commercial',
         EXPERT: '/expert',
         CLIENT: '/client',
       }
-      return NextResponse.redirect(new URL(routes[role] || '/client', request.url))
+      const redirectUrl = routes[role] || '/client'
+      console.log("🔍 Middleware - Redirection vers:", redirectUrl)
+      return NextResponse.redirect(new URL(redirectUrl, request.url))
     }
 
-    // Protection des accès croisés (ex: un client ne peut pas aller sur /admin)
+    // ✅ Protection des accès croisés
     if (path.startsWith('/admin') && role !== 'ADMIN') {
+      console.log("❌ Middleware - Accès ADMIN refusé pour rôle:", role)
       return NextResponse.redirect(new URL('/client', request.url))
+    }
+
+    if (path.startsWith('/client') && role === 'ADMIN') {
+      console.log("⚠️ Middleware - ADMIN accède à /client (autorisé)")
+      // Autoriser l'admin à accéder à /client (pour tests)
     }
   }
 

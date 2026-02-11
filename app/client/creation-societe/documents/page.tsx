@@ -338,53 +338,55 @@ export default function DocumentUploadPage() {
                   </div>
 
                   <div className="flex-shrink-0">
-                    <label className="block">
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                        disabled={isUploading || (doc?.status === 'approved')}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleFileUpload(docType.type, file);
-                          }
-                          e.target.value = '';
-                        }}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        disabled={isUploading || (doc?.status === 'approved')}
-                        className={`
-                          ${doc?.status === 'approved'
-                            ? 'bg-green-500 hover:bg-green-600' 
-                            : 'bg-amber-500 hover:bg-amber-600'
-                          } text-white
-                        `}
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="animate-spin mr-2" size={16} />
-                            Upload...
-                          </>
-                        ) : doc?.status === 'approved' ? (
-                          <>
-                            <CheckCircle2 className="mr-2" size={16} />
-                            Validé
-                          </>
-                        ) : doc ? (
-                          <>
-                            <Upload className="mr-2" size={16} />
-                            Remplacer
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="mr-2" size={16} />
-                            Uploader
-                          </>
-                        )}
-                      </Button>
-                    </label>
+                    <input
+                      id={`file-input-${docType.type}`}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      disabled={isUploading || (doc?.status === 'approved')}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload(docType.type, file);
+                        }
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      disabled={isUploading || (doc?.status === 'approved')}
+                      onClick={() => {
+                        document.getElementById(`file-input-${docType.type}`)?.click();
+                      }}
+                      className={`
+                        ${doc?.status === 'approved'
+                          ? 'bg-green-500 hover:bg-green-600' 
+                          : 'bg-amber-500 hover:bg-amber-600'
+                        } text-white
+                      `}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="animate-spin mr-2" size={16} />
+                          Upload...
+                        </>
+                      ) : doc?.status === 'approved' ? (
+                        <>
+                          <CheckCircle2 className="mr-2" size={16} />
+                          Validé
+                        </>
+                      ) : doc ? (
+                        <>
+                          <Upload className="mr-2" size={16} />
+                          Remplacer
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2" size={16} />
+                          Uploader
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </CardContent>

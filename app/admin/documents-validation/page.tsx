@@ -85,21 +85,7 @@ export default function AdminDocumentValidation() {
 
       let query = supabase
         .from("company_documents")
-        .select(`
-          id,
-          user_id,
-          document_type,
-          file_name,
-          file_path,
-          uploaded_at,
-          status,
-          rejection_reason,
-          users!company_documents_user_id_fkey (
-            email,
-            first_name,
-            last_name
-          )
-        `)
+        .select("*")
         .eq("source", "upload")
         .order("uploaded_at", { ascending: false });
 
@@ -111,26 +97,36 @@ export default function AdminDocumentValidation() {
         query = query.eq("status", "rejected");
       }
 
-      const { data, error } = await query;
+      const { data: docs, error } = await query;
 
       if (error) {
-        console.error("Erreur chargement:", error);
+        console.error("Erreur chargement documents:", error);
         return;
       }
 
-      const formatted = (data || []).map((doc: any) => ({
-        id: doc.id,
-        user_id: doc.user_id,
-        client_email: doc.users?.email || "N/A",
-        client_name: `${doc.users?.first_name || ""} ${doc.users?.last_name || ""}`.trim() || "N/A",
-        document_type: doc.document_type,
-        file_name: doc.file_name,
-        file_path: doc.file_path,
-        uploaded_at: doc.uploaded_at,
-        status: doc.status,
-        rejection_reason: doc.rejection_reason,
-      }));
+      const userIds = [...new Set((docs || []).map(d => d.user_id))];
+      const { data: users } = await supabase
+        .from("users")
+        .select("id, email, first_name, last_name")
+        .in("id", userIds);
 
+      const formatted = (docs || []).map((doc: any) => {
+        const user = users?.find(u => u.id === doc.user_id);
+        return {
+          id: doc.id,
+          user_id: doc.user_id,
+          client_email: user?.email || "N/A",
+          client_name: `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "N/A",
+          document_type: doc.document_type,
+          file_name: doc.file_name,
+          file_path: doc.file_path,
+          uploaded_at: doc.uploaded_at,
+          status: doc.status,
+          rejection_reason: doc.rejection_reason,
+        };
+      });
+
+      console.log("📄 Documents chargés:", formatted.length);
       setDocuments(formatted);
     } catch (err) {
       console.error("Erreur:", err);

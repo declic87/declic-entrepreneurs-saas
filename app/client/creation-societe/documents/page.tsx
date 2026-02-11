@@ -1,332 +1,409 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { useRouter } from "next/navigation";
-import { useDocumentUpload } from "@/hooks/useDocumentUpload";
+import { Upload, FileText, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Upload,
-  FileText,
-  CheckCircle2,
-  Loader2,
-  Trash2,
-  Eye,
-  ArrowRight,
-} from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface Document {
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+interface CompanyDocument {
   id: string;
   document_type: string;
   file_name: string;
   file_path: string;
-  status: string;
   uploaded_at: string;
+  status: string; // 'pending', 'approved', 'rejected'
+  rejection_reason?: string;
 }
 
-const DOCUMENT_TYPES = [
-  {
-    type: "piece_identite",
-    label: "Pièce d'identité",
-    description: "CNI (recto-verso) ou Passeport",
-    required: true,
+// Types de documents requis pour l'upload manuel (pas les docs auto-générés)
+const REQUIRED_DOCUMENTS = [
+  { 
+    type: "piece_identite", 
+    label: "Pièce d'identité", 
+    description: "CNI, Passeport ou Titre de séjour" 
   },
-  {
-    type: "justificatif_domicile",
-    label: "Justificatif de domicile",
-    description: "Moins de 3 mois ou avenant au bail",
-    required: true,
+  { 
+    type: "justificatif_domicile", 
+    label: "Justificatif de domicile", 
+    description: "Moins de 3 mois (facture, quittance...)" 
   },
-  {
-    type: "attestation_depot_capital",
-    label: "Attestation de dépôt de capital",
-    description: "Fournie par votre banque",
-    required: true,
+  { 
+    type: "attestation_depot_capital", 
+    label: "Attestation dépôt capital", 
+    description: "Attestation de la banque" 
   },
 ];
 
-export default function DocumentsUploadPage() {
-  const router = useRouter();
+export default function DocumentUploadPage() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<CompanyDocument[]>([]);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [validating, setValidating] = useState(false);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { uploadDocument, deleteDocument, getDocumentUrl, uploading, progress } =
-    useDocumentUpload(userId || "");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUser();
+    loadUserAndDocuments();
   }, []);
 
-  useEffect(() => {
-    if (userId) {
-      loadDocuments();
-    }
-  }, [userId]);
+  async function loadUserAndDocuments() {
+    try {
+      setLoading(true);
+      
+      // 1️⃣ Récupérer l'utilisateur connecté
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        setError("Vous devez être connecté");
+        return;
+      }
 
-  async function fetchUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: userData } = await supabase
+      // 2️⃣ Récupérer l'ID user depuis la table users
+      const { data: userData, error: userError } = await supabase
         .from("users")
         .select("id")
         .eq("auth_id", user.id)
         .single();
-      if (userData) setUserId(userData.id);
-    }
-    setLoading(false);
-  }
 
-  async function loadDocuments() {
-    const { data } = await supabase
-      .from("company_documents")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("source", "upload")
-      .order("uploaded_at", { ascending: false });
+      if (userError || !userData) {
+        setError("Utilisateur introuvable");
+        return;
+      }
 
-    setDocuments(data || []);
-  }
+      setUserId(userData.id);
 
-  async function handleFileUpload(
-    file: File,
-    type: "piece_identite" | "justificatif_domicile" | "attestation_depot_capital"
-  ) {
-    const result = await uploadDocument(file, type);
-    if (result.success) {
-      await loadDocuments();
-      
-      // Vérifier si tous les documents sont uploadés
-      const updatedDocs = await supabase
+      // 3️⃣ Charger les documents existants (seulement les uploadés manuellement)
+      const { data: docs, error: docsError } = await supabase
         .from("company_documents")
         .select("*")
-        .eq("user_id", userId)
-        .eq("source", "upload");
-      
-      if (updatedDocs.data && updatedDocs.data.length === 3) {
-        await autoValidate();
+        .eq("user_id", userData.id)
+        .eq("source", "upload") // Filtrer uniquement les documents uploadés
+        .order("uploaded_at", { ascending: false });
+
+      if (docsError) {
+        console.error("Erreur chargement documents:", docsError);
+        setError("Erreur lors du chargement des documents");
+        return;
       }
-    } else {
-      alert(`Erreur: ${result.error}`);
-    }
-  }
 
-  async function handleDelete(docId: string, filePath: string) {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce document ?")) {
-      const result = await deleteDocument(docId, filePath);
-      if (result.success) {
-        await loadDocuments();
-      } else {
-        alert(`Erreur: ${result.error}`);
-      }
-    }
-  }
-
-  async function handleView(filePath: string) {
-    const url = await getDocumentUrl(filePath);
-    if (url) {
-      window.open(url, "_blank");
-    }
-  }
-
-  async function autoValidate() {
-    if (!userId || validating) return;
-    
-    setValidating(true);
-    
-    try {
-      console.log("🚀 Auto-validation : Passage à l'étape documents_generation");
-      
-      const { error } = await supabase
-        .from("company_creation_data")
-        .update({ 
-          step: "documents_generation",
-          updated_at: new Date().toISOString()
-        })
-        .eq("user_id", userId);
-
-      if (error) {
-        console.error("❌ Erreur auto-validation:", error);
-      } else {
-        console.log("✅ Auto-validation réussie !");
-      }
+      setDocuments(docs || []);
     } catch (err) {
-      console.error("❌ Erreur:", err);
+      console.error("Erreur:", err);
+      setError("Une erreur est survenue");
     } finally {
-      setValidating(false);
+      setLoading(false);
     }
   }
 
-  function getDocumentByType(type: string) {
-    return documents.find((d) => d.document_type === type);
+  async function handleFileUpload(documentType: string, file: File) {
+    if (!userId) {
+      alert("Erreur : utilisateur non identifié");
+      return;
+    }
+
+    setUploading(documentType);
+    setError(null);
+
+    try {
+      // 1️⃣ Valider le fichier
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        throw new Error("Le fichier ne doit pas dépasser 10MB");
+      }
+
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error("Format non autorisé. Utilisez PDF, JPG ou PNG");
+      }
+
+      // 2️⃣ Générer un nom de fichier unique
+      const fileExtension = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const fileName = `${documentType}_${timestamp}.${fileExtension}`;
+      const filePath = `${userId}/${fileName}`;
+
+      console.log("📤 Upload vers company-documents:", filePath);
+
+      // 3️⃣ Upload vers Supabase Storage (bucket company-documents)
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('company-documents')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error("❌ Erreur upload:", uploadError);
+        throw new Error(`Erreur d'upload: ${uploadError.message}`);
+      }
+
+      console.log("✅ Fichier uploadé:", uploadData);
+
+      // 4️⃣ Enregistrer dans la base de données
+      const { data: dbData, error: dbError } = await supabase
+        .from("company_documents")
+        .insert({
+          user_id: userId,
+          document_type: documentType,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          mime_type: file.type,
+          status: 'pending',
+          source: 'upload',
+          uploaded_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error("❌ Erreur DB:", dbError);
+        // Nettoyer le fichier uploadé si l'insertion DB échoue
+        await supabase.storage.from('company-documents').remove([filePath]);
+        throw new Error("Erreur lors de l'enregistrement en base");
+      }
+
+      console.log("✅ Document enregistré en DB:", dbData);
+
+      // 5️⃣ Recharger les documents
+      await loadUserAndDocuments();
+
+      alert(`✅ Document "${file.name}" uploadé avec succès !`);
+    } catch (err: any) {
+      console.error("❌ Erreur upload:", err);
+      setError(err.message || "Erreur lors de l'upload");
+      alert(`❌ ${err.message}`);
+    } finally {
+      setUploading(null);
+    }
   }
 
-  const allDocumentsUploaded = DOCUMENT_TYPES.every((dt) =>
-    getDocumentByType(dt.type)
-  );
+  async function handleDeleteDocument(doc: CompanyDocument) {
+    if (!confirm(`Supprimer ${doc.file_name} ?`)) return;
+
+    try {
+      // 1️⃣ Supprimer du storage
+      const { error: storageError } = await supabase.storage
+        .from('company-documents')
+        .remove([doc.file_path]);
+
+      if (storageError) {
+        console.error("Erreur suppression storage:", storageError);
+      }
+
+      // 2️⃣ Supprimer de la DB
+      const { error: dbError } = await supabase
+        .from("company_documents")
+        .delete()
+        .eq("id", doc.id);
+
+      if (dbError) {
+        throw new Error("Erreur lors de la suppression");
+      }
+
+      // 3️⃣ Recharger
+      await loadUserAndDocuments();
+      alert("✅ Document supprimé");
+    } catch (err: any) {
+      console.error("Erreur suppression:", err);
+      alert(`❌ ${err.message}`);
+    }
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin text-amber-500" size={48} />
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="animate-spin text-amber-500" size={40} />
+        <span className="ml-3 text-lg">Chargement...</span>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-[#123055]">
-          📄 Documents requis
-        </h1>
-        <p className="text-slate-600 mt-1">
-          Uploadez vos documents au format PDF uniquement (max 10MB)
-        </p>
-      </div>
+  const uploadedDocs = documents.reduce((acc, doc) => {
+    acc[doc.document_type] = doc;
+    return acc;
+  }, {} as Record<string, CompanyDocument>);
 
-      {/* Progress */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-blue-900">
-              Progression
-            </span>
-            <span className="text-sm font-semibold text-blue-600">
-              {documents.length} / {DOCUMENT_TYPES.length}
-            </span>
-          </div>
-          <div className="w-full bg-blue-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{
-                width: `${(documents.length / DOCUMENT_TYPES.length) * 100}%`,
-              }}
-            />
+  const requiredDocsCount = REQUIRED_DOCUMENTS.length;
+  const uploadedRequiredCount = REQUIRED_DOCUMENTS.filter(
+    d => uploadedDocs[d.type]
+  ).length;
+  const approvedRequiredCount = REQUIRED_DOCUMENTS.filter(
+    d => uploadedDocs[d.type]?.status === 'approved'
+  ).length;
+
+  const allRequiredUploaded = uploadedRequiredCount === requiredDocsCount;
+  const allRequiredApproved = approvedRequiredCount === requiredDocsCount;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-2xl text-slate-900">
+            <FileText className="text-amber-500" size={28} />
+            Upload de vos documents
+          </CardTitle>
+          <p className="text-slate-600 mt-2">
+            Uploadez les 3 documents nécessaires pour valider votre dossier
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-white rounded-lg p-4 border border-amber-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-slate-900">
+                  Documents requis : {uploadedRequiredCount}/{requiredDocsCount} uploadés
+                </p>
+                <p className="text-sm text-slate-600">
+                  Documents validés : {approvedRequiredCount}/{requiredDocsCount}
+                </p>
+              </div>
+              {allRequiredApproved ? (
+                <CheckCircle2 className="text-green-500" size={32} />
+              ) : allRequiredUploaded ? (
+                <AlertCircle className="text-amber-500" size={32} />
+              ) : (
+                <Upload className="text-slate-400" size={32} />
+              )}
+            </div>
+            <div className="mt-3 w-full bg-slate-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-amber-400 to-amber-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(uploadedRequiredCount / requiredDocsCount) * 100}%` }}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Documents */}
-      <div className="space-y-4">
-        {DOCUMENT_TYPES.map((docType) => {
-          const existingDoc = getDocumentByType(docType.type);
+      {/* Erreur globale */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle size={18} />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Liste des documents */}
+      <div className="grid gap-4">
+        {REQUIRED_DOCUMENTS.map((docType) => {
+          const doc = uploadedDocs[docType.type];
+          const isUploading = uploading === docType.type;
 
           return (
             <Card key={docType.type} className="border-slate-200">
               <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      existingDoc ? "bg-green-100" : "bg-slate-100"
-                    }`}
-                  >
-                    {existingDoc ? (
-                      <CheckCircle2 className="text-green-600" size={24} />
+                <div className="flex items-start justify-between gap-4">
+                  {/* Info document */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-slate-900">{docType.label}</h3>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-3">{docType.description}</p>
+
+                    {/* État du document */}
+                    {doc ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} className="text-slate-400" />
+                          <span className="text-sm text-slate-700">{doc.file_name}</span>
+                        </div>
+                        
+                        {doc.status === 'approved' ? (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle2 size={16} />
+                            <span className="text-sm font-medium">Document validé</span>
+                          </div>
+                        ) : doc.status === 'rejected' ? (
+                          <div className="flex items-center gap-2 text-red-600">
+                            <XCircle size={16} />
+                            <span className="text-sm">{doc.rejection_reason || "Document rejeté"}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-amber-600">
+                            <AlertCircle size={16} />
+                            <span className="text-sm">En attente de validation</span>
+                          </div>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteDocument(doc)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={doc.status === 'approved'}
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
                     ) : (
-                      <FileText className="text-slate-400" size={24} />
+                      <p className="text-sm text-slate-500 italic">Aucun document uploadé</p>
                     )}
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-slate-900">
-                        {docType.label}
-                      </h3>
-                      {docType.required && (
-                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded font-semibold">
-                          Requis
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">
-                      {docType.description}
-                    </p>
-
-                    {existingDoc ? (
-                      /* Document uploadé */
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-                          <p className="text-sm font-medium text-green-900">
-                            {existingDoc.file_name}
-                          </p>
-                          <p className="text-xs text-green-600">
-                            Uploadé le{" "}
-                            {new Date(
-                              existingDoc.uploaded_at
-                            ).toLocaleDateString("fr-FR")}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleView(existingDoc.file_path)}
-                        >
-                          <Eye size={16} />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleDelete(existingDoc.id, existingDoc.file_path)
+                  {/* Bouton upload */}
+                  <div className="flex-shrink-0">
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        disabled={isUploading || (doc?.status === 'approved')}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(docType.type, file);
                           }
-                        >
-                          <Trash2 size={16} className="text-red-500" />
-                        </Button>
-                      </div>
-                    ) : (
-                      /* Upload button */
-                      <div>
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          id={`upload-${docType.type}`}
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              handleFileUpload(file, docType.type as any);
-                            }
-                          }}
-                          disabled={uploading}
-                        />
-                        <label htmlFor={`upload-${docType.type}`}>
-                          <Button
-                            className="bg-amber-500 hover:bg-amber-600"
-                            disabled={uploading}
-                            asChild
-                          >
-                            <span>
-                              {uploading ? (
-                                <>
-                                  <Loader2
-                                    className="animate-spin mr-2"
-                                    size={16}
-                                  />
-                                  Upload en cours... {progress}%
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="mr-2" size={16} />
-                                  Uploader (PDF uniquement)
-                                </>
-                              )}
-                            </span>
-                          </Button>
-                        </label>
-                      </div>
-                    )}
+                          e.target.value = ''; // Reset input
+                        }}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        disabled={isUploading || (doc?.status === 'approved')}
+                        className={`
+                          ${doc?.status === 'approved'
+                            ? 'bg-green-500 hover:bg-green-600' 
+                            : 'bg-amber-500 hover:bg-amber-600'
+                          } text-white
+                        `}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="animate-spin mr-2" size={16} />
+                            Upload...
+                          </>
+                        ) : doc?.status === 'approved' ? (
+                          <>
+                            <CheckCircle2 className="mr-2" size={16} />
+                            Validé
+                          </>
+                        ) : doc ? (
+                          <>
+                            <Upload className="mr-2" size={16} />
+                            Remplacer
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2" size={16} />
+                            Uploader
+                          </>
+                        )}
+                      </Button>
+                    </label>
                   </div>
                 </div>
               </CardContent>
@@ -335,33 +412,17 @@ export default function DocumentsUploadPage() {
         })}
       </div>
 
-      {/* Next step */}
-      {allDocumentsUploaded && (
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="text-green-600" size={32} />
-              <div className="flex-1">
-                <h3 className="font-bold text-green-900 text-lg">
-                  ✅ Tous les documents sont uploadés !
-                </h3>
-                <p className="text-sm text-green-700 mt-1">
-                  Vos documents ont été transmis. La génération automatique va commencer.
-                </p>
-              </div>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  console.log("🔄 Redirection vers dashboard...");
-                  router.push("/client/creation-societe");
-                }}
-              >
-                Retour au tableau de bord
-                <ArrowRight className="ml-2" size={16} />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Message final */}
+      {allRequiredUploaded && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <AlertCircle className="text-amber-600" size={18} />
+          <AlertDescription className="text-amber-800">
+            {allRequiredApproved
+              ? "✅ Tous vos documents sont validés ! Vous pouvez passer à l'étape suivante."
+              : "📋 Vos documents sont en cours de validation par notre équipe. Vous serez notifié dès que la validation sera terminée."
+            }
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );

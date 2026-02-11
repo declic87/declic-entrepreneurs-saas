@@ -21,24 +21,6 @@ interface GeneratedDocument {
   status: string;
 }
 
-const DOCUMENTS_TO_GENERATE = [
-  {
-    type: "statuts",
-    label: "Statuts de la société",
-    description: "Document juridique définissant les règles de fonctionnement"
-  },
-  {
-    type: "attestation_souscription",
-    label: "Attestation de souscription",
-    description: "Attestation du dépôt du capital social"
-  },
-  {
-    type: "pv_constitution",
-    label: "Procès-verbal de constitution",
-    description: "Acte actant la création de la société"
-  },
-];
-
 export default function DocumentGenerationPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [generatedDocs, setGeneratedDocs] = useState<GeneratedDocument[]>([]);
@@ -85,6 +67,7 @@ export default function DocumentGenerationPage() {
         console.error("Erreur chargement documents:", docsError);
       }
 
+      console.log("📄 Documents chargés:", docs?.length || 0);
       setGeneratedDocs(docs || []);
     } catch (err) {
       console.error("Erreur:", err);
@@ -162,6 +145,18 @@ export default function DocumentGenerationPage() {
     }
   }
 
+  function formatDocumentLabel(docType: string): string {
+    const labels: Record<string, string> = {
+      'statuts': 'Statuts de la société',
+      'attestation_souscription': 'Attestation de souscription',
+      'pv_constitution': 'Procès-verbal de constitution',
+      'm0': 'Formulaire M0',
+      'actes': 'Actes de constitution',
+    };
+    
+    return labels[docType] || docType.replace(/_/g, ' ').toUpperCase();
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -171,13 +166,7 @@ export default function DocumentGenerationPage() {
     );
   }
 
-  const docsMap = generatedDocs.reduce((acc, doc) => {
-    acc[doc.document_type] = doc;
-    return acc;
-  }, {} as Record<string, GeneratedDocument>);
-
-  const allGenerated = DOCUMENTS_TO_GENERATE.every(d => docsMap[d.type]);
-  const generatedCount = DOCUMENTS_TO_GENERATE.filter(d => docsMap[d.type]).length;
+  const hasDocuments = generatedDocs.length > 0;
 
   return (
     <div className="space-y-6">
@@ -196,24 +185,23 @@ export default function DocumentGenerationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-semibold text-slate-900">
-                  Documents générés : {generatedCount}/{DOCUMENTS_TO_GENERATE.length}
+                  Documents générés : {generatedDocs.length}
                 </p>
                 <p className="text-sm text-slate-600">
-                  {allGenerated ? "Tous les documents sont prêts !" : "Cliquez sur le bouton pour générer vos documents"}
+                  {hasDocuments ? "Tous les documents sont prêts !" : "Cliquez sur le bouton pour générer vos documents"}
                 </p>
               </div>
-              {allGenerated ? (
+              {hasDocuments ? (
                 <CheckCircle2 className="text-green-500" size={32} />
               ) : (
                 <AlertCircle className="text-blue-500" size={32} />
               )}
             </div>
-            <div className="mt-3 w-full bg-slate-200 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${(generatedCount / DOCUMENTS_TO_GENERATE.length) * 100}%` }}
-              />
-            </div>
+            {hasDocuments && (
+              <div className="mt-3 w-full bg-slate-200 rounded-full h-2">
+                <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full w-full" />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -225,66 +213,67 @@ export default function DocumentGenerationPage() {
         </Alert>
       )}
 
-      <div className="grid gap-4">
-        {DOCUMENTS_TO_GENERATE.map((docType) => {
-          const doc = docsMap[docType.type];
-
-          return (
-            <Card key={docType.type} className="border-slate-200">
+      {/* Liste des documents générés */}
+      {hasDocuments ? (
+        <div className="grid gap-4">
+          {generatedDocs.map((doc) => (
+            <Card key={doc.id} className="border-slate-200">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-slate-900">{docType.label}</h3>
+                      <h3 className="font-bold text-slate-900">
+                        {formatDocumentLabel(doc.document_type)}
+                      </h3>
                     </div>
-                    <p className="text-sm text-slate-600 mb-3">{docType.description}</p>
-
-                    {doc ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <FileText size={16} className="text-slate-400" />
-                          <span className="text-sm text-slate-700">{doc.file_name}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle2 size={16} />
-                          <span className="text-sm font-medium">Document généré</span>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => downloadDocument(doc.file_path, doc.file_name)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <Download size={16} className="mr-2" />
-                          Télécharger
-                        </Button>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-slate-400" />
+                        <span className="text-sm text-slate-700">{doc.file_name}</span>
                       </div>
-                    ) : (
-                      <p className="text-sm text-slate-500 italic">En attente de génération</p>
-                    )}
+
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle2 size={16} />
+                        <span className="text-sm font-medium">Document généré</span>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadDocument(doc.file_path, doc.file_name)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Download size={16} className="mr-2" />
+                        Télécharger
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="flex-shrink-0">
-                    {doc ? (
-                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                        <CheckCircle2 className="text-green-600" size={24} />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                        <FileText className="text-slate-400" size={24} />
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle2 className="text-green-600" size={24} />
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          <Card className="border-slate-200">
+            <CardContent className="p-6">
+              <p className="text-center text-slate-500 italic">
+                Aucun document généré pour le moment
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {!allGenerated && (
+      {/* Bouton de génération */}
+      {!hasDocuments && (
         <Card className="border-blue-300 bg-blue-50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -319,7 +308,8 @@ export default function DocumentGenerationPage() {
         </Card>
       )}
 
-      {allGenerated && (
+      {/* Message final */}
+      {hasDocuments && (
         <Alert className="border-green-300 bg-green-50">
           <CheckCircle2 className="text-green-600" size={18} />
           <AlertDescription className="text-green-800">
@@ -330,4 +320,3 @@ export default function DocumentGenerationPage() {
     </div>
   );
 }
-// rebuild 02/11/2026 21:25:42

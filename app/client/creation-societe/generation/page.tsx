@@ -78,20 +78,27 @@ export default function DocumentGenerationPage() {
   }
 
   async function handleGenerateDocuments() {
+    console.log("🔵 DÉBUT handleGenerateDocuments");
+    console.log("🔵 userId:", userId);
+    
     if (!userId) {
+      console.log("❌ PAS DE userId");
       alert("Erreur : utilisateur non identifié");
       return;
     }
 
+    console.log("🔵 Avant confirm");
     if (!confirm("Générer tous les documents ? Cette action peut prendre quelques instants.")) {
+      console.log("❌ Utilisateur a cliqué ANNULER");
       return;
     }
+    console.log("✅ Utilisateur a cliqué OK");
 
     setGenerating(true);
     setError(null);
 
     try {
-      console.log("🚀 Appel API de génération...");
+      console.log("🚀 Appel API de génération... userId:", userId);
 
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
@@ -99,7 +106,10 @@ export default function DocumentGenerationPage() {
         body: JSON.stringify({ userId }),
       });
 
+      console.log("📡 Réponse reçue:", response.status);
+
       const result = await response.json();
+      console.log("📦 Résultat:", result);
 
       if (!response.ok) {
         throw new Error(result.error || 'Erreur de génération');
@@ -122,6 +132,7 @@ export default function DocumentGenerationPage() {
       alert(`❌ ${err.message}`);
     } finally {
       setGenerating(false);
+      console.log("🔵 FIN handleGenerateDocuments");
     }
   }
 

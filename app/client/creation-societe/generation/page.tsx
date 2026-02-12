@@ -159,6 +159,7 @@ export default function DocumentGenerationPage() {
   function formatDocumentLabel(docType: string): string {
     const labels: Record<string, string> = {
       'statuts': 'Statuts de la société',
+      'statuts_sci': 'Statuts SCI',
       'attestation_souscription': 'Attestation de souscription',
       'pv_constitution': 'Procès-verbal de constitution',
       'm0': 'Formulaire M0',
@@ -225,7 +226,7 @@ export default function DocumentGenerationPage() {
       )}
 
       {/* Liste des documents générés */}
-      {hasDocuments ? (
+      {hasDocuments && (
         <div className="grid gap-4">
           {generatedDocs.map((doc) => (
             <Card key={doc.id} className="border-slate-200">
@@ -271,7 +272,10 @@ export default function DocumentGenerationPage() {
             </Card>
           ))}
         </div>
-      ) : (
+      )}
+
+      {/* Aucun document */}
+      {!hasDocuments && (
         <div className="grid gap-4">
           <Card className="border-slate-200">
             <CardContent className="p-6">
@@ -283,41 +287,39 @@ export default function DocumentGenerationPage() {
         </div>
       )}
 
-      {/* Bouton de génération */}
-      {!hasDocuments && (
-        <Card className="border-blue-300 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-slate-900 mb-1">
-                  Prêt à générer vos documents ?
-                </h3>
-                <p className="text-sm text-slate-600">
-                  Cette opération prendra quelques instants. Vos documents seront générés automatiquement.
-                </p>
-              </div>
-              <Button
-                onClick={handleGenerateDocuments}
-                disabled={generating}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                size="lg"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" size={20} />
-                    Génération en cours...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2" size={20} />
-                    Générer les documents
-                  </>
-                )}
-              </Button>
+      {/* Bouton de génération - TOUJOURS AFFICHÉ */}
+      <Card className="border-blue-300 bg-blue-50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-900 mb-1">
+                Prêt à générer vos documents ?
+              </h3>
+              <p className="text-sm text-slate-600">
+                Cette opération prendra quelques instants. Vos documents seront générés automatiquement.
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <Button
+              onClick={handleGenerateDocuments}
+              disabled={generating}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              size="lg"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={20} />
+                  Génération en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2" size={20} />
+                  Générer les documents
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Message final */}
       {hasDocuments && (

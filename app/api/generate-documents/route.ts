@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const companyType = companyData.company_type;
-    const profession = companyData.profession; // Pour les SEL
+    const profession = companyData.profession;
 
     if (!companyType) {
       return NextResponse.json({ error: 'Type de société non défini' }, { status: 400 });
@@ -48,17 +48,32 @@ export async function POST(request: NextRequest) {
 
     console.log(`📋 Statut: ${companyType}${profession ? ` - Profession: ${profession}` : ''}`);
 
-    // 2️⃣ Récupérer la liste des documents à générer
+    // 2️⃣ Récupérer les associés (si multi-associés)
+    const requiresMultipleAssocies = ['SAS', 'SARL', 'SCI', 'SELAS', 'SELARL'].includes(companyType);
+    
+    let shareholders = [];
+    if (requiresMultipleAssocies) {
+      const { data: shareholdersData } = await supabase
+        .from('company_shareholders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('shares_percentage', { ascending: false });
+      
+      shareholders = shareholdersData || [];
+      console.log(`👥 Associés trouvés: ${shareholders.length}`);
+    }
+
+    // 3️⃣ Récupérer la liste des documents à générer
     const documentsToGenerate = getDocumentsForStatut(companyType, profession as ProfessionReglementee);
 
     if (documentsToGenerate.length === 0) {
       return NextResponse.json({ error: `Aucun document défini pour ${companyType}` }, { status: 400 });
     }
 
-    // 3️⃣ Préparer les données pour les templates
-    const templateData = prepareTemplateData(companyData, profession as ProfessionReglementee);
+    // 4️⃣ Préparer les données pour les templates
+    const templateData = prepareTemplateData(companyData, profession as ProfessionReglementee, shareholders);
 
-    // 4️⃣ Générer tous les documents
+    // 5️⃣ Générer tous les documents
     const generatedDocs = [];
 
     for (const docConfig of documentsToGenerate) {
@@ -110,7 +125,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5️⃣ Mettre à jour le workflow
+    // 6️⃣ Mettre à jour le workflow
     await supabase
       .from('company_creation_data')
       .update({
@@ -137,7 +152,12 @@ export async function POST(request: NextRequest) {
 }
 
 // 🔧 Préparer les données pour les templates
-function prepareTemplateData(companyData: any, profession?: ProfessionReglementee) {
+function prepareTemplateData(companyData: any, profession?: ProfessionReglementee, shareholders: any[] = []) {
+  const companyType = companyData.company_type;
+  
+  // Déterminer le titre du dirigeant
+  const dirigeantTitre = ['SASU', 'SAS', 'SELAS', 'SELASU'].includes(companyType) ? 'Président' : 'Gérant';
+
   const baseData = {
     // Société
     company_name: companyData.company_name || 'NOM DE LA SOCIÉTÉ',
@@ -145,6 +165,7 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     capital_amount: companyData.capital_amount || '0',
     capital_amount_words: numberToWords(companyData.capital_amount || 0),
     activity_description: companyData.activity_description || 'Activité non définie',
+    duree: companyData.duree || '99',
     
     // Adresse
     address_line1: companyData.address_line1 || '',
@@ -162,6 +183,9 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     president_nationality: companyData.president_nationality || 'Française',
     president_address: companyData.president_address || '',
     
+    // Variable dynamique dirigeant
+    dirigeant_titre: dirigeantTitre,
+    
     // Banque
     bank_name: companyData.bank_name || '',
     iban: companyData.iban || '',
@@ -173,8 +197,27 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     month: formatMonth(new Date()),
     day: new Date().getDate().toString(),
     
-    // Durée
-    duree: companyData.duree || '99',
+    // Associés (si multi-associés)
+    shareholders: shareholders.map(s => ({
+      first_name: s.first_name,
+      last_name: s.last_name,
+      full_name: `${s.first_name} ${s.last_name}`,
+      birth_date: formatDate(s.birth_date),
+      birth_place: s.birth_place,
+      nationality: s.nationality || 'Française',
+      address: s.address,
+      shares_count: s.shares_count,
+      shares_percentage: s.shares_percentage?.toFixed(2) || '0.00',
+      apport_numeraire: s.apport_numeraire || 0,
+      apport_nature: s.apport_nature || '',
+      apport_nature_valorisation: s.apport_nature_valorisation || 0,
+      is_president: s.is_president || false,
+      is_gerant: s.is_gerant || false,
+    })),
+    total_shares: shareholders.reduce((sum, s) => sum + (s.shares_count || 0), 0),
+    
+    // Gérant (pour SCI/SARL/EURL/SEL)
+    gerant_full_name: companyData.president_full_name || `${companyData.president_first_name || ''} ${companyData.president_last_name || ''}`.trim(),
   };
 
   // Ajouter les données spécifiques aux SEL

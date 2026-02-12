@@ -11,7 +11,7 @@ import {
   getProfessionOrdre,
   getProfessionCode,
   ProfessionReglementee
-} from '@/config/documents-config';
+} from '@/lib/config/documents-config';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -1,86 +1,53 @@
-// lib/config/documents-config.ts
+// Configuration complète des documents par statut juridique
 
-export type CompanyType = 
-  | 'SASU' 
-  | 'SAS' 
-  | 'SARL' 
-  | 'EURL' 
-  | 'SCI'
-  | 'SELARL'
-  | 'SELARLU'
-  | 'SELAS'
-  | 'SELASU'
-  | 'SPFPL-SELARL'
-  | 'SPFPL-SELAS'
-  | 'SPFPL-SAS'
-  | 'SPFPL-SARL'
-  | 'Auto-Entrepreneur';
+export const PROFESSIONS_REGLEMENTEES = [
+  'medecin',
+  'architecte',
+  'avocat',
+  'expert_comptable',
+  'kine',
+  'infirmier',
+  'dentiste',
+  'veterinaire',
+] as const;
 
-export type ProfessionReglementee = 
-  | 'medecin'
-  | 'architecte'
-  | 'avocat'
-  | 'expert_comptable'
-  | 'kine'
-  | 'infirmier'
-  | 'dentiste'
-  | 'veterinaire';
+export type ProfessionReglementee = typeof PROFESSIONS_REGLEMENTEES[number];
 
-export interface DocumentTemplate {
-  type: string;
-  label: string;
-  template: string; // Chemin relatif depuis public/templates/
-}
+export const PROFESSIONS_LABELS: Record<ProfessionReglementee, string> = {
+  medecin: 'Médecin',
+  architecte: 'Architecte',
+  avocat: 'Avocat',
+  expert_comptable: 'Expert-comptable',
+  kine: 'Masseur-Kinésithérapeute',
+  infirmier: 'Infirmier',
+  dentiste: 'Chirurgien-dentiste',
+  veterinaire: 'Vétérinaire',
+};
 
-export const PROFESSIONS_REGLEMENTEES: Record<ProfessionReglementee, {
-  label: string;
-  ordre: string;
-  code_legal: string;
-}> = {
-  medecin: {
-    label: 'Médecin',
-    ordre: "l'Ordre des Médecins",
-    code_legal: 'Code de la santé publique (articles L.4111-1 et suivants)',
-  },
-  architecte: {
-    label: 'Architecte',
-    ordre: "l'Ordre des Architectes",
-    code_legal: 'Loi du 3 janvier 1977 sur l\'architecture',
-  },
-  avocat: {
-    label: 'Avocat',
-    ordre: 'le Barreau',
-    code_legal: 'Loi n°71-1130 du 31 décembre 1971',
-  },
-  expert_comptable: {
-    label: 'Expert-comptable',
-    ordre: "l'Ordre des Experts-Comptables",
-    code_legal: 'Ordonnance n°45-2138 du 19 septembre 1945',
-  },
-  kine: {
-    label: 'Masseur-Kinésithérapeute',
-    ordre: "l'Ordre des Masseurs-Kinésithérapeutes",
-    code_legal: 'Code de la santé publique (articles L.4321-1 et suivants)',
-  },
-  infirmier: {
-    label: 'Infirmier',
-    ordre: "l'Ordre des Infirmiers",
-    code_legal: 'Code de la santé publique (articles L.4311-1 et suivants)',
-  },
-  dentiste: {
-    label: 'Chirurgien-dentiste',
-    ordre: "l'Ordre des Chirurgiens-Dentistes",
-    code_legal: 'Code de la santé publique (articles L.4141-1 et suivants)',
-  },
-  veterinaire: {
-    label: 'Vétérinaire',
-    ordre: "l'Ordre des Vétérinaires",
-    code_legal: 'Code rural et de la pêche maritime (articles L.241-1 et suivants)',
-  },
+export const PROFESSIONS_ORDRES: Record<ProfessionReglementee, string> = {
+  medecin: "Ordre des Médecins",
+  architecte: "Ordre des Architectes",
+  avocat: "Barreau",
+  expert_comptable: "Ordre des Experts-Comptables",
+  kine: "Ordre des Masseurs-Kinésithérapeutes",
+  infirmier: "Ordre des Infirmiers",
+  dentiste: "Ordre des Chirurgiens-Dentistes",
+  veterinaire: "Ordre des Vétérinaires",
+};
+
+export const PROFESSIONS_CODES_SANTE: Record<ProfessionReglementee, string> = {
+  medecin: "Code de la santé publique, articles L.4161-1 et suivants",
+  kine: "Code de la santé publique, articles L.4321-1 et suivants",
+  infirmier: "Code de la santé publique, articles L.4311-1 et suivants",
+  dentiste: "Code de la santé publique, articles L.4141-1 et suivants",
+  veterinaire: "Code rural et de la pêche maritime, articles L.241-1 et suivants",
+  architecte: "Loi du 3 janvier 1977 sur l'architecture",
+  avocat: "Loi n°71-1130 du 31 décembre 1971",
+  expert_comptable: "Ordonnance n°45-2138 du 19 septembre 1945",
 };
 
 // Documents communs à tous les statuts
-const DOCUMENTS_COMMUNS: DocumentTemplate[] = [
+export const DOCUMENTS_COMMUNS = [
   {
     type: 'attestation_domiciliation',
     label: 'Attestation de domiciliation',
@@ -98,11 +65,15 @@ const DOCUMENTS_COMMUNS: DocumentTemplate[] = [
   },
 ];
 
-// Documents spécifiques par statut
-export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
-  // ========== SASU (Associé unique) ==========
+// Configuration des documents par statut
+export const DOCUMENTS_BY_STATUT: Record<string, Array<{
+  type: string;
+  label: string;
+  template: string;
+  requiresProfession?: boolean;
+}>> = {
+  // ========== SASU ==========
   SASU: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_sasu',
       label: 'Statuts SASU',
@@ -110,12 +81,12 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_decision_unique',
-      label: 'Procès-verbal de décision unique',
+      label: 'PV de décision unique',
       template: 'SASU/pv_decision_unique.docx',
     },
     {
       type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
+      label: 'Attestation de souscription du capital',
       template: 'SASU/attestation_souscription.docx',
     },
     {
@@ -123,11 +94,16 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
       label: 'Déclaration des bénéficiaires effectifs',
       template: 'SASU/declaration_beneficiaires.docx',
     },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SASU',
+      template: 'SASU/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SAS (Multi-associés) ==========
+  // ========== SAS ==========
   SAS: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_sas',
       label: 'Statuts SAS',
@@ -135,12 +111,12 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
+      label: "PV d'assemblée générale constitutive",
       template: 'SAS/pv_agm_constitutive.docx',
     },
     {
       type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
+      label: 'Attestation de souscription du capital',
       template: 'SAS/attestation_souscription.docx',
     },
     {
@@ -148,11 +124,16 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
       label: 'Déclaration des bénéficiaires effectifs',
       template: 'SAS/declaration_beneficiaires.docx',
     },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SAS',
+      template: 'SAS/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SARL (Multi-associés) ==========
+  // ========== SARL ==========
   SARL: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_sarl',
       label: 'Statuts SARL',
@@ -160,24 +141,24 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
+      label: "PV d'assemblée générale constitutive",
       template: 'SARL/pv_agm_constitutive.docx',
-    },
-    {
-      type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
-      template: 'SARL/attestation_souscription.docx',
     },
     {
       type: 'declaration_beneficiaires',
       label: 'Déclaration des bénéficiaires effectifs',
       template: 'SARL/declaration_beneficiaires.docx',
     },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SARL',
+      template: 'SARL/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== EURL (Associé unique) ==========
+  // ========== EURL ==========
   EURL: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_eurl',
       label: 'Statuts EURL',
@@ -189,15 +170,20 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
       template: 'EURL/declaration_gerance.docx',
     },
     {
-      type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
-      template: 'EURL/attestation_souscription.docx',
+      type: 'declaration_beneficiaires',
+      label: 'Déclaration des bénéficiaires effectifs',
+      template: 'EURL/declaration_beneficiaires.docx',
     },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 EURL',
+      template: 'EURL/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SCI (Multi-associés) ==========
+  // ========== SCI ==========
   SCI: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_sci',
       label: 'Statuts SCI',
@@ -205,139 +191,157 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_constitution',
-      label: 'Procès-verbal de constitution',
+      label: 'PV de constitution',
       template: 'SCI/pv_constitution.docx',
     },
     {
-      type: 'attestation_souscription',
-      label: 'Attestation de souscription et libération',
-      template: 'SCI/attestation_souscription.docx',
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SCI',
+      template: 'SCI/formulaire_m0.docx',
     },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SELARL (Multi-associés + Profession réglementée) ==========
+  // ========== SELARL ==========
   SELARL: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_selarl',
       label: 'Statuts SELARL',
-      template: 'SELARL/statuts_selarl.docx',
+      template: 'SEL/statuts_selarl.docx',
+      requiresProfession: true,
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
-      template: 'SELARL/pv_agm_constitutive.docx',
-    },
-    {
-      type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
-      template: 'SELARL/attestation_souscription.docx',
-    },
-    {
-      type: 'attestation_inscription_ordre',
-      label: 'Attestation d\'inscription à l\'ordre professionnel',
-      template: 'SELARL/attestation_inscription_ordre.docx',
+      label: "PV d'assemblée générale constitutive",
+      template: 'SEL/pv_agm_constitutive_selarl.docx',
     },
     {
       type: 'declaration_beneficiaires',
       label: 'Déclaration des bénéficiaires effectifs',
-      template: 'SELARL/declaration_beneficiaires.docx',
+      template: 'SEL/declaration_beneficiaires.docx',
     },
+    {
+      type: 'attestation_inscription_ordre',
+      label: "Attestation d'inscription à l'ordre professionnel",
+      template: 'SEL/attestation_inscription_ordre.docx',
+      requiresProfession: true,
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SELARL',
+      template: 'SEL/formulaire_m0_selarl.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SELARLU (Associé unique + Profession réglementée) ==========
+  // ========== SELARLU ==========
   SELARLU: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_selarlu',
       label: 'Statuts SELARLU',
-      template: 'SELARLU/statuts_selarlu.docx',
+      template: 'SEL/statuts_selarlu.docx',
+      requiresProfession: true,
     },
     {
       type: 'pv_decision_unique',
-      label: 'Procès-verbal de décision unique',
-      template: 'SELARLU/pv_decision_unique.docx',
-    },
-    {
-      type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
-      template: 'SELARLU/attestation_souscription.docx',
-    },
-    {
-      type: 'attestation_inscription_ordre',
-      label: 'Attestation d\'inscription à l\'ordre professionnel',
-      template: 'SELARLU/attestation_inscription_ordre.docx',
+      label: 'PV de décision unique',
+      template: 'SEL/pv_decision_unique_selarlu.docx',
     },
     {
       type: 'declaration_beneficiaires',
       label: 'Déclaration des bénéficiaires effectifs',
-      template: 'SELARLU/declaration_beneficiaires.docx',
+      template: 'SEL/declaration_beneficiaires.docx',
     },
+    {
+      type: 'attestation_inscription_ordre',
+      label: "Attestation d'inscription à l'ordre professionnel",
+      template: 'SEL/attestation_inscription_ordre.docx',
+      requiresProfession: true,
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SELARLU',
+      template: 'SEL/formulaire_m0_selarlu.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SELAS (Multi-associés + Profession réglementée) ==========
+  // ========== SELAS ==========
   SELAS: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_selas',
       label: 'Statuts SELAS',
-      template: 'SELAS/statuts_selas.docx',
+      template: 'SEL/statuts_selas.docx',
+      requiresProfession: true,
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
-      template: 'SELAS/pv_agm_constitutive.docx',
+      label: "PV d'assemblée générale constitutive",
+      template: 'SEL/pv_agm_constitutive_selas.docx',
     },
     {
       type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
-      template: 'SELAS/attestation_souscription.docx',
-    },
-    {
-      type: 'attestation_inscription_ordre',
-      label: 'Attestation d\'inscription à l\'ordre professionnel',
-      template: 'SELAS/attestation_inscription_ordre.docx',
+      label: 'Attestation de souscription du capital',
+      template: 'SEL/attestation_souscription.docx',
     },
     {
       type: 'declaration_beneficiaires',
       label: 'Déclaration des bénéficiaires effectifs',
-      template: 'SELAS/declaration_beneficiaires.docx',
+      template: 'SEL/declaration_beneficiaires.docx',
     },
+    {
+      type: 'attestation_inscription_ordre',
+      label: "Attestation d'inscription à l'ordre professionnel",
+      template: 'SEL/attestation_inscription_ordre.docx',
+      requiresProfession: true,
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SELAS',
+      template: 'SEL/formulaire_m0_selas.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SELASU (Associé unique + Profession réglementée) ==========
+  // ========== SELASU ==========
   SELASU: [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_selasu',
       label: 'Statuts SELASU',
-      template: 'SELASU/statuts_selasu.docx',
+      template: 'SEL/statuts_selasu.docx',
+      requiresProfession: true,
     },
     {
       type: 'pv_decision_unique',
-      label: 'Procès-verbal de décision unique',
-      template: 'SELASU/pv_decision_unique.docx',
+      label: 'PV de décision unique',
+      template: 'SEL/pv_decision_unique_selasu.docx',
     },
     {
       type: 'attestation_souscription',
-      label: 'Attestation de souscription et versement',
-      template: 'SELASU/attestation_souscription.docx',
-    },
-    {
-      type: 'attestation_inscription_ordre',
-      label: 'Attestation d\'inscription à l\'ordre professionnel',
-      template: 'SELASU/attestation_inscription_ordre.docx',
+      label: 'Attestation de souscription du capital',
+      template: 'SEL/attestation_souscription.docx',
     },
     {
       type: 'declaration_beneficiaires',
       label: 'Déclaration des bénéficiaires effectifs',
-      template: 'SELASU/declaration_beneficiaires.docx',
+      template: 'SEL/declaration_beneficiaires.docx',
     },
+    {
+      type: 'attestation_inscription_ordre',
+      label: "Attestation d'inscription à l'ordre professionnel",
+      template: 'SEL/attestation_inscription_ordre.docx',
+      requiresProfession: true,
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SELASU',
+      template: 'SEL/formulaire_m0_selasu.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== SPFPL (Sociétés de Participations Financières de Professions Libérales) ==========
+  // ========== SPFPL-SELARL ==========
   'SPFPL-SELARL': [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_spfpl_selarl',
       label: 'Statuts SPFPL-SELARL',
@@ -345,13 +349,24 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
-      template: 'SPFPL/pv_agm_constitutive_selarl.docx',
+      label: "PV d'assemblée générale constitutive",
+      template: 'SPFPL/pv_agm_constitutive.docx',
     },
+    {
+      type: 'declaration_beneficiaires',
+      label: 'Déclaration des bénéficiaires effectifs',
+      template: 'SPFPL/declaration_beneficiaires.docx',
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SPFPL',
+      template: 'SPFPL/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
+  // ========== SPFPL-SELAS ==========
   'SPFPL-SELAS': [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_spfpl_selas',
       label: 'Statuts SPFPL-SELAS',
@@ -359,13 +374,24 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
-      template: 'SPFPL/pv_agm_constitutive_selas.docx',
+      label: "PV d'assemblée générale constitutive",
+      template: 'SPFPL/pv_agm_constitutive.docx',
     },
+    {
+      type: 'declaration_beneficiaires',
+      label: 'Déclaration des bénéficiaires effectifs',
+      template: 'SPFPL/declaration_beneficiaires.docx',
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SPFPL',
+      template: 'SPFPL/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
+  // ========== SPFPL-SAS ==========
   'SPFPL-SAS': [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_spfpl_sas',
       label: 'Statuts SPFPL-SAS',
@@ -373,13 +399,24 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
-      template: 'SPFPL/pv_agm_constitutive_sas.docx',
+      label: "PV d'assemblée générale constitutive",
+      template: 'SPFPL/pv_agm_constitutive.docx',
     },
+    {
+      type: 'declaration_beneficiaires',
+      label: 'Déclaration des bénéficiaires effectifs',
+      template: 'SPFPL/declaration_beneficiaires.docx',
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SPFPL',
+      template: 'SPFPL/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
+  // ========== SPFPL-SARL ==========
   'SPFPL-SARL': [
-    ...DOCUMENTS_COMMUNS,
     {
       type: 'statuts_spfpl_sarl',
       label: 'Statuts SPFPL-SARL',
@@ -387,53 +424,63 @@ export const DOCUMENTS_BY_STATUT: Record<CompanyType, DocumentTemplate[]> = {
     },
     {
       type: 'pv_agm_constitutive',
-      label: 'Procès-verbal d\'assemblée générale constitutive',
-      template: 'SPFPL/pv_agm_constitutive_sarl.docx',
+      label: "PV d'assemblée générale constitutive",
+      template: 'SPFPL/pv_agm_constitutive.docx',
     },
+    {
+      type: 'declaration_beneficiaires',
+      label: 'Déclaration des bénéficiaires effectifs',
+      template: 'SPFPL/declaration_beneficiaires.docx',
+    },
+    {
+      type: 'formulaire_m0',
+      label: 'Formulaire M0 SPFPL',
+      template: 'SPFPL/formulaire_m0.docx',
+    },
+    ...DOCUMENTS_COMMUNS,
   ],
 
-  // ========== Auto-Entrepreneur ==========
+  // ========== AUTO-ENTREPRENEUR ==========
   'Auto-Entrepreneur': [
     {
-      type: 'declaration_auto_entrepreneur',
-      label: 'Déclaration de début d\'activité',
+      type: 'declaration_debut_activite',
+      label: "Déclaration de début d'activité (P0)",
       template: 'Auto-Entrepreneur/declaration_debut_activite.docx',
     },
   ],
 };
 
-// ========== HELPERS ==========
-
-export function getDocumentsForStatut(
-  companyType: CompanyType,
-  profession?: ProfessionReglementee
-): DocumentTemplate[] {
-  const docs = DOCUMENTS_BY_STATUT[companyType] || [];
+// Fonction helper pour récupérer les documents d'un statut
+export function getDocumentsForStatut(statut: string, profession?: ProfessionReglementee) {
+  const docs = DOCUMENTS_BY_STATUT[statut] || [];
   
-  // Si c'est une SEL, vérifier que la profession est fournie
-  if (['SELARL', 'SELARLU', 'SELAS', 'SELASU'].includes(companyType) && !profession) {
-    console.warn(`Profession requise pour ${companyType} mais non fournie`);
-  }
-  
-  return docs;
+  return docs.map(doc => ({
+    ...doc,
+    profession: doc.requiresProfession ? profession : undefined,
+  }));
 }
 
+// Fonction pour obtenir le label d'une profession
 export function getProfessionLabel(profession: ProfessionReglementee): string {
-  return PROFESSIONS_REGLEMENTEES[profession]?.label || profession;
+  return PROFESSIONS_LABELS[profession] || profession;
 }
 
+// Fonction pour obtenir l'ordre d'une profession
 export function getProfessionOrdre(profession: ProfessionReglementee): string {
-  return PROFESSIONS_REGLEMENTEES[profession]?.ordre || '';
+  return PROFESSIONS_ORDRES[profession] || "Ordre professionnel";
 }
 
+// Fonction pour obtenir le code légal d'une profession
 export function getProfessionCode(profession: ProfessionReglementee): string {
-  return PROFESSIONS_REGLEMENTEES[profession]?.code_legal || '';
+  return PROFESSIONS_CODES_SANTE[profession] || "";
 }
 
-export function requiresMultipleAssocies(companyType: CompanyType): boolean {
+// Fonction pour vérifier si un statut nécessite plusieurs associés
+export function requiresMultipleAssocies(companyType: string): boolean {
   return ['SAS', 'SARL', 'SCI', 'SELAS', 'SELARL'].includes(companyType);
 }
 
-export function requiresProfession(companyType: CompanyType): boolean {
+// Fonction pour vérifier si un statut nécessite une profession
+export function requiresProfession(companyType: string): boolean {
   return ['SELARL', 'SELARLU', 'SELAS', 'SELASU'].includes(companyType);
 }

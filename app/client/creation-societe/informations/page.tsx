@@ -70,8 +70,8 @@ export default function InformationsPage() {
   const [localShareholders, setLocalShareholders] = useState<Shareholder[]>(shareholders);
 
   // Déterminer si multi-associés
-  const isMultiAssocies = requiresMultipleAssocies(companyType);
-  const needsProfession = requiresProfession(companyType);
+  const isMultiAssocies = companyType ? requiresMultipleAssocies(companyType) : false;
+  const needsProfession = companyType ? requiresProfession(companyType) : false;
 
   // Charger les données au montage
   useEffect(() => {

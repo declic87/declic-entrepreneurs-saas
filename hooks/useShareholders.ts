@@ -45,7 +45,7 @@ export function useShareholders(userId: string) {
       if (fetchError) throw fetchError;
 
       // Mapper les données pour garantir que id est présent
-      const mappedData = (data || []).map(item => ({
+      const mappedData = (data || []).map((item: any) => ({
         ...item,
         id: item.id || '', // Garantir que id n'est jamais undefined
       }));

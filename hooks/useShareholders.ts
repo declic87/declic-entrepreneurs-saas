@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export interface Shareholder {
-  id?: string;
+  id: string;
   user_id?: string;
   first_name: string;
   last_name: string;
@@ -44,7 +44,13 @@ export function useShareholders(userId: string) {
 
       if (fetchError) throw fetchError;
 
-      setShareholders(data || []);
+      // Mapper les données pour garantir que id est présent
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        id: item.id || '', // Garantir que id n'est jamais undefined
+      }));
+
+      setShareholders(mappedData);
     } catch (err: any) {
       console.error('Erreur chargement associés:', err);
       setError(err.message);

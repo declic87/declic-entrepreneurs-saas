@@ -20,31 +20,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    // Récupérer l'utilisateur authentifié
-    const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !authUser) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-
-    // CORRECTION: Récupérer l'ID de la table users avec auth_id
-    const { data: userData, error: userDataError } = await supabaseClient
-      .from('users')
-      .select('id')
-      .eq('auth_id', authUser.id)
-      .single();
-
-    if (userDataError || !userData) {
-      return new Response(JSON.stringify({ error: 'User not found in database' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 404,
-      });
-    }
-
-    const userId = userData.id; // Maintenant on a le bon user_id
-
+    // Lire le body
     const { company_id } = await req.json();
     
     if (!company_id) {
@@ -54,26 +30,89 @@ serve(async (req) => {
       });
     }
 
-    // Fetch company data avec le bon user_id
+    // Authentification
+    let userId: string;
+
+    // Vérifier s'il y a un JWT utilisateur valide
+    const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (authUser) {
+      // Auth utilisateur normale - récupérer le user_id de la table users
+      console.log('User auth detected:', authUser.id);
+      
+      const { data: userData, error: userDataError } = await supabaseClient
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single();
+
+      if (userDataError || !userData) {
+        console.error('User lookup failed:', userDataError);
+        return new Response(JSON.stringify({ 
+          error: 'User not found in database',
+          details: userDataError?.message 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+      
+      userId = userData.id;
+      console.log('Using userId from auth:', userId);
+      
+    } else {
+      // Pas d'auth utilisateur - vérifier via company_id
+      console.log('No user auth, fetching from company');
+      
+      const { data: companyLookup, error: lookupError } = await supabaseClient
+        .from('company_creation_data')
+        .select('user_id')
+        .eq('id', company_id)
+        .single();
+      
+      if (lookupError || !companyLookup) {
+        console.error('Company lookup failed:', lookupError);
+        return new Response(JSON.stringify({ 
+          error: 'Company not found or unauthorized',
+          details: lookupError?.message 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+      
+      userId = companyLookup.user_id;
+      console.log('Using userId from company:', userId);
+    }
+
+    // Fetch company data
     const { data: company, error: companyError } = await supabaseClient
       .from('company_creation_data')
       .select('*')
       .eq('id', company_id)
-      .eq('user_id', userId) // Utilise le user_id de la table users
+      .eq('user_id', userId)
       .single();
 
     if (companyError || !company) {
-      return new Response(JSON.stringify({ error: 'Company not found' }), {
+      console.error('Company fetch failed:', companyError);
+      return new Response(JSON.stringify({ 
+        error: 'Company not found',
+        details: companyError?.message 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 404,
       });
     }
 
-    // Fetch shareholders avec le user_id de la table users
+    console.log('Company found:', company.company_name);
+
+    // Fetch shareholders
     const { data: shareholders } = await supabaseClient
       .from('company_shareholders')
       .select('*')
       .eq('user_id', userId);
+
+    console.log('Shareholders found:', shareholders?.length || 0);
 
     // Build president/gerant info
     const managerInfo = company.president_first_name && company.president_last_name
@@ -112,55 +151,70 @@ serve(async (req) => {
         pourcentage: s.shares_percentage || 0
       }));
 
-      // For SAS/SASU/SELAS/SELASU use actionnaires
       if (['SASU', 'SAS', 'SELAS', 'SELASU'].includes(company.company_type)) {
         companyData.actionnaires = mappedShareholders;
       } else {
-        // For SARL/EURL/SCI/SELARL/SELARLU use associes
         companyData.associes = mappedShareholders;
       }
     }
 
-    // Add president or gérant based on company type
+    // Add president or gérant
     if (['SASU', 'SAS', 'SELAS', 'SELASU'].includes(company.company_type)) {
       companyData.president = managerInfo;
     } else {
       companyData.gerant = company.gerant || managerInfo;
     }
 
-    // Add profession for SEL (professions libérales)
+    // Add profession for SEL
     if (company.company_type?.startsWith('SEL')) {
       companyData.profession = company.profession || 'Profession libérale';
       companyData.objet_professionnel = company.activity_description;
     }
 
+    console.log('Generating document for:', company.company_name);
+
     // Generate document
     const buffer = await generateStatuts(companyData);
 
-    // Store document in Supabase Storage avec authUser.id pour le path
+    console.log('Document generated, size:', buffer.byteLength);
+
+    // Store document
     const fileName = `statuts-${company.company_name.replace(/\s+/g, '-')}-${Date.now()}.docx`;
+    
+    console.log('Uploading to:', `${userId}/${fileName}`);
+
     const { error: uploadError } = await supabaseClient
       .storage
-      .from('documents')
-      .upload(`${authUser.id}/${company_id}/${fileName}`, buffer, {
+      .from('company-documents')
+      .upload(`${userId}/${fileName}`, buffer, {
         contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         upsert: true
       });
 
     if (uploadError) {
+      console.error('Upload failed:', uploadError);
       throw uploadError;
     }
 
-    // Get public URL
-    const { data: urlData } = supabaseClient
+    console.log('Upload successful');
+
+    // Créer une URL signée (valide 1 heure)
+    const { data: urlData, error: signedError } = await supabaseClient
       .storage
-      .from('documents')
-      .getPublicUrl(`${authUser.id}/${company_id}/${fileName}`);
+      .from('company-documents')
+      .createSignedUrl(`${userId}/${fileName}`, 3600);
+
+    if (signedError) {
+      console.error('Signed URL creation failed:', signedError);
+      throw signedError;
+    }
+
+    console.log('Document signed URL created');
 
     return new Response(
       JSON.stringify({
         success: true,
-        url: urlData.publicUrl,
+        url: urlData.signedUrl,
         fileName
       }),
       {

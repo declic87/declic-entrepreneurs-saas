@@ -6,6 +6,7 @@ import { Upload, FileText, CheckCircle2, XCircle, Loader2, AlertCircle } from "l
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DownloadStatutsButton } from "@/components/DownloadStatutsButton";
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -435,15 +436,37 @@ export default function DocumentUploadPage() {
       </div>
 
       {allRequiredUploaded && (
-        <Alert className="border-amber-300 bg-amber-50">
-          <AlertCircle className="text-amber-600" size={18} />
-          <AlertDescription className="text-amber-800">
-            {allRequiredApproved
-              ? "✅ Tous vos documents sont validés ! Vous pouvez passer à l'étape suivante."
-              : "📋 Vos documents sont en cours de validation par notre équipe. Vous serez notifié dès que la validation sera terminée."
-            }
-          </AlertDescription>
-        </Alert>
+        <>
+          <Alert className="border-amber-300 bg-amber-50">
+            <AlertCircle className="text-amber-600" size={18} />
+            <AlertDescription className="text-amber-800">
+              {allRequiredApproved
+                ? "✅ Tous vos documents sont validés ! Vous pouvez maintenant télécharger vos statuts."
+                : "📋 Vos documents sont en cours de validation par notre équipe. Vous serez notifié dès que la validation sera terminée."
+              }
+            </AlertDescription>
+          </Alert>
+
+          {allRequiredApproved && userId && (
+            <Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
+                  <FileText className="text-green-500" size={24} />
+                  Télécharger vos statuts
+                </CardTitle>
+                <p className="text-slate-600 mt-2">
+                  Vos documents sont validés. Vous pouvez maintenant générer et télécharger vos statuts personnalisés.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <DownloadStatutsButton 
+                  companyId={userId}
+                  companyName="Ma société"
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

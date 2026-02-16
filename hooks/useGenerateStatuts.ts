@@ -11,34 +11,40 @@ export function useGenerateStatuts() {
     setError(null);
 
     try {
-      // Créer un client Supabase avec les credentials
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      // Récupérer la session actuelle
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
         throw new Error('Non authentifié');
       }
 
-      console.log('Session trouvée, appel de la fonction...');
+      console.log('Session trouvée, appel direct avec fetch...');
 
-      // Appeler la fonction avec le token
-      const { data, error: functionError } = await supabase.functions.invoke('generate-statuts', {
-        body: { company_id: companyId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
+      // Appel DIRECT avec fetch au lieu du SDK Supabase
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-statuts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+          },
+          body: JSON.stringify({ company_id: companyId })
         }
-      });
+      );
 
-      if (functionError) {
-        console.error('Erreur fonction:', functionError);
-        throw functionError;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error:', response.status, errorText);
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
       }
 
+      const data = await response.json();
       console.log('Document généré:', data);
 
       // Télécharger le document

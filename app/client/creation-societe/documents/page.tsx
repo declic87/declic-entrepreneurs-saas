@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DownloadStatutsButton } from "@/components/DownloadStatutsButton";
+import { useGenerateDocuments } from "@/hooks/useGenerateDocuments";
+import { toast } from "sonner";
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,6 +50,7 @@ export default function DocumentUploadPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { generateDocuments, loading: loadingDocs } = useGenerateDocuments();
 
   useEffect(() => {
     loadUserAndDocuments();
@@ -146,6 +149,19 @@ export default function DocumentUploadPage() {
       } else {
         console.log("✅ Workflow mis à jour vers 'documents_generation'");
       }
+    }
+  }
+
+  async function handleGenerateAllDocuments() {
+    if (!companyId) return;
+    
+    try {
+      await generateDocuments(companyId);
+      toast.success('Documents générés avec succès !');
+      // Recharger les documents
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error) {
+      toast.error('Erreur lors de la génération des documents');
     }
   }
 
@@ -464,17 +480,36 @@ export default function DocumentUploadPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
                   <FileText className="text-green-500" size={24} />
-                  Télécharger vos statuts
+                  Télécharger vos documents
                 </CardTitle>
                 <p className="text-slate-600 mt-2">
-                  Vos documents sont validés. Vous pouvez maintenant générer et télécharger vos statuts personnalisés.
+                  Vos documents sont validés. Vous pouvez maintenant générer et télécharger tous vos documents légaux.
                 </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <DownloadStatutsButton 
                   companyId={companyId}
                   companyName="Ma société"
                 />
+                
+                <Button
+                  onClick={handleGenerateAllDocuments}
+                  disabled={loadingDocs}
+                  variant="outline"
+                  className="w-full border-blue-300 hover:bg-blue-50"
+                >
+                  {loadingDocs ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Génération en cours...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="mr-2 h-4 w-4" />
+                      Générer tous les autres documents (PV, attestations...)
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}

@@ -20,25 +20,26 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    const { company_id } = await request.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID requis' }, { status: 400 });
+    if (!company_id) {
+      return NextResponse.json({ error: 'company_id requis' }, { status: 400 });
     }
 
-    console.log('🚀 Génération des documents pour user:', userId);
+    console.log('🚀 Génération des documents pour company:', company_id);
 
     // 1️⃣ Récupérer les données de création
     const { data: companyData, error: dataError } = await supabase
       .from('company_creation_data')
       .select('*')
-      .eq('user_id', userId)
+      .eq('id', company_id)
       .single();
 
     if (dataError || !companyData) {
       return NextResponse.json({ error: 'Données introuvables' }, { status: 404 });
     }
 
+    const userId = companyData.user_id;
     const companyType = companyData.company_type;
     const profession = companyData.profession;
 
@@ -63,12 +64,15 @@ export async function POST(request: NextRequest) {
       console.log(`👥 Associés trouvés: ${shareholders.length}`);
     }
 
-    // 3️⃣ Récupérer la liste des documents à générer
-    const documentsToGenerate = getDocumentsForStatut(companyType, profession as ProfessionReglementee);
+    // 3️⃣ Récupérer la liste des documents à générer (SANS les statuts)
+    const allDocs = getDocumentsForStatut(companyType, profession as ProfessionReglementee);
+    const documentsToGenerate = allDocs.filter(doc => !doc.type.includes('statuts'));
 
     if (documentsToGenerate.length === 0) {
       return NextResponse.json({ error: `Aucun document défini pour ${companyType}` }, { status: 400 });
     }
+
+    console.log(`📋 ${documentsToGenerate.length} documents à générer (hors statuts)`);
 
     // 4️⃣ Préparer les données pour les templates
     const templateData = prepareTemplateData(companyData, profession as ProfessionReglementee, shareholders);

@@ -43,6 +43,7 @@ const REQUIRED_DOCUMENTS = [
 
 export default function DocumentUploadPage() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<CompanyDocument[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,6 +82,17 @@ export default function DocumentUploadPage() {
       }
 
       setUserId(userData.id);
+
+      // Récupérer l'ID de la société
+      const { data: companyData } = await supabase
+        .from('company_creation_data')
+        .select('id')
+        .eq('user_id', userData.id)
+        .single();
+
+      if (companyData) {
+        setCompanyId(companyData.id);
+      }
 
       const { data: docs, error: docsError } = await supabase
         .from("company_documents")
@@ -447,7 +459,7 @@ export default function DocumentUploadPage() {
             </AlertDescription>
           </Alert>
 
-          {allRequiredApproved && userId && (
+          {allRequiredApproved && companyId && (
             <Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
@@ -460,7 +472,7 @@ export default function DocumentUploadPage() {
               </CardHeader>
               <CardContent>
                 <DownloadStatutsButton 
-                  companyId={userId}
+                  companyId={companyId}
                   companyName="Ma société"
                 />
               </CardContent>

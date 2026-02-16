@@ -1,6 +1,6 @@
 // hooks/useGenerateStatuts.ts
 import { useState } from 'react';
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser-client';
+import { createBrowserClient } from '@supabase/ssr';
 
 export function useGenerateStatuts() {
   const [loading, setLoading] = useState(false);
@@ -11,21 +11,45 @@ export function useGenerateStatuts() {
     setError(null);
 
     try {
-      const supabase = getSupabaseBrowserClient();
+      // Créer un client Supabase avec les credentials
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      // Récupérer la session actuelle
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      if (sessionError || !session) {
+        throw new Error('Non authentifié');
+      }
+
+      console.log('Session trouvée, appel de la fonction...');
+
+      // Appeler la fonction avec le token
       const { data, error: functionError } = await supabase.functions.invoke('generate-statuts', {
-        body: { company_id: companyId }
+        body: { company_id: companyId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
-      if (functionError) throw functionError;
+      if (functionError) {
+        console.error('Erreur fonction:', functionError);
+        throw functionError;
+      }
 
-      // Download the document
-      const link = document.createElement('a');
-      link.href = data.url;
-      link.download = data.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      console.log('Document généré:', data);
+
+      // Télécharger le document
+      if (data?.url) {
+        const link = document.createElement('a');
+        link.href = data.url;
+        link.download = data.fileName || 'statuts.docx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
 
       return data;
     } catch (err: any) {

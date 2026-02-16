@@ -52,11 +52,11 @@ serve(async (req) => {
       });
     }
 
-    // Fetch shareholders
+    // Fetch shareholders - CORRIGÉ: utilise user.id au lieu de company_id
     const { data: shareholders } = await supabaseClient
       .from('company_shareholders')
       .select('*')
-      .eq('company_id', company_id);
+      .eq('user_id', user.id);
 
     // Build president/gerant info
     const managerInfo = company.president_first_name && company.president_last_name
@@ -89,10 +89,10 @@ serve(async (req) => {
     if (shareholders && shareholders.length > 0) {
       const mappedShareholders = shareholders.map((s: any) => ({
         nom: `${s.first_name} ${s.last_name}`,
-        apport: s.contribution_amount?.toString() || "0",
+        apport: s.apport_numeraire?.toString() || "0",
         actions: s.shares_count || 0,
         parts: s.shares_count || 0,
-        pourcentage: s.ownership_percentage || 0
+        pourcentage: s.shares_percentage || 0
       }));
 
       // For SAS/SASU/SELAS/SELASU use actionnaires

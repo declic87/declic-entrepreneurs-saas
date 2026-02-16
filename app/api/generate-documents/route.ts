@@ -245,8 +245,24 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
 // 📄 Générer un document à partir d'un template
 async function generateDocumentFromTemplate(templatePath: string, data: any): Promise<Buffer> {
   try {
-    // Chemin absolu vers le template
-    const fullPath = join(process.cwd(), 'public', 'templates', templatePath);
+    // Path différent selon l'environnement
+    let fullPath: string;
+    
+    if (process.env.VERCEL) {
+      // Production Vercel - essayer plusieurs paths possibles
+      const paths = [
+        join(process.cwd(), '.next', 'static', 'templates', templatePath),
+        join(process.cwd(), 'public', 'templates', templatePath),
+        join('/var/task', 'public', 'templates', templatePath),
+      ];
+      
+      fullPath = paths[1]; // Commencer par public/templates
+      console.log('📂 Production - Template path:', fullPath);
+    } else {
+      // Développement local
+      fullPath = join(process.cwd(), 'public', 'templates', templatePath);
+      console.log('📂 Local - Template path:', fullPath);
+    }
     
     // Lire le template
     const content = readFileSync(fullPath, 'binary');
@@ -271,7 +287,7 @@ async function generateDocumentFromTemplate(templatePath: string, data: any): Pr
 
     return buffer;
   } catch (error) {
-    console.error(`Erreur template ${templatePath}:`, error);
+    console.error(`❌ Erreur template ${templatePath}:`, error);
     throw error;
   }
 }

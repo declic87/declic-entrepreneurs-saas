@@ -9,6 +9,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUserAccess } from '@/hooks/useUserAccess';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 
 // --- Interfaces ---
 interface Template {
@@ -106,6 +107,21 @@ export default function MemberDashboard({
     });
   };
 
+  // Déterminer le pageSlug en fonction de l'onglet actif
+  const getPageSlug = () => {
+    const slugMap: Record<string, string> = {
+      "tutos-pratiques": "formations",
+      "formation-createur": "formations",
+      "formation-agent-immo": "formations",
+      "formations-accompagnement": "formations",
+      "coaching": "coachings",
+      "ateliers": "ateliers",
+      "rdv-inclus": "rdv",
+      "rdv-payants": "rdv"
+    };
+    return slugMap[activeTab] || "formations";
+  };
+
   if (!mounted || isLoading || accessLoading) {
     return (
       <div className="max-w-6xl mx-auto p-8 space-y-4">
@@ -170,6 +186,9 @@ export default function MemberDashboard({
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-8 animate-in fade-in duration-500">
       
+      {/* VIDÉO ONBOARDING - Dynamique selon l'onglet */}
+      <OnboardingVideo pageSlug={getPageSlug()} />
+
       {/* Bandeau Pack actuel */}
       {pack && (
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">

@@ -1,6 +1,6 @@
 // hooks/useGenerateStatuts.ts
 import { useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser-client';
 
 export function useGenerateStatuts() {
   const [loading, setLoading] = useState(false);
@@ -11,11 +11,7 @@ export function useGenerateStatuts() {
     setError(null);
 
     try {
-      // Utilise le client Supabase global avec les clés publiques
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabase = getSupabaseBrowserClient();
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-statuts', {
         body: { company_id: companyId }

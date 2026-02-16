@@ -20,13 +20,30 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
+    // Récupérer l'utilisateur authentifié
+    const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !authUser) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
+
+    // CORRECTION: Récupérer l'ID de la table users avec auth_id
+    const { data: userData, error: userDataError } = await supabaseClient
+      .from('users')
+      .select('id')
+      .eq('auth_id', authUser.id)
+      .single();
+
+    if (userDataError || !userData) {
+      return new Response(JSON.stringify({ error: 'User not found in database' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
+    }
+
+    const userId = userData.id; // Maintenant on a le bon user_id
 
     const { company_id } = await req.json();
     
@@ -37,12 +54,12 @@ serve(async (req) => {
       });
     }
 
-    // Fetch company data
+    // Fetch company data avec le bon user_id
     const { data: company, error: companyError } = await supabaseClient
       .from('company_creation_data')
       .select('*')
       .eq('id', company_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId) // Utilise le user_id de la table users
       .single();
 
     if (companyError || !company) {
@@ -52,11 +69,11 @@ serve(async (req) => {
       });
     }
 
-    // Fetch shareholders - CORRIGÉ: utilise user.id au lieu de company_id
+    // Fetch shareholders avec le user_id de la table users
     const { data: shareholders } = await supabaseClient
       .from('company_shareholders')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     // Build president/gerant info
     const managerInfo = company.president_first_name && company.president_last_name
@@ -120,12 +137,12 @@ serve(async (req) => {
     // Generate document
     const buffer = await generateStatuts(companyData);
 
-    // Store document in Supabase Storage
+    // Store document in Supabase Storage avec authUser.id pour le path
     const fileName = `statuts-${company.company_name.replace(/\s+/g, '-')}-${Date.now()}.docx`;
     const { error: uploadError } = await supabaseClient
       .storage
       .from('documents')
-      .upload(`${user.id}/${company_id}/${fileName}`, buffer, {
+      .upload(`${authUser.id}/${company_id}/${fileName}`, buffer, {
         contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         upsert: true
       });
@@ -138,7 +155,7 @@ serve(async (req) => {
     const { data: urlData } = supabaseClient
       .storage
       .from('documents')
-      .getPublicUrl(`${user.id}/${company_id}/${fileName}`);
+      .getPublicUrl(`${authUser.id}/${company_id}/${fileName}`);
 
     return new Response(
       JSON.stringify({

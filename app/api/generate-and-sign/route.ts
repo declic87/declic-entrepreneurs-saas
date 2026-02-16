@@ -4,9 +4,16 @@ import { createClient } from '@supabase/supabase-js';
 import { generateAllDocuments } from '@/lib/pdf/pdfGenerator';
 import { createSignatureRequest } from '@/lib/yousign/yousignService';
 
+// ✅ UTILISER LE SERVICE ROLE (bypass RLS)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 export async function POST(request: NextRequest) {
@@ -30,6 +37,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dataError || !companyData) {
+      console.error('❌ Erreur récupération données:', dataError);
       return NextResponse.json(
         { error: 'Données de création introuvables' },
         { status: 404 }
@@ -65,6 +73,7 @@ export async function POST(request: NextRequest) {
 
     // 4️⃣ Uploader les PDFs dans Supabase Storage
     const uploadedDocIds: string[] = [];
+    const uploadErrors: string[] = [];
 
     for (const [docType, pdfDoc] of Object.entries(pdfs)) {
       try {
@@ -84,17 +93,22 @@ export async function POST(request: NextRequest) {
 
         if (uploadError) {
           console.error(`❌ Erreur upload ${docType}:`, uploadError);
+          uploadErrors.push(`Upload ${docType}: ${uploadError.message}`);
           continue;
         }
 
-        // Insérer dans la DB
+        console.log(`✅ ${docType} uploadé dans Storage`);
+
+        // Insérer dans la DB avec SERVICE ROLE (bypass RLS)
         const { data: dbDoc, error: dbError } = await supabase
           .from('company_documents')
           .insert({
             user_id: userId,
             document_type: docType,
-            file_name: getDocumentLabel(docType),
+            file_name: getDocumentLabel(docType) + '.pdf',
             file_path: filePath,
+            file_size: pdfBuffer.length,
+            mime_type: 'application/pdf',
             source: 'generated',
             status: 'pending',
             generated_at: new Date().toISOString(),
@@ -102,24 +116,35 @@ export async function POST(request: NextRequest) {
           .select()
           .single();
 
-        if (!dbError && dbDoc) {
-          uploadedDocIds.push(dbDoc.id);
-          console.log(`✅ ${docType} uploadé`);
+        if (dbError) {
+          console.error(`❌ Erreur DB ${docType}:`, JSON.stringify(dbError, null, 2));
+          uploadErrors.push(`DB ${docType}: ${dbError.message}`);
+          continue;
         }
 
-      } catch (error) {
+        if (dbDoc) {
+          uploadedDocIds.push(dbDoc.id);
+          console.log(`✅ ${docType} enregistré en DB`);
+        }
+
+      } catch (error: any) {
         console.error(`❌ Erreur traitement ${docType}:`, error);
+        uploadErrors.push(`${docType}: ${error.message}`);
       }
     }
 
     if (uploadedDocIds.length === 0) {
+      console.error('❌ Aucun document généré avec succès');
       return NextResponse.json(
-        { error: 'Aucun document généré' },
+        { 
+          error: 'Aucun document généré avec succès',
+          details: uploadErrors 
+        },
         { status: 500 }
       );
     }
 
-    console.log(`✅ ${uploadedDocIds.length} documents uploadés`);
+    console.log(`✅ ${uploadedDocIds.length} documents uploadés et enregistrés`);
 
     // 5️⃣ Créer la demande de signature YouSign
     console.log('🔐 Envoi en signature via YouSign...');
@@ -133,10 +158,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (!signatureResult.success) {
-      return NextResponse.json(
-        { error: signatureResult.error },
-        { status: 500 }
-      );
+      console.error('❌ Erreur YouSign:', signatureResult.error);
+      
+      // Même si YouSign échoue, on retourne les docs générés
+      return NextResponse.json({
+        success: true,
+        warning: 'Documents générés mais erreur signature',
+        signature_error: signatureResult.error,
+        documents_count: uploadedDocIds.length,
+        signature_url: null,
+      });
     }
 
     // 6️⃣ Mettre à jour le workflow
@@ -156,12 +187,16 @@ export async function POST(request: NextRequest) {
       signature_url: signatureResult.signatureUrl,
       signature_request_id: signatureResult.signatureRequestId,
       documents_count: uploadedDocIds.length,
+      errors: uploadErrors.length > 0 ? uploadErrors : undefined,
     });
 
   } catch (error: any) {
     console.error('❌ Erreur generate-and-sign:', error);
     return NextResponse.json(
-      { error: error.message || 'Erreur de génération' },
+      { 
+        error: error.message || 'Erreur de génération',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

@@ -158,8 +158,6 @@ export async function POST(request: NextRequest) {
 // 🔧 Préparer les données pour les templates
 function prepareTemplateData(companyData: any, profession?: ProfessionReglementee, shareholders: any[] = []) {
   const companyType = companyData.company_type;
-  
-  // Déterminer le titre du dirigeant
   const dirigeantTitre = ['SASU', 'SAS', 'SELAS', 'SELASU'].includes(companyType) ? 'Président' : 'Gérant';
 
   const baseData = {
@@ -171,12 +169,13 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     activity_description: companyData.activity_description || 'Activité non définie',
     duree: companyData.duree || '99',
     
-    // Adresse
+    // Adresse siège social
     address_line1: companyData.address_line1 || '',
     address_line2: companyData.address_line2 || '',
     postal_code: companyData.postal_code || '',
     city: companyData.city || '',
     country: companyData.country || 'France',
+    siege_social: `${companyData.address_line1 || ''}, ${companyData.postal_code || ''} ${companyData.city || ''}`.trim(),
     
     // Dirigeant
     president_first_name: companyData.president_first_name || '',
@@ -185,13 +184,22 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     president_birth_date: formatDate(companyData.president_birth_date),
     president_birth_place: companyData.president_birth_place || '',
     president_nationality: companyData.president_nationality || 'Française',
-    president_address: companyData.president_address || '',
+    president_address: companyData.president_address || companyData.address_line1 || '',
+    
+    // Gérant (alias du président)
+    gerant_first_name: companyData.president_first_name || '',
+    gerant_last_name: companyData.president_last_name || '',
+    gerant_full_name: `${companyData.president_first_name || ''} ${companyData.president_last_name || ''}`.trim(),
+    gerant_birth_date: formatDate(companyData.president_birth_date),
+    gerant_birth_place: companyData.president_birth_place || '',
+    gerant_nationality: companyData.president_nationality || 'Française',
+    gerant_address: companyData.president_address || companyData.address_line1 || '',
     
     // Variable dynamique dirigeant
     dirigeant_titre: dirigeantTitre,
     
     // Banque
-    bank_name: companyData.bank_name || '',
+    bank_name: companyData.bank_name || 'BANQUE',
     iban: companyData.iban || '',
     
     // Dates
@@ -200,17 +208,27 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     year: new Date().getFullYear().toString(),
     month: formatMonth(new Date()),
     day: new Date().getDate().toString(),
+    date_constitution: formatDateLong(new Date()),
+    
+    // Apports
+    apports_numeraire: companyData.capital_amount || '0',
+    apports_nature: companyData.apports_nature || '',
+    apports_nature_valorisation: companyData.apports_nature_valorisation || '0',
+    
+    // Exercice social
+    exercice_debut: companyData.exercice_debut || '1er janvier',
+    exercice_fin: companyData.exercice_fin || '31 décembre',
     
     // Associés (si multi-associés)
     shareholders: shareholders.map(s => ({
-      first_name: s.first_name,
-      last_name: s.last_name,
-      full_name: `${s.first_name} ${s.last_name}`,
+      first_name: s.first_name || '',
+      last_name: s.last_name || '',
+      full_name: `${s.first_name || ''} ${s.last_name || ''}`.trim(),
       birth_date: formatDate(s.birth_date),
-      birth_place: s.birth_place,
+      birth_place: s.birth_place || '',
       nationality: s.nationality || 'Française',
-      address: s.address,
-      shares_count: s.shares_count,
+      address: s.address || '',
+      shares_count: s.shares_count || 0,
       shares_percentage: s.shares_percentage?.toFixed(2) || '0.00',
       apport_numeraire: s.apport_numeraire || 0,
       apport_nature: s.apport_nature || '',
@@ -220,8 +238,12 @@ function prepareTemplateData(companyData: any, profession?: ProfessionReglemente
     })),
     total_shares: shareholders.reduce((sum, s) => sum + (s.shares_count || 0), 0),
     
-    // Gérant (pour SCI/SARL/EURL/SEL)
-    gerant_full_name: companyData.president_full_name || `${companyData.president_first_name || ''} ${companyData.president_last_name || ''}`.trim(),
+    // Nombre d'associés
+    nombre_associes: shareholders.length || 1,
+    
+    // Variables communes manquantes
+    statuts_type: companyType,
+    forme_sociale: companyType,
   };
 
   // Ajouter les données spécifiques aux SEL
@@ -249,14 +271,8 @@ async function generateDocumentFromTemplate(templatePath: string, data: any): Pr
     let fullPath: string;
     
     if (process.env.VERCEL) {
-      // Production Vercel - essayer plusieurs paths possibles
-      const paths = [
-        join(process.cwd(), '.next', 'static', 'templates', templatePath),
-        join(process.cwd(), 'public', 'templates', templatePath),
-        join('/var/task', 'public', 'templates', templatePath),
-      ];
-      
-      fullPath = paths[1]; // Commencer par public/templates
+      // Production Vercel
+      fullPath = join(process.cwd(), 'public', 'templates', templatePath);
       console.log('📂 Production - Template path:', fullPath);
     } else {
       // Développement local
@@ -320,7 +336,6 @@ function formatMonth(date: Date): string {
 }
 
 function numberToWords(num: number): string {
-  // Implémentation basique - à améliorer
   if (num === 0) return 'zéro';
   
   const units = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
@@ -335,6 +350,5 @@ function numberToWords(num: number): string {
     return tens[ten] + (unit ? `-${units[unit]}` : '');
   }
   
-  // Pour les nombres plus grands, retourner le chiffre
   return num.toString();
 }

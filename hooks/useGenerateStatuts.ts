@@ -1,6 +1,5 @@
 // hooks/useGenerateStatuts.ts
 import { useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 
 export function useGenerateStatuts() {
   const [loading, setLoading] = useState(false);
@@ -11,37 +10,20 @@ export function useGenerateStatuts() {
     setError(null);
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      console.log('Appel API Route Next.js...');
 
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('Non authentifié');
-      }
-
-      console.log('Session trouvée, appel direct avec fetch...');
-
-      // Appel DIRECT avec fetch au lieu du SDK Supabase
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-statuts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-          },
-          body: JSON.stringify({ company_id: companyId })
-        }
-      );
+      // Appeler notre API Route au lieu de l'Edge Function directement
+      const response = await fetch('/api/generate-statuts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ company_id: companyId })
+      });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', response.status, errorText);
-        throw new Error(`Erreur ${response.status}: ${errorText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la génération');
       }
 
       const data = await response.json();

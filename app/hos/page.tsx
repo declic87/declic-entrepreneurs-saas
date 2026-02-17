@@ -1,139 +1,285 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/ui/dashboard-layout";
-import { Users, TrendingUp, Mail, Phone, MoreVertical, Target, Calendar, Award, UserPlus, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
+import { 
+  Users, 
+  TrendingUp, 
+  DollarSign, 
+  Target,
+  Award,
+  AlertTriangle,
+  Phone,
+  Calendar,
+  Activity
+} from 'lucide-react';
 
-const hosNavItems = [
-  { label: "Dashboard", href: "/hos", icon: TrendingUp },
-  { label: "Mon Équipe", href: "/hos/equipe", icon: Users },
-  { label: "Pipeline", href: "/hos/pipeline", icon: Target },
-  { label: "Rendez-vous", href: "/hos/rdv", icon: Calendar },
-  { label: "Performance", href: "/hos/performance", icon: Award },
-];
+interface HOSStats {
+  totalLeads: number;
+  activeClosers: number;
+  activeSetters: number;
+  caMonth: number;
+  rdvMonth: number;
+  conversionRate: number;
+  closingRate: number;
+}
 
-export default function TeamPage() {
+interface TeamPerformance {
+  id: string;
+  name: string;
+  role: string;
+  calls: number;
+  rdv: number;
+  closes: number;
+  ca: number;
+}
+
+export default function HOSDashboard() {
+  const [stats, setStats] = useState<HOSStats>({
+    totalLeads: 0,
+    activeClosers: 0,
+    activeSetters: 0,
+    caMonth: 0,
+    rdvMonth: 0,
+    conversionRate: 0,
+    closingRate: 0,
+  });
+  const [teamPerformance, setTeamPerformance] = useState<TeamPerformance[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
+    loadStats();
+    loadTeamPerformance();
   }, []);
 
-  const team = [
-    { id: 1, name: "Jean Dupont", role: "Closer Senior", status: "En ligne", sales: "12", revenue: "24 500€", email: "jean@declic.fr" },
-    { id: 2, name: "Alice Martin", role: "SDR", status: "En rendez-vous", sales: "8", revenue: "14 200€", email: "alice@declic.fr" },
-    { id: 3, name: "Lucas Meyer", role: "Closer", status: "Hors ligne", sales: "10", revenue: "18 900€", email: "lucas@declic.fr" },
-    { id: 4, name: "Sophie Vallet", role: "Closer Senior", status: "En ligne", sales: "15", revenue: "31 800€", email: "sophie@declic.fr" },
-  ];
+  async function loadStats() {
+    // TODO: Charger vraies stats depuis team_members
+    setStats({
+      totalLeads: 487,
+      activeClosers: 4,
+      activeSetters: 3,
+      caMonth: 127800,
+      rdvMonth: 156,
+      conversionRate: 32.1,
+      closingRate: 18.5,
+    });
+    setLoading(false);
+  }
+
+  async function loadTeamPerformance() {
+    // TODO: Charger depuis team_members avec leurs stats
+    setTeamPerformance([
+      { id: '1', name: 'Sophie Martin', role: 'Closer', calls: 142, rdv: 45, closes: 12, ca: 45600 },
+      { id: '2', name: 'Thomas Dubois', role: 'Closer', calls: 128, rdv: 38, closes: 9, ca: 38200 },
+      { id: '3', name: 'Marie Lefebvre', role: 'Setter', calls: 267, rdv: 78, closes: 0, ca: 0 },
+      { id: '4', name: 'Lucas Bernard', role: 'Setter', calls: 245, rdv: 68, closes: 0, ca: 0 },
+      { id: '5', name: 'Emma Rousseau', role: 'Closer', calls: 115, rdv: 32, closes: 7, ca: 28400 },
+    ]);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <DashboardLayout navItems={hosNavItems}>
-      
-      <div className="space-y-6">
-        {/* Header de la page */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Mon Équipe</h1>
-            <p className="text-slate-500 text-sm">Suivi des performances individuelles des commerciaux.</p>
+            <h1 className="text-4xl font-bold text-gray-900">Dashboard HOS</h1>
+            <p className="text-gray-600 mt-2">Vue d'ensemble de la performance commerciale</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 flex items-center gap-2 transition-all">
-            <UserPlus size={18} />
-            Ajouter un commercial
-          </Button>
+          <div className="flex gap-3">
+            <a
+              href="/hos/equipe"
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Gérer l'Équipe
+            </a>
+            <a
+              href="/hos/pipeline"
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+            >
+              Pipeline Global
+            </a>
+          </div>
         </div>
 
-        {/* Barre de recherche et filtres rapides */}
-        <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                    type="text" 
-                    placeholder="Rechercher par nom ou rôle..." 
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                />
+        {/* Top KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Target size={24} className="text-blue-600" />
+              </div>
             </div>
-            <div className="flex gap-2">
-                <select className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Tous les rôles</option>
-                    <option>Closer</option>
-                    <option>SDR</option>
-                </select>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Leads Actifs</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.totalLeads}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Calendar size={24} className="text-green-600" />
+              </div>
             </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">RDV ce Mois</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.rdvMonth}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <DollarSign size={24} className="text-purple-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">CA du Mois</h3>
+            <p className="text-3xl font-bold text-gray-900">{(stats.caMonth / 1000).toFixed(0)}K€</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <TrendingUp size={24} className="text-orange-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Taux Closing</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.closingRate}%</p>
+          </div>
         </div>
 
-        {/* Tableau */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Team Overview */}
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+              <Users size={20} />
+              Setters
+            </h3>
+            <p className="text-5xl font-bold mb-2">{stats.activeSetters}</p>
+            <p className="text-blue-100 text-sm">Actifs ce mois</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+              <Award size={20} />
+              Closers
+            </h3>
+            <p className="text-5xl font-bold mb-2">{stats.activeClosers}</p>
+            <p className="text-purple-100 text-sm">Actifs ce mois</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+              <Activity size={20} />
+              Taux Conversion
+            </h3>
+            <p className="text-5xl font-bold mb-2">{stats.conversionRate}%</p>
+            <p className="text-green-100 text-sm">Lead → RDV</p>
+          </div>
+        </div>
+
+        {/* Leaderboard */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">🏆 Classement de l'Équipe</h2>
+            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+              <option>Ce mois</option>
+              <option>Cette semaine</option>
+              <option>Aujourd'hui</option>
+            </select>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-[11px] uppercase tracking-wider font-bold text-slate-400">Membre</th>
-                  <th className="px-6 py-4 text-[11px] uppercase tracking-wider font-bold text-slate-400">Statut</th>
-                  <th className="px-6 py-4 text-[11px] uppercase tracking-wider font-bold text-slate-400 text-center">Ventes (Mois)</th>
-                  <th className="px-6 py-4 text-[11px] uppercase tracking-wider font-bold text-slate-400">CA Généré</th>
-                  <th className="px-6 py-4 text-[11px] uppercase tracking-wider font-bold text-slate-400 text-right">Actions</th>
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Rang
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Commercial
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Rôle
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">
+                    Appels
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">
+                    RDV
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">
+                    Closes
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                    CA Généré
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                    // Skeleton loading simple
-                    [1,2,3].map(i => (
-                        <tr key={i} className="animate-pulse">
-                            <td colSpan={5} className="px-6 py-6 bg-slate-50/20"></td>
-                        </tr>
-                    ))
-                ) : (
-                    team.map((member) => (
-                    <tr key={member.id} className="hover:bg-blue-50/30 transition-colors group">
-                        <td className="px-6 py-4">
+              <tbody className="divide-y divide-gray-200">
+                {teamPerformance.map((member, index) => {
+                  const isTop3 = index < 3;
+                  const medalColors = ['text-yellow-500', 'text-gray-400', 'text-orange-600'];
+
+                  return (
+                    <tr key={member.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {isTop3 && (
+                            <Award className={medalColors[index]} size={20} fill="currentColor" />
+                          )}
+                          <span className="text-lg font-bold text-gray-900">#{index + 1}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all">
-                            {member.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <div>
-                            <p className="font-bold text-slate-900 text-sm leading-none mb-1">{member.name}</p>
-                            <p className="text-xs text-slate-500">{member.role}</p>
-                            </div>
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                            {member.name.charAt(0)}
+                          </div>
+                          <span className="font-semibold text-gray-900">{member.name}</span>
                         </div>
-                        </td>
-                        <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                            member.status === 'En ligne' 
-                            ? 'bg-emerald-50 text-emerald-600' 
-                            : member.status === 'En rendez-vous' 
-                            ? 'bg-amber-50 text-amber-600'
-                            : 'bg-slate-100 text-slate-500'
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          member.role === 'Closer'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
                         }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                member.status === 'En ligne' ? 'bg-emerald-500' : member.status === 'En rendez-vous' ? 'bg-amber-500' : 'bg-slate-400'
-                            }`}></span>
-                            {member.status}
+                          {member.role}
                         </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-slate-700 text-center">{member.sales}</td>
-                        <td className="px-6 py-4">
-                            <span className="text-sm font-bold text-slate-900">{member.revenue}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                        <div className="flex justify-end gap-1">
-                            <button title="Envoyer un mail" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Mail size={18} /></button>
-                            <button title="Appeler" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Phone size={18} /></button>
-                            <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"><MoreVertical size={18} /></button>
-                        </div>
-                        </td>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-gray-900">{member.calls}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-gray-900">{member.rdv}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-gray-900">{member.closes}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-lg font-bold text-green-600">
+                          {member.ca > 0 ? `${member.ca.toLocaleString()}€` : '-'}
+                        </span>
+                      </td>
                     </tr>
-                    ))
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-             <p className="text-xs text-slate-500">Affichage de {team.length} membres actifs</p>
-          </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

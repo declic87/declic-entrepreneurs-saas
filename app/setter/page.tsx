@@ -1,117 +1,319 @@
-"use client";
+'use client';
 
-import { DashboardLayout } from "@/components/ui/dashboard-layout";
+import { useEffect, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import { 
   Users, 
+  Phone, 
   Calendar, 
-  PhoneCall, 
   Clock, 
-  Plus, 
-  ChevronRight, 
+  TrendingUp,
+  Target,
   AlertCircle,
-  Home,
-  BarChart2
-} from "lucide-react";
+  CheckCircle2,
+  Zap
+} from 'lucide-react';
 
-// On passe la référence du composant (ex: Home) et non l'élément rendu (ex: <Home />)
-const setterNavItems = [
-  { label: "Vue d'ensemble", href: "/setter", icon: Home },
-  { label: "Mes Leads", href: "/setter/leads", icon: Users },
-  { label: "Mon Agenda", href: "/setter/agenda", icon: Calendar },
-  { label: "Performances", href: "/setter/stats", icon: BarChart2 },
-];
+interface SetterStats {
+  leadsAssigned: number;
+  callsToday: number;
+  callsTarget: number;
+  rdvBooked: number;
+  conversionRate: number;
+  avgCallDuration: string;
+}
+
+interface Lead {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  status: string;
+  temperature: string;
+  created_at: string;
+  last_contact: string | null;
+}
 
 export default function SetterDashboard() {
+  const [stats, setStats] = useState<SetterStats>({
+    leadsAssigned: 0,
+    callsToday: 0,
+    callsTarget: 40,
+    rdvBooked: 0,
+    conversionRate: 0,
+    avgCallDuration: '0:00',
+  });
+  const [priorityLeads, setPriorityLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    if (userId) {
+      loadStats();
+      loadPriorityLeads();
+    }
+  }, [userId]);
+
+  async function loadUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single();
+
+      if (profile) {
+        setUserId(profile.id);
+      }
+    }
+  }
+
+  async function loadStats() {
+    // TODO: Implémenter les vraies stats depuis la base
+    // Pour l'instant, données de démonstration
+    setStats({
+      leadsAssigned: 62,
+      callsToday: 28,
+      callsTarget: 40,
+      rdvBooked: 12,
+      conversionRate: 19.4,
+      avgCallDuration: '3:24',
+    });
+    setLoading(false);
+  }
+
+  async function loadPriorityLeads() {
+    // TODO: Charger les vrais leads depuis la table
+    // Pour l'instant, données de démo
+    setPriorityLeads([
+      {
+        id: '1',
+        first_name: 'Jean',
+        last_name: 'Dupont',
+        email: 'jean@test.fr',
+        phone: '06 12 34 56 78',
+        status: 'NOUVEAU',
+        temperature: 'HOT',
+        created_at: new Date(Date.now() - 600000).toISOString(),
+        last_contact: null,
+      },
+      {
+        id: '2',
+        first_name: 'Marie',
+        last_name: 'Martin',
+        email: 'marie@test.fr',
+        phone: '06 98 76 54 32',
+        status: 'RELANCE',
+        temperature: 'WARM',
+        created_at: new Date(Date.now() - 7200000).toISOString(),
+        last_contact: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        id: '3',
+        first_name: 'Pierre',
+        last_name: 'Durand',
+        email: 'pierre@test.fr',
+        phone: '06 11 22 33 44',
+        status: 'NOUVEAU',
+        temperature: 'HOT',
+        created_at: new Date(Date.now() - 1800000).toISOString(),
+        last_contact: null,
+      },
+    ]);
+  }
+
+  const callProgress = (stats.callsToday / stats.callsTarget) * 100;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <DashboardLayout navItems={setterNavItems}>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-black text-blue-900 uppercase italic">Dashboard Setter</h1>
-            <p className="text-gray-500 font-medium">Objectif du jour : 40 appels (70% complétés)</p>
+            <h1 className="text-4xl font-bold text-gray-900">Dashboard Setter</h1>
+            <p className="text-gray-600 mt-2">
+              Objectif du jour : {stats.callsTarget} appels ({callProgress.toFixed(0)}% complété)
+            </p>
           </div>
-          <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg shadow-emerald-100 uppercase text-sm tracking-tighter">
-            <Plus size={20} /> Nouvel Appel
+          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+            <Phone size={20} />
+            Nouvel Appel
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard icon={<Users />} count="62" label="Leads à appeler" color="text-blue-600" bg="bg-blue-100" />
-            <StatCard icon={<PhoneCall />} count="28" label="Appels aujourd'hui" color="text-emerald-600" bg="bg-emerald-100" />
-            <StatCard icon={<Calendar />} count="12" label="RDV pris ce mois" color="text-orange-600" bg="bg-orange-100" />
-            <StatCard icon={<Clock />} count="3h24" label="Temps d'appel" color="text-purple-600" bg="bg-purple-100" />
+        {/* Progress Bar */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-600">Progression Journalière</span>
+            <span className="text-2xl font-bold text-gray-900">
+              {stats.callsToday} / {stats.callsTarget}
+            </span>
+          </div>
+          <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+              style={{ width: `${Math.min(callProgress, 100)}%` }}
+            />
+          </div>
         </div>
 
-        {/* Priorités */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-black text-blue-900 uppercase">Leads prioritaires</h2>
-                <button className="text-sm font-bold text-blue-600 hover:underline">Voir tout</button>
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Users size={24} className="text-blue-600" />
+              </div>
             </div>
-            
-            <div className="space-y-4">
-              {[
-                { name: "Jean Dupont", time: "Il y a 10 min", status: "Nouveau" },
-                { name: "Marie Morel", time: "Hier", status: "Relance" },
-                { name: "Lucas Bernard", time: "Il y a 2h", status: "Urgent" },
-              ].map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-gray-50 hover:bg-slate-50 transition-colors group cursor-pointer">
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Leads à Appeler</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.leadsAssigned}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Phone size={24} className="text-green-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Appels Aujourd'hui</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.callsToday}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <Calendar size={24} className="text-orange-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">RDV Bookés</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.rdvBooked}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <TrendingUp size={24} className="text-purple-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Taux de Conv.</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.conversionRate}%</p>
+          </div>
+        </div>
+
+        {/* Priority Leads */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="text-red-500" size={24} />
+              <h2 className="text-2xl font-bold text-gray-900">Leads Prioritaires</h2>
+            </div>
+            <a href="/setter/leads" className="text-blue-600 hover:text-blue-700 font-medium">
+              Voir tous →
+            </a>
+          </div>
+
+          <div className="space-y-4">
+            {priorityLeads.map((lead) => {
+              const timeAgo = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 60000);
+              const isUrgent = timeAgo < 30 || lead.temperature === 'HOT';
+
+              return (
+                <div
+                  key={lead.id}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+                    isUrgent
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-gray-200 bg-gray-50 hover:bg-white'
+                  }`}
+                >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center font-bold text-white">
-                      {lead.name[0]}
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      {lead.first_name.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-bold text-blue-900">{lead.name}</p>
-                      <p className="text-xs text-gray-400">Inscrit {lead.time}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-gray-900 text-lg">
+                          {lead.first_name} {lead.last_name}
+                        </p>
+                        {lead.temperature === 'HOT' && (
+                          <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                            🔥 HOT
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-sm text-gray-500">{lead.phone}</span>
+                        <span className="text-xs text-gray-400">
+                          {timeAgo < 60 ? `Il y a ${timeAgo} min` : 'Il y a plusieurs heures'}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        lead.status === 'Urgent' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      lead.status === 'NOUVEAU' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
                     }`}>
                       {lead.status}
                     </span>
-                    <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-600 transition-colors" />
+                    <button className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                      <Phone size={18} />
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Clock size={20} />
+              Temps Moyen d'Appel
+            </h3>
+            <p className="text-4xl font-bold text-gray-900">{stats.avgCallDuration}</p>
           </div>
 
-          {/* Rappels */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-black text-blue-900 mb-4 flex items-center gap-2 uppercase">
-                <AlertCircle size={20} className="text-orange-500" /> Rappels
-            </h2>
-            <div className="space-y-4">
-               <div className="p-4 bg-orange-50 rounded-xl border-l-4 border-orange-400">
-                  <p className="text-sm font-bold text-orange-800 italic uppercase">Rappeler Marc A.</p>
-                  <p className="text-xs text-orange-700 mt-1">Prévu à 14h30 - "Besoin de détails sur l'offre PRO"</p>
-               </div>
-               <p className="text-sm text-gray-400 text-center py-4 font-medium italic">Aucun autre rappel pour aujourd'hui.</p>
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Zap size={20} />
+              Objectif du Mois
+            </h3>
+            <div className="flex items-baseline gap-2">
+              <p className="text-4xl font-bold">{stats.rdvBooked * 2.5}</p>
+              <span className="text-blue-100">/ 200 RDV</span>
+            </div>
+            <div className="mt-4 w-full h-2 bg-blue-400 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white"
+                style={{ width: `${(stats.rdvBooked * 2.5 / 200) * 100}%` }}
+              />
             </div>
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
-}
-
-function StatCard({ icon, count, label, color, bg }: any) {
-    return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 ${bg} ${color} rounded-xl flex items-center justify-center`}>
-                    {icon}
-                </div>
-                <div>
-                    <p className="text-2xl font-black text-blue-900">{count}</p>
-                    <p className="text-sm font-medium text-gray-500">{label}</p>
-                </div>
-            </div>
-        </div>
-    );
 }

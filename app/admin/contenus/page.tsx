@@ -79,14 +79,15 @@ export default function AdminContenus() {
 }
 
 // ============================================
-// ONGLET 1 : FORMATIONS
+// ONGLET 1 : FORMATIONS (AVEC CATÉGORIES)
 // ============================================
 function FormationsTab({ supabase }: any) {
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [videos, setVideos] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
-    category: "",
+    category: "Créateur", // Par défaut
     description: "",
     duration: "",
     loom_id: "",
@@ -95,10 +96,16 @@ function FormationsTab({ supabase }: any) {
 
   useEffect(() => {
     fetchVideos();
-  }, []);
+  }, [categoryFilter]);
 
   async function fetchVideos() {
-    const { data } = await supabase.from("videos").select("*").order("created_at", { ascending: false });
+    let query = supabase.from("videos").select("*").order("created_at", { ascending: false });
+    
+    if (categoryFilter !== "all") {
+      query = query.eq("category", categoryFilter);
+    }
+    
+    const { data } = await query;
     setVideos(data || []);
   }
 
@@ -113,7 +120,7 @@ function FormationsTab({ supabase }: any) {
   }
 
   function resetForm() {
-    setFormData({ title: "", category: "", description: "", duration: "", loom_id: "", is_new: false });
+    setFormData({ title: "", category: "Créateur", description: "", duration: "", loom_id: "", is_new: false });
     setEditingId(null);
   }
 
@@ -123,42 +130,109 @@ function FormationsTab({ supabase }: any) {
   }
 
   async function handlePublish(video: any) {
-    const result = await publishAndNotify("formation", video.title, "/client/formations");
+    const result = await publishAndNotify("formation", video.title, "/client");
     if (result.success) {
-      alert("✅ Notification envoyée à tous les clients !");
+      alert("✅ Notification envoyée aux clients concernés !");
     } else {
       alert("❌ Erreur lors de l'envoi");
     }
   }
 
+  const categories = [
+    { value: "all", label: "📚 Toutes les formations", color: "slate" },
+    { value: "Créateur", label: "🚀 Formation Créateur (497€)", color: "blue" },
+    { value: "Agent Immo", label: "🏠 Formation Agent Immo (897€)", color: "green" },
+    { value: "Accompagnement", label: "💼 Formations Accompagnement", color: "purple" }
+  ];
+
   return (
     <div className="space-y-6">
-      <Card>
+      {/* Filtres par catégorie */}
+      <div className="flex gap-2 flex-wrap">
+        {categories.map(cat => (
+          <button
+            key={cat.value}
+            onClick={() => setCategoryFilter(cat.value)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              categoryFilter === cat.value
+                ? `bg-${cat.color}-500 text-white shadow-md`
+                : `bg-${cat.color}-50 text-${cat.color}-700 hover:bg-${cat.color}-100`
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Formulaire d'ajout/édition */}
+      <Card className="border-2 border-amber-200">
         <CardContent className="p-6">
           <h3 className="text-xl font-bold text-[#123055] mb-4">
-            {editingId ? "Modifier la vidéo" : "Ajouter une vidéo"}
+            {editingId ? "✏️ Modifier la vidéo" : "➕ Ajouter une vidéo"}
           </h3>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <Input placeholder="Titre" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-            <Input placeholder="Catégorie" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
-            <Input placeholder="Durée (ex: 15 min)" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} />
-            <Input placeholder="Loom ID" value={formData.loom_id} onChange={e => setFormData({ ...formData, loom_id: e.target.value })} />
+          
+          {/* Sélecteur de catégorie */}
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              📂 Catégorie (détermine l'accès)
+            </label>
+            <select
+              value={formData.category}
+              onChange={e => setFormData({ ...formData, category: e.target.value })}
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 ring-amber-500/20 outline-none"
+            >
+              <option value="Créateur">🚀 Formation Créateur (497€ - 3 mois)</option>
+              <option value="Agent Immo">🏠 Formation Agent Immo (897€ - 3 mois)</option>
+              <option value="Accompagnement">💼 Formations Accompagnement (STARTER/PRO/EXPERT)</option>
+            </select>
+            <p className="text-xs text-slate-500 mt-1">
+              {formData.category === "Créateur" && "✅ Visible uniquement pour les clients avec pack Formation Créateur"}
+              {formData.category === "Agent Immo" && "✅ Visible uniquement pour les clients avec pack Formation Agent Immo"}
+              {formData.category === "Accompagnement" && "✅ Visible pour STARTER, PRO et EXPERT"}
+            </p>
           </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <Input 
+              placeholder="Titre du module" 
+              value={formData.title} 
+              onChange={e => setFormData({ ...formData, title: e.target.value })} 
+            />
+            <Input 
+              placeholder="Durée (ex: 15 min)" 
+              value={formData.duration} 
+              onChange={e => setFormData({ ...formData, duration: e.target.value })} 
+            />
+            <div className="col-span-2">
+              <Input 
+                placeholder="Loom ID (ex: abc123def456)" 
+                value={formData.loom_id} 
+                onChange={e => setFormData({ ...formData, loom_id: e.target.value })} 
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                💡 Copiez l'ID depuis l'URL Loom : https://www.loom.com/share/<strong>abc123def456</strong>
+              </p>
+            </div>
+          </div>
+
           <textarea
-            placeholder="Description"
+            placeholder="Description du module (objectifs, contenu...)"
             value={formData.description}
             onChange={e => setFormData({ ...formData, description: e.target.value })}
             className="w-full p-3 border rounded-lg mb-4"
             rows={3}
           />
+
           <div className="flex items-center gap-2 mb-4">
             <input
               type="checkbox"
               checked={formData.is_new}
               onChange={e => setFormData({ ...formData, is_new: e.target.checked })}
+              className="w-4 h-4"
             />
-            <label className="text-sm">Marquer comme "Nouveau"</label>
+            <label className="text-sm font-medium">⭐ Marquer comme "Nouveau"</label>
           </div>
+
           <div className="flex gap-2">
             <Button onClick={saveVideo} className="bg-[#F59E0B] hover:bg-[#D97706] text-white">
               <Save size={18} className="mr-2" />
@@ -174,33 +248,79 @@ function FormationsTab({ supabase }: any) {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4">
-        {videos.map(video => (
-          <Card key={video.id}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex-1">
-                <h4 className="font-bold text-[#123055]">{video.title}</h4>
-                <p className="text-sm text-slate-600">{video.category} • {video.duration}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => handlePublish(video)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Send size={16} className="mr-1" />
-                  Publier
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => { setFormData(video); setEditingId(video.id); }}>
-                  Modifier
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => deleteVideo(video.id)}>
-                  <Trash2 size={16} />
-                </Button>
-              </div>
+      {/* Liste des vidéos */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-bold text-slate-700">
+          {categoryFilter === "all" 
+            ? `📚 Toutes les formations (${videos.length})` 
+            : `${categories.find(c => c.value === categoryFilter)?.label} (${videos.length})`}
+        </h3>
+
+        {videos.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center text-slate-400">
+              <Video size={64} className="mx-auto mb-4 opacity-20" />
+              <p>Aucune vidéo dans cette catégorie</p>
             </CardContent>
           </Card>
-        ))}
+        ) : (
+          videos.map(video => (
+            <Card key={video.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                      video.category === "Créateur" ? "bg-blue-100 text-blue-700" :
+                      video.category === "Agent Immo" ? "bg-green-100 text-green-700" :
+                      "bg-purple-100 text-purple-700"
+                    }`}>
+                      {video.category}
+                    </span>
+                    {video.is_new && (
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">
+                        NOUVEAU
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-[#123055]">{video.title}</h4>
+                  <p className="text-sm text-slate-600">{video.duration}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={() => handlePublish(video)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Send size={16} className="mr-1" />
+                    Publier
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => { 
+                      setFormData(video); 
+                      setEditingId(video.id); 
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  >
+                    Modifier
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => {
+                      if (confirm(`Supprimer "${video.title}" ?`)) {
+                        deleteVideo(video.id);
+                      }
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
@@ -252,7 +372,7 @@ function TutosPratiquesTab({ supabase }: any) {
   }
 
   async function handlePublish(tuto: any) {
-    const result = await publishAndNotify("tuto", tuto.title, "/client/tutos");
+    const result = await publishAndNotify("tuto", tuto.title, "/client");
     if (result.success) {
       alert("✅ Notification envoyée à tous les clients !");
     } else {
@@ -387,7 +507,7 @@ function CoachingsTab({ supabase }: any) {
   }
 
   async function handlePublish(coaching: any) {
-    const result = await publishAndNotify("coaching", coaching.title, "/client/coachings");
+    const result = await publishAndNotify("coaching", coaching.title, "/client");
     if (result.success) {
       alert("✅ Notification envoyée à tous les clients !");
     } else {
@@ -546,7 +666,7 @@ function AteliersTab({ supabase }: any) {
   }
 
   async function handlePublish(atelier: any) {
-    const result = await publishAndNotify("atelier", atelier.title, "/client/ateliers");
+    const result = await publishAndNotify("atelier", atelier.title, "/client");
     if (result.success) {
       alert("✅ Notification envoyée à tous les clients !");
     } else {

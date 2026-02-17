@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useMessaging } from "@/hooks/useMessaging";
+import { OnboardingVideo } from "@/components/OnboardingVideo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -131,6 +132,9 @@ export default function ClientMessagesPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-6">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="messages" />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

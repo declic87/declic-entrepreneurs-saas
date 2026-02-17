@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
   UserCheck, FileText, Calculator, MessageSquare, LogOut, Building,
-  Play, Video, ChevronRight
+  Play, Video, ChevronRight, Handshake // 🆕 Icône Partenaire
 } from "lucide-react";
 
 interface SidebarProps {
@@ -30,6 +30,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Experts", href: "/admin/experts", icon: Briefcase },
     { label: "Contenus", href: "/admin/contenus", icon: Video },
     { label: "Onboarding Staff", href: "/admin/onboarding-staff", icon: Play },
+    { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video }, // 🆕 NOUVEAU
     { label: "Paiements", href: "/admin/paiements", icon: CreditCard },
     { label: "Remboursements", href: "/admin/remboursements", icon: RefreshCw },
     { label: "Tâches", href: "/admin/taches", icon: CheckCircle },
@@ -70,6 +71,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Documents", href: "/client/documents", icon: FileText },
     { label: "Simulateur", href: "/client/simulateur", icon: Calculator },
     { label: "Messages", href: "/client/messages", icon: MessageSquare },
+    { label: "Partenaire", href: "/client/partenaire", icon: Handshake }, // 🆕 NOUVEAU
     { label: "Paramètres", href: "/client/parametres", icon: Settings },
   ],
 };

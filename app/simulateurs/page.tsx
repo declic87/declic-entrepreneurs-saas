@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { OnboardingVideo } from "@/components/OnboardingVideo";
 import {
   FileSpreadsheet,
   TrendingUp,
@@ -33,7 +34,7 @@ const NAV_LINKS = [
 
 const SIMULATEURS = [
   { title: "Comparateur de Statuts", subtitle: "Micro vs SASU vs EURL", icon: FileSpreadsheet, href: "/simulateurs/comparateur", color: "#3B82F6" },
-  { title: "Simulateur d’Économies", subtitle: "Méthode VASE", icon: TrendingUp, href: "/simulateurs/economies", color: "#10B981" },
+  { title: "Simulateur d'Économies", subtitle: "Méthode VASE", icon: TrendingUp, href: "/simulateurs/economies", color: "#10B981" },
   { title: "Calculateur de Charges", subtitle: "Charges sociales et fiscales", icon: Receipt, href: "/simulateurs/charges", color: "#8B5CF6" },
   { title: "Indemnités Kilométriques", subtitle: "Barème IK 2024‑2026", icon: Car, href: "/simulateurs/ik", color: "#0EA5E9" },
   { title: "Investissement Immobilier", subtitle: "LMNP, SCI IR, SCI IS", icon: Building2, href: "/simulateurs/immobilier", color: "#F59E0B" },
@@ -148,8 +149,13 @@ export default function SimulateursPage() {
         )}
       </nav>
 
+      {/* VIDÉO ONBOARDING - ajouté ici après le header fixe */}
+      <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <OnboardingVideo pageSlug="simulateur" />
+      </div>
+
       {/* Header de page simulateurs */}
-      <header className="pt-28 md:pt-32 pb-8 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
+      <header className="pt-8 pb-8 bg-[radial-gradient(1200px_500px_at_20%_-10%,#1f3a5f_0%,transparent_60%),linear-gradient(180deg,#18314f_0%,#0f2742_100%)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold">Nos simulateurs gratuits</h1>
           <p className="text-slate-200 mt-3 max-w-2xl mx-auto">
@@ -206,9 +212,9 @@ export default function SimulateursPage() {
       {/* CTA + footer brandés comme le home */}
       <section className="py-16 bg-[linear-gradient(180deg,#0f2742_0%,#0f2742_60%,#102b48_100%)] text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl md:text-4xl font-extrabold">Besoin d’un diagnostic rapide ?</h3>
+          <h3 className="text-3xl md:text-4xl font-extrabold">Besoin d'un diagnostic rapide ?</h3>
           <p className="text-white/90 mt-3">
-            45 minutes avec un expert pour obtenir un plan d’action personnalisé.
+            45 minutes avec un expert pour obtenir un plan d'action personnalisé.
           </p>
           <Link
             href="https://calendly.com/declic-entrepreneurs/diagnostic"

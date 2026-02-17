@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr"; // On passe sur SSR
 import { cookies } from "next/headers";
-import { Sidebar } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/ui/sidebar-FIXED";
 import { redirect } from "next/navigation";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -3,15 +3,19 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 import { Bell, Lock, User } from 'lucide-react';
 
 export default function ParametresPage() {
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold text-[#123055] mb-8">Paramètres</h1>
+    <div className="max-w-4xl mx-auto p-8 space-y-6">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="parametres" />
+
+      <h1 className="text-3xl font-bold text-[#123055]">Paramètres</h1>
 
       {/* Profil */}
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-[#123055] mb-6 flex items-center gap-2">
             <User size={20} />
@@ -44,7 +48,7 @@ export default function ParametresPage() {
       </Card>
 
       {/* Notifications */}
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-[#123055] mb-6 flex items-center gap-2">
             <Bell size={20} />

@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, CheckCircle2, Clock, Lock } from 'lucide-react';
 import { useUserAccess } from '@/hooks/useUserAccess';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -46,8 +47,11 @@ export default function MonDossierPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-6xl mx-auto p-8 space-y-6">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="mon-dossier" />
+
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-[#123055]">Mon Dossier</h1>
         <div className="bg-amber-100 text-amber-700 px-4 py-2 rounded-full font-semibold text-sm">
           Pack {pack?.replace(/_/g, ' ')}
@@ -61,7 +65,7 @@ export default function MonDossierPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold text-[#123055] mb-4 flex items-center gap-2">
                 <Calendar size={20} />
-                Mes rendez-vous expert ({hasAccess.rdvExpert} RDV)
+                Mes rendez-vous expert ({hasAccess.rdvExpertRestants} RDV restants)
               </h2>
 
               <div className="space-y-4">
@@ -84,7 +88,7 @@ export default function MonDossierPage() {
                   </Button>
                 </div>
 
-                {hasAccess.rdvExpert >= 3 && (
+                {hasAccess.rdvExpertTotal >= 3 && (
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-slate-600">RDV 3 - Validation finale</span>
@@ -93,7 +97,7 @@ export default function MonDossierPage() {
                   </div>
                 )}
 
-                {hasAccess.rdvExpert >= 4 && (
+                {hasAccess.rdvExpertTotal >= 4 && (
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-slate-600">RDV 4 - Suivi avancé</span>
@@ -102,7 +106,7 @@ export default function MonDossierPage() {
                   </div>
                 )}
 
-                {hasAccess.rdvExpert >= 5 && (
+                {hasAccess.rdvExpertTotal >= 5 && (
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-slate-600">RDV 5 - Optimisation finale</span>

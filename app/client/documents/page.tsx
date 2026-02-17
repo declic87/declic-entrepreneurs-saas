@@ -2,15 +2,19 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 import { FileText, Download, Calendar } from 'lucide-react';
 
 export default function DocumentsPage() {
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold text-[#123055] mb-8">Mes Documents</h1>
+    <div className="max-w-4xl mx-auto p-8 space-y-6">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="documents" />
+
+      <h1 className="text-3xl font-bold text-[#123055]">Mes Documents</h1>
 
       {/* Documents auto-générés */}
-      <Card className="mb-8">
+      <Card>
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-[#123055] mb-6">Documents générés automatiquement</h2>
 

@@ -5,6 +5,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { OnboardingVideo } from "@/components/OnboardingVideo";
 import {
   CheckCircle2,
   Circle,
@@ -243,6 +244,9 @@ export default function CreationSocietePage() {
 
   return (
     <div className="max-w-5xl mx-auto p-8 space-y-8">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="creation-societe" />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#123055]">

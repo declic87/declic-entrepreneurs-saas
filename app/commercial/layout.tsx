@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { Sidebar } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/ui/sidebar-FIXED";
 import { Loader2 } from "lucide-react";
 
 export default function CommercialLayout({ children }: { children: React.ReactNode }) {

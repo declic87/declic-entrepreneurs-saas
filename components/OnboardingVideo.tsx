@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Video, Play, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const supabase = createBrowserClient(
@@ -13,11 +12,12 @@ const supabase = createBrowserClient(
 );
 
 interface OnboardingVideoProps {
-  pageSlug: string; // 'dashboard', 'creation-societe', etc.
+  pageSlug: string; // 'dashboard', 'creation-societe', 'mon-dossier', etc.
 }
 
 interface VideoData {
   video_url: string;
+  video_type: string; // 'loom', 'fathom', 'youtube'
   title: string;
   description?: string;
 }
@@ -33,8 +33,8 @@ export function OnboardingVideo({ pageSlug }: OnboardingVideoProps) {
   async function loadVideo() {
     try {
       const { data, error } = await supabase
-        .from('onboarding_videos')
-        .select('video_url, title, description')
+        .from('onboarding_videos_client')
+        .select('video_url, video_type, title, description')
         .eq('page_slug', pageSlug)
         .eq('is_active', true)
         .single();
@@ -49,7 +49,36 @@ export function OnboardingVideo({ pageSlug }: OnboardingVideoProps) {
     }
   }
 
-  if (loading || !videoData) return null;
+  // Extraire l'ID Loom de l'URL
+  function getLoomEmbedUrl(url: string): string {
+    const match = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
+    if (match) {
+      return `https://www.loom.com/embed/${match[1]}`;
+    }
+    return url;
+  }
+
+  // Extraire l'ID Fathom de l'URL
+  function getFathomEmbedUrl(url: string): string {
+    if (url.includes('/embed/')) return url;
+    
+    const match = url.match(/fathom\.video\/share\/([a-zA-Z0-9]+)/);
+    if (match) {
+      return `https://fathom.video/embed/${match[1]}`;
+    }
+    return url;
+  }
+
+  // Extraire l'ID YouTube de l'URL
+  function getYouTubeEmbedUrl(url: string): string {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    if (match) {
+      return `https://www.youtube.com/embed/${match[1]}`;
+    }
+    return url;
+  }
+
+  if (loading || !videoData || !videoData.video_url) return null;
 
   return (
     <div className="mb-6">

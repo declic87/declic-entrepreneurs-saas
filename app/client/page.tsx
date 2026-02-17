@@ -107,21 +107,6 @@ export default function MemberDashboard({
     });
   };
 
-  // Déterminer le pageSlug en fonction de l'onglet actif
-  const getPageSlug = () => {
-    const slugMap: Record<string, string> = {
-      "tutos-pratiques": "formations",
-      "formation-createur": "formations",
-      "formation-agent-immo": "formations",
-      "formations-accompagnement": "formations",
-      "coaching": "coachings",
-      "ateliers": "ateliers",
-      "rdv-inclus": "rdv",
-      "rdv-payants": "rdv"
-    };
-    return slugMap[activeTab] || "formations";
-  };
-
   if (!mounted || isLoading || accessLoading) {
     return (
       <div className="max-w-6xl mx-auto p-8 space-y-4">
@@ -186,8 +171,8 @@ export default function MemberDashboard({
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-8 animate-in fade-in duration-500">
       
-      {/* VIDÉO ONBOARDING - Dynamique selon l'onglet */}
-      <OnboardingVideo pageSlug={getPageSlug()} />
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="dashboard" />
 
       {/* Bandeau Pack actuel */}
       {pack && (
@@ -202,10 +187,10 @@ export default function MemberDashboard({
                 </p>
               )}
             </div>
-            {hasAccess.rdvExpert > 0 && (
+            {hasAccess.rdvExpertRestants > 0 && (
               <div className="text-right">
                 <p className="text-xs text-slate-600">RDV Expert restants</p>
-                <p className="text-2xl font-black text-amber-600">{hasAccess.rdvExpert}</p>
+                <p className="text-2xl font-black text-amber-600">{hasAccess.rdvExpertRestants}</p>
               </div>
             )}
           </div>
@@ -606,7 +591,7 @@ export default function MemberDashboard({
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 inline-block">
               <p className="text-sm text-amber-800">
-                <strong>{hasAccess.rdvExpert}</strong> RDV expert(s) restant(s)
+                <strong>{hasAccess.rdvExpertRestants}</strong> RDV expert(s) restant(s)
               </p>
             </div>
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold" asChild>

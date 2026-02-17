@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { Sidebar } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/ui/sidebar-FIXED";
 
 export default function ExpertLayout({ children }: { children: React.ReactNode }) {
   const supabase = createBrowserClient(

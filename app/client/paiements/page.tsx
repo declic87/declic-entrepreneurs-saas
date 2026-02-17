@@ -2,15 +2,19 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 import { CreditCard, Download, CheckCircle2 } from 'lucide-react';
 
 export default function PaiementsPage() {
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold text-[#123055] mb-8">Mes Paiements</h1>
+    <div className="max-w-4xl mx-auto p-8 space-y-6">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="paiements" />
+
+      <h1 className="text-3xl font-bold text-[#123055]">Mes Paiements</h1>
 
       {/* Pack actuel */}
-      <Card className="mb-8 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+      <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -73,7 +77,7 @@ export default function PaiementsPage() {
       </Card>
 
       {/* Upgrade */}
-      <Card className="mt-8 border-2 border-dashed border-amber-300">
+      <Card className="border-2 border-dashed border-amber-300">
         <CardContent className="p-6 text-center">
           <CreditCard className="mx-auto text-amber-500 mb-4" size={48} />
           <h3 className="text-xl font-bold text-[#123055] mb-2">Besoin d'un accompagnement supplémentaire ?</h3>

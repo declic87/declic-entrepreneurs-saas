@@ -174,6 +174,41 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   console.log(`✅ Subscription created for ${customerEmail}: ${packConfig.pack}`);
+
+  // Générer et envoyer le contrat automatiquement
+  try {
+    const contractResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/contracts/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        contractType: 'client_subscription',
+        packType: packConfig.pack,
+        contractData: {
+          price: packConfig.price,
+          duration: packConfig.duration_months,
+        },
+      }),
+    });
+
+    const contractData = await contractResponse.json();
+
+    if (contractData.success && process.env.YOUSIGN_API_KEY) {
+      // Envoyer à YouSign pour signature
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/yousign/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contractId: contractData.contract.id,
+        }),
+      });
+      
+      console.log('✅ Contrat généré et envoyé à YouSign pour signature');
+    }
+  } catch (error) {
+    console.error('❌ Erreur génération contrat:', error);
+    // On ne bloque pas le processus principal si le contrat échoue
+  }
 }
 
 // ==========================================

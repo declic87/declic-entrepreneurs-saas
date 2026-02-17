@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
   UserCheck, FileText, Calculator, MessageSquare, LogOut, Building,
-  Play, Video, ChevronRight, Handshake // 🆕 Icône Partenaire
+  Play, Video, ChevronRight, Handshake, TrendingUp
 } from "lucide-react";
 
 interface SidebarProps {
@@ -24,13 +24,14 @@ interface SidebarProps {
 const navItemsByRole: Record<string, { label: string; href: string; icon: any }[]> = {
   admin: [
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { label: "CRM Master", href: "/admin/crm", icon: Target },
     { label: "Pipeline", href: "/admin/pipeline", icon: Target },
     { label: "Clients", href: "/admin/clients", icon: Users },
     { label: "Equipe", href: "/admin/equipe", icon: Users },
     { label: "Experts", href: "/admin/experts", icon: Briefcase },
     { label: "Contenus", href: "/admin/contenus", icon: Video },
     { label: "Onboarding Staff", href: "/admin/onboarding-staff", icon: Play },
-    { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video }, // 🆕 NOUVEAU
+    { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video },
     { label: "Paiements", href: "/admin/paiements", icon: CreditCard },
     { label: "Remboursements", href: "/admin/remboursements", icon: RefreshCw },
     { label: "Tâches", href: "/admin/taches", icon: CheckCircle },
@@ -53,6 +54,24 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Scripts", href: "/commercial/scripts", icon: FileText },
     { label: "Paramètres", href: "/commercial/settings", icon: Settings },
   ],
+  setter: [
+    { label: "Dashboard", href: "/setter", icon: LayoutDashboard },
+    { label: "Mes Leads", href: "/setter/leads", icon: Users },
+    { label: "Mon Agenda", href: "/setter/agenda", icon: Calendar },
+    { label: "Messages", href: "/setter/messages", icon: MessageSquare },
+    { label: "Performances", href: "/setter/stats", icon: BarChart3 },
+    { label: "Paramètres", href: "/setter/settings", icon: Settings },
+  ],
+  hos: [
+    { label: "Dashboard", href: "/hos", icon: LayoutDashboard },
+    { label: "Pipeline Global", href: "/hos/pipeline", icon: Target },
+    { label: "Mon Équipe", href: "/hos/equipe", icon: Users },
+    { label: "Rendez-vous", href: "/hos/rdv", icon: Calendar },
+    { label: "Leads", href: "/hos/leads", icon: Users },
+    { label: "Messages", href: "/hos/messages", icon: MessageSquare },
+    { label: "Performance", href: "/hos/performance", icon: TrendingUp },
+    { label: "Paramètres", href: "/hos/settings", icon: Settings },
+  ],
   expert: [
     { label: "Dashboard", href: "/expert", icon: LayoutDashboard },
     { label: "Mes Clients", href: "/expert/clients", icon: Users },
@@ -71,7 +90,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Documents", href: "/client/documents", icon: FileText },
     { label: "Simulateur", href: "/client/simulateur", icon: Calculator },
     { label: "Messages", href: "/client/messages", icon: MessageSquare },
-    { label: "Partenaire", href: "/client/partenaire", icon: Handshake }, // 🆕 NOUVEAU
+    { label: "Partenaire", href: "/client/partenaire", icon: Handshake },
     { label: "Paramètres", href: "/client/parametres", icon: Settings },
   ],
 };
@@ -112,7 +131,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
       }
     }
     fetchUserId();
-  }, []);
+  }, [supabase]);
 
   // Hook pour les messages non lus
   const { unreadCount } = useUnreadMessages(userId);
@@ -130,6 +149,8 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const roleLabels: Record<string, string> = {
     admin: "Administration",
     commercial: "Espace Commercial",
+    setter: "Espace Setter",
+    hos: "Head of Sales",
     expert: "Espace Expert",
     client: "Espace Client",
   };

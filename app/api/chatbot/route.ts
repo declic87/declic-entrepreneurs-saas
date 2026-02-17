@@ -1,6 +1,117 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+// 🎯 PROMPT SYSTÈME ULTRA-PRO
+const SYSTEM_PROMPT = `Tu es l'Assistant IA Expert de DÉCLIC Entrepreneurs, la plateforme premium d'optimisation fiscale pour entrepreneurs français.
+
+## 🎯 TON RÔLE
+Tu es un expert-comptable fiscal français spécialisé en :
+- Création et gestion de sociétés (SASU, EURL, SAS, SARL, SCI)
+- Optimisation fiscale légale et stratégies patrimoniales
+- Analyse comparative des statuts juridiques
+- Calculs de charges sociales, IS, IR, dividendes
+- Indemnités kilométriques et frais déductibles
+- Stratégies d'investissement immobilier (LMNP, SCI)
+- Prévisions et business plans
+
+## 💼 EXPERTISE TECHNIQUE
+- Tu maîtrises le Code Général des Impôts 2024-2026
+- Tu connais les barèmes URSSAF, charges sociales et fiscales en vigueur
+- Tu es à jour sur les réformes fiscales récentes
+- Tu utilises des exemples chiffrés concrets et pertinents
+
+## 🎨 STYLE DE RÉPONSE
+✅ **TON ULTRA-PRO :**
+- Précis, factuel, professionnel mais accessible
+- Tu vulgarises sans simplifier à l'excès
+- Tu utilises des emojis stratégiques (📊💰✅❌) pour la lisibilité
+- Tu structures avec des titres, listes, tableaux comparatifs
+
+✅ **FORMAT IDÉAL :**
+1. Réponse directe et claire en introduction (2-3 lignes max)
+2. Développement structuré avec exemples chiffrés
+3. Recommandation d'action concrète en conclusion
+
+❌ **À ÉVITER :**
+- Jargon incompréhensible sans explication
+- Réponses vagues ou évasives
+- Conseils génériques applicables à tout le monde
+- Formules de politesse excessives
+
+## 🧠 INTELLIGENCE CONTEXTUELLE
+Tu analyses :
+- L'historique de conversation pour personnaliser
+- Les indices sur la situation du client (CA, secteur, projet)
+- Le niveau de complexité attendu selon la question
+
+## 🎯 STRATÉGIE DE RÉPONSE
+
+### Pour une QUESTION SIMPLE (ex: "C'est quoi l'IS ?")
+→ Réponse directe + exemple chiffré + lien vers ressource
+
+### Pour une COMPARAISON (ex: "SASU ou EURL ?")
+→ Tableau comparatif + cas d'usage typiques + recommandation conditionnelle
+
+### Pour un CAS COMPLEXE (ex: "J'ai 80K de CA, location meublée...")
+→ Analyse structurée + simulation chiffrée + plan d'action 3 étapes
+
+### Pour une QUESTION HORS PÉRIMÈTRE
+→ Reconnaissance honnête + redirection vers l'expert humain
+
+## 📚 RESSOURCES DISPONIBLES
+Tu peux recommander :
+- Simulateurs (comparateur statuts, IK, immobilier, dividendes)
+- Tutos Pratiques (vidéos courtes thématiques)
+- Formations (Créateur <30K CA, Agent Immobilier)
+- RDV Expert (pour analyse personnalisée approfondie)
+
+## 🚀 EXEMPLES DE RÉPONSES TOP
+
+**Question basique :**
+"L'IS (Impôt sur les Sociétés) taxe les bénéfices de votre société à 15% jusqu'à 42 500€, puis 25% au-delà.
+
+**Exemple concret :**
+- CA : 100 000€
+- Charges : 60 000€
+- Bénéfice : 40 000€
+→ IS = 40 000€ × 15% = **6 000€**
+
+💡 Pour comparer IS vs IR selon votre situation, utilisez notre simulateur."
+
+**Question complexe :**
+"Avec 80K de CA et une activité de location meublée, voici votre stratégie optimale :
+
+**📊 Structure recommandée :**
+1. **LMNP classique** pour le meublé (régime réel)
+   - Amortissement immobilier = grosse économie fiscale
+   - Charges déductibles : intérêts emprunt, travaux, charges copro
+
+2. **SASU** pour votre activité principale
+   - IS 15% sur les premiers 42 500€
+   - Dividendes flat tax 30% ensuite
+
+**💰 Simulation fiscale :**
+[Tableau comparatif détaillé]
+
+**🎯 Action immédiate :**
+1. Visionner la formation "Investissement Immobilier" (module LMNP)
+2. Utiliser notre simulateur LMNP vs SCI
+3. Réserver un RDV expert pour validation (inclus dans votre pack)"
+
+## ⚠️ RÈGLES DE SÉCURITÉ
+- JAMAIS de conseil en investissement financier (actions, crypto)
+- JAMAIS de validation définitive sans "consultez un expert"
+- TOUJOURS préciser "selon les règles 2024-2026"
+- En cas de doute technique : rediriger vers RDV Expert
+
+## 🎖️ SIGNATURE
+Termine TOUJOURS par une recommandation d'action concrète ou une question de clarification si besoin.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +138,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const { message, userId, conversationHistory } = await req.json();
+    const { message, userId, conversationHistory = [] } = await req.json();
 
     if (!message || !userId) {
       return NextResponse.json(
@@ -82,84 +193,55 @@ export async function POST(req: NextRequest) {
     }
 
     // ============================================
-    // RÉPONSE SIMULÉE (TEMPORAIRE)
+    // 🚀 APPEL À L'API ANTHROPIC CLAUDE
     // ============================================
-    const messageLower = message.toLowerCase();
     
-    let aiResponse = "";
-    let intent = "general";
+    // Construire l'historique pour Claude
+    const claudeMessages: Array<{ role: "user" | "assistant"; content: string }> = [];
+    
+    // Ajouter l'historique (limité aux 10 derniers messages pour ne pas surcharger)
+    const recentHistory = conversationHistory.slice(-10);
+    for (const msg of recentHistory) {
+      claudeMessages.push({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
+      });
+    }
+    
+    // Ajouter le message actuel
+    claudeMessages.push({
+      role: "user",
+      content: message,
+    });
 
-    // Détection basique d'intent
+    // Appeler Claude
+    const claudeResponse = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2000,
+      system: SYSTEM_PROMPT,
+      messages: claudeMessages,
+    });
+
+    // Extraire la réponse
+    const aiResponse = claudeResponse.content
+      .filter((block) => block.type === "text")
+      .map((block) => (block as any).text)
+      .join("\n\n");
+
+    // Détection d'intent basique
+    const messageLower = message.toLowerCase();
+    let intent = "general";
+    
     if (messageLower.includes("sasu") || messageLower.includes("eurl") || messageLower.includes("statut")) {
       intent = "choix_statut";
-      aiResponse = `La principale différence entre SASU et EURL réside dans la fiscalité :
-
-**SASU (Société par Actions Simplifiée Unipersonnelle) :**
-- Soumise à l'IS (Impôt sur les Sociétés)
-- Dividendes taxés à 30% (flat tax)
-- Idéal si vous prévoyez de vous verser des dividendes
-
-**EURL (Entreprise Unipersonnelle à Responsabilité Limitée) :**
-- Par défaut à l'IR (Impôt sur le Revenu)
-- Peut opter pour l'IS
-- Idéal pour les petits CA avec peu de charges
-
-Pour choisir le bon statut selon VOTRE situation, je vous recommande de :
-1. Utiliser notre simulateur comparatif
-2. Visionner la formation "Choix du statut" dans Tutos Pratiques
-3. Réserver un RDV expert si vous avez un pack accompagnement
-
-💡 **Note :** Cette réponse est temporaire. L'IA Anthropic Claude sera activée prochainement pour des réponses encore plus personnalisées.`;
     } else if (messageLower.includes("ik") || messageLower.includes("kilométrique")) {
       intent = "indemnites_kilometriques";
-      aiResponse = `Les **Indemnités Kilométriques (IK)** permettent de déduire vos frais de déplacement professionnel.
-
-**Barème 2024 :**
-- Jusqu'à 5 000 km : 0,529 €/km (pour une 5CV)
-- De 5 001 à 20 000 km : 0,316 €/km
-- Au-delà de 20 000 km : 0,370 €/km
-
-**Conditions :**
-✅ Véhicule personnel utilisé pour l'activité pro
-✅ Carte grise à votre nom
-✅ Justificatifs de déplacements
-
-Pour optimiser vos IK, consultez notre tuto pratique "Maximiser ses IK" dans l'onglet Formations.
-
-💡 Cette réponse est temporaire en attendant l'activation de l'IA Claude.`;
     } else if (messageLower.includes("dividende") || messageLower.includes("rémunération")) {
       intent = "remuneration";
-      aiResponse = `**Dividendes vs Rémunération : quelle stratégie choisir ?**
-
-**Rémunération (salaire) :**
-- ✅ Valide des trimestres de retraite
-- ❌ Soumise aux charges sociales (~45%)
-
-**Dividendes :**
-- ✅ Flat tax 30% (au lieu de 45%)
-- ❌ Ne valide pas de trimestres retraite
-
-**Stratégie optimale (souvent) :**
-1. Se verser un SMIC pour valider 4 trimestres
-2. Compléter avec des dividendes pour optimiser la fiscalité
-
-💡 Pour votre situation spécifique, réservez un RDV expert.
-
-(Réponse temporaire - IA Claude en cours d'activation)`;
-    } else {
-      intent = "general";
-      aiResponse = `Bonjour ! Je suis l'assistant IA de DÉCLIC Entrepreneurs 👋
-
-Je peux vous aider sur :
-- Choix du statut (SASU vs EURL)
-- Fiscalité (IS, IR, charges sociales)
-- Indemnités kilométriques (IK)
-- Dividendes vs rémunération
-- TVA et frais déductibles
-
-Pour des conseils personnalisés, passez en mode **Expert** ou réservez un RDV avec un conseiller.
-
-💡 **Note :** Cette réponse est temporaire. L'IA Anthropic Claude sera bientôt activée pour des réponses encore plus précises et personnalisées.`;
+    } else if (messageLower.includes("immobilier") || messageLower.includes("lmnp") || messageLower.includes("sci")) {
+      intent = "immobilier";
+    } else if (messageLower.includes("charges") || messageLower.includes("urssaf")) {
+      intent = "charges_sociales";
     }
 
     // Insérer la réponse IA dans messages
@@ -200,9 +282,13 @@ Pour des conseils personnalisés, passez en mode **Expert** ou réservez un RDV 
     });
   } catch (error: any) {
     console.error("Erreur API chatbot:", error);
-    return NextResponse.json(
-      { error: error.message || "Erreur serveur" },
-      { status: 500 }
-    );
+    
+    // Fallback si Claude ne répond pas
+    return NextResponse.json({
+      response: "⚠️ L'IA est temporairement indisponible. Veuillez passer en mode Expert pour contacter directement un conseiller.",
+      intent: "error",
+      success: false,
+      error: error.message,
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/ui/Sidebar";
+import { Sidebar } from "@/components/ui/sidebar";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";

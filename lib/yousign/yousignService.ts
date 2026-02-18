@@ -4,24 +4,90 @@ import { createClient } from '@supabase/supabase-js';
 const YOUSIGN_API_KEY = process.env.YOUSIGN_API_KEY!;
 const YOUSIGN_BASE_URL = 'https://api.yousign.app/v3';
 
-// Pas besoin de SDK YouSign, on utilise fetch directement
-// L'API YouSign v3 est REST et très simple à utiliser
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// ============================================
+// AJOUT : Fonction pour contrats (closer, setter, expert, client)
+// ============================================
+export async function sendContractToYouSign(
+  email: string,
+  name: string,
+  pdfPath: string,
+  packName: string
+) {
+  try {
+    const { data: fileData } = await supabase.storage
+      .from('contracts')
+      .download(pdfPath);
+
+    if (!fileData) throw new Error('PDF not found');
+
+    const formData = new FormData();
+    formData.append('file', new Blob([await fileData.arrayBuffer()]), 'contract.pdf');
+    formData.append('nature', 'signable_document');
+
+    const uploadResponse = await fetch(`${YOUSIGN_BASE_URL}/documents`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${YOUSIGN_API_KEY}` },
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) throw new Error('Failed to upload to YouSign');
+    const document = await uploadResponse.json();
+
+    const signatureResponse = await fetch(`${YOUSIGN_BASE_URL}/signature_requests`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${YOUSIGN_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: `Contrat ${packName}`,
+        delivery_mode: 'email',
+        documents: [document.id],
+        signers: [{
+          info: {
+            first_name: name.split(' ')[0],
+            last_name: name.split(' ').slice(1).join(' ') || name,
+            email: email,
+          },
+          signature_level: 'electronic_signature',
+          signature_authentication_mode: 'otp_email',
+        }],
+        webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/yousign`,
+      }),
+    });
+
+    if (!signatureResponse.ok) throw new Error('Failed to create signature request');
+    const signatureData = await signatureResponse.json();
+
+    return {
+      id: signatureData.id,
+      url: signatureData.signers[0].signature_link,
+    };
+  } catch (error: any) {
+    console.error('❌ YouSign send error:', error);
+    throw error;
+  }
+}
+
+// ============================================
+// TON CODE ORIGINAL POUR DOCUMENTS SOCIÉTÉ
+// ============================================
+
 interface SignatureRequest {
   userId: string;
   companyId: string;
-  documentIds: string[]; // IDs des documents dans company_documents
+  documentIds: string[];
   signerEmail: string;
   signerName: string;
 }
 
 interface YouSignDocument {
-  file: string; // base64
+  file: string;
   name: string;
 }
 
@@ -35,9 +101,6 @@ interface YouSignSigner {
   signature_authentication_mode: 'otp_sms' | 'otp_email';
 }
 
-/**
- * Créer une demande de signature YouSign
- */
 export async function createSignatureRequest(params: SignatureRequest): Promise<{
   success: boolean;
   signatureRequestId?: string;
@@ -47,7 +110,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
   try {
     console.log('🔐 Création demande de signature YouSign...');
 
-    // 1️⃣ Récupérer les documents depuis Supabase Storage
     const documents: YouSignDocument[] = [];
     
     for (const docId of params.documentIds) {
@@ -62,7 +124,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
         continue;
       }
 
-      // Télécharger le fichier depuis Storage
       const { data: fileData, error: fileError } = await supabase.storage
         .from('company-documents')
         .download(docData.file_path);
@@ -72,7 +133,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
         continue;
       }
 
-      // Convertir en base64
       const buffer = Buffer.from(await fileData.arrayBuffer());
       const base64 = buffer.toString('base64');
 
@@ -89,12 +149,10 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
       };
     }
 
-    // 2️⃣ Extraire nom/prénom du signerName
     const nameParts = params.signerName.split(' ');
     const firstName = nameParts[0] || 'Client';
     const lastName = nameParts.slice(1).join(' ') || 'Déclic';
 
-    // 3️⃣ Créer la demande de signature via API YouSign
     const payload = {
       name: `Signature documents - ${params.companyId}`,
       delivery_mode: 'email',
@@ -111,7 +169,7 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
             first_name: firstName,
             last_name: lastName,
             email: params.signerEmail,
-            phone_number: '+33600000000', // À adapter avec vraies données
+            phone_number: '+33600000000',
           },
           signature_level: 'electronic_signature',
           signature_authentication_mode: 'otp_email',
@@ -130,8 +188,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
       external_id: params.companyId,
       custom_experience_id: null,
     };
-
-    console.log('📤 Envoi requête YouSign...');
 
     const response = await fetch(`${YOUSIGN_BASE_URL}/signature_requests`, {
       method: 'POST',
@@ -154,7 +210,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
     const result = await response.json();
     console.log('✅ Demande de signature créée:', result.id);
 
-    // 4️⃣ Enregistrer la demande dans la DB
     await supabase
       .from('signature_requests')
       .insert({
@@ -167,7 +222,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
         created_at: new Date().toISOString(),
       });
 
-    // 5️⃣ Mettre à jour les documents
     await supabase
       .from('company_documents')
       .update({
@@ -191,9 +245,6 @@ export async function createSignatureRequest(params: SignatureRequest): Promise<
   }
 }
 
-/**
- * Webhook YouSign - Réception des documents signés
- */
 export async function handleYouSignWebhook(payload: any): Promise<{
   success: boolean;
   error?: string;
@@ -208,7 +259,6 @@ export async function handleYouSignWebhook(payload: any): Promise<{
       return { success: false, error: 'Pas de signature_request_id' };
     }
 
-    // Récupérer la demande de signature dans la DB
     const { data: signatureRequest, error: dbError } = await supabase
       .from('signature_requests')
       .select('*')
@@ -220,15 +270,12 @@ export async function handleYouSignWebhook(payload: any): Promise<{
       return { success: false, error: 'Signature request introuvable' };
     }
 
-    // Traiter selon l'événement
     switch (eventName) {
       case 'signature_request.done':
         console.log('✅ Tous les documents signés !');
 
-        // 1️⃣ Télécharger les documents signés depuis YouSign
         const signedDocuments = await downloadSignedDocuments(signatureRequestId);
 
-        // 2️⃣ Uploader dans Supabase Storage
         for (const doc of signedDocuments) {
           const filePath = `${signatureRequest.user_id}/signed/${doc.name}`;
 
@@ -239,7 +286,6 @@ export async function handleYouSignWebhook(payload: any): Promise<{
               upsert: true,
             });
 
-          // Mettre à jour la DB
           await supabase
             .from('company_documents')
             .insert({
@@ -253,7 +299,6 @@ export async function handleYouSignWebhook(payload: any): Promise<{
             });
         }
 
-        // 3️⃣ Mettre à jour le statut de la demande
         await supabase
           .from('signature_requests')
           .update({
@@ -262,7 +307,6 @@ export async function handleYouSignWebhook(payload: any): Promise<{
           })
           .eq('id', signatureRequest.id);
 
-        // 4️⃣ Mettre à jour le workflow
         await supabase
           .from('company_creation_data')
           .update({
@@ -302,16 +346,12 @@ export async function handleYouSignWebhook(payload: any): Promise<{
   }
 }
 
-/**
- * Télécharger les documents signés depuis YouSign
- */
 async function downloadSignedDocuments(signatureRequestId: string): Promise<Array<{
   name: string;
   type: string;
   buffer: Buffer;
 }>> {
   try {
-    // 1️⃣ Récupérer les infos de la signature request
     const response = await fetch(
       `${YOUSIGN_BASE_URL}/signature_requests/${signatureRequestId}`,
       {
@@ -328,7 +368,6 @@ async function downloadSignedDocuments(signatureRequestId: string): Promise<Arra
     const signatureRequest = await response.json();
     const documents = signatureRequest.documents || [];
 
-    // 2️⃣ Télécharger chaque document signé
     const signedDocs = [];
 
     for (const doc of documents) {
@@ -359,9 +398,6 @@ async function downloadSignedDocuments(signatureRequestId: string): Promise<Arra
   }
 }
 
-/**
- * Extraire le type de document du nom de fichier
- */
 function extractDocType(filename: string): string {
   if (filename.includes('statuts')) return 'statuts_signed';
   if (filename.includes('pv_decision')) return 'pv_decision_signed';
@@ -374,9 +410,6 @@ function extractDocType(filename: string): string {
   return 'document_signed';
 }
 
-/**
- * Vérifier le statut d'une demande de signature
- */
 export async function checkSignatureStatus(signatureRequestId: string): Promise<{
   status: string;
   signers: any[];
@@ -408,9 +441,6 @@ export async function checkSignatureStatus(signatureRequestId: string): Promise<
   }
 }
 
-/**
- * Relancer une demande de signature
- */
 export async function remindSigner(signatureRequestId: string, signerId: string): Promise<boolean> {
   try {
     const response = await fetch(

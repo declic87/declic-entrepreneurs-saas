@@ -30,14 +30,14 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // 1. Protection : Redirection vers /auth/login si non connecté
-  const protectedPaths = ['/admin', '/client', '/commercial', '/expert', '/dashboard']
+  const protectedPaths = ['/admin', '/client', '/commercial', '/expert', '/setter', '/hos']
   if (protectedPaths.some(p => path.startsWith(p)) && !session) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
   // 2. Intelligence des Rôles (RBAC)
   if (session) {
-    // ✅ CORRECTION : Récupérer le rôle depuis la table users
+    // ✅ Récupérer le rôle depuis la table users
     const { data: userData } = await supabase
       .from('users')
       .select('role')
@@ -47,31 +47,44 @@ export async function middleware(request: NextRequest) {
     const role = (userData?.role || 'CLIENT').toUpperCase()
     console.log("🔍 Middleware - Rôle détecté:", role, "pour path:", path)
 
+    // ✅ CORRECTION : Routes spécifiques pour chaque rôle
+    const routes: Record<string, string> = {
+      ADMIN: '/admin',
+      HOS: '/hos',              // ✅ CORRIGÉ
+      CLOSER: '/commercial',    // ✅ Closer = Commercial
+      SETTER: '/setter',        // ✅ CORRIGÉ
+      COMMERCIAL: '/commercial',
+      EXPERT: '/expert',
+      CLIENT: '/client',
+    }
+
     // Redirection automatique depuis le login ou le dashboard racine
     if (path === '/auth/login' || path === '/dashboard' || path === '/login') {
-      const routes: Record<string, string> = {
-        ADMIN: '/admin',
-        HOS: '/commercial',
-        CLOSER: '/commercial',
-        SETTER: '/commercial',
-        COMMERCIAL: '/commercial',
-        EXPERT: '/expert',
-        CLIENT: '/client',
-      }
       const redirectUrl = routes[role] || '/client'
       console.log("🔍 Middleware - Redirection vers:", redirectUrl)
       return NextResponse.redirect(new URL(redirectUrl, request.url))
     }
 
     // ✅ Protection des accès croisés
-    if (path.startsWith('/admin') && role !== 'ADMIN') {
-      console.log("❌ Middleware - Accès ADMIN refusé pour rôle:", role)
-      return NextResponse.redirect(new URL('/client', request.url))
+    const roleToPath: Record<string, string> = {
+      ADMIN: '/admin',
+      HOS: '/hos',
+      SETTER: '/setter',
+      CLOSER: '/commercial',
+      COMMERCIAL: '/commercial',
+      EXPERT: '/expert',
+      CLIENT: '/client',
     }
 
-    if (path.startsWith('/client') && role === 'ADMIN') {
-      console.log("⚠️ Middleware - ADMIN accède à /client (autorisé)")
-      // Autoriser l'admin à accéder à /client (pour tests)
+    const allowedPath = roleToPath[role]
+
+    // Vérifier si l'utilisateur essaie d'accéder à un espace qui n'est pas le sien
+    if (allowedPath && !path.startsWith(allowedPath) && !path.startsWith('/auth')) {
+      // Exception : ADMIN peut tout voir
+      if (role !== 'ADMIN') {
+        console.log("❌ Middleware - Accès refusé. Rôle:", role, "Path:", path)
+        return NextResponse.redirect(new URL(allowedPath, request.url))
+      }
     }
   }
 
@@ -79,5 +92,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/client/:path*', '/commercial/:path*', '/expert/:path*', '/auth/login', '/login', '/dashboard'],
+  matcher: [
+    '/admin/:path*', 
+    '/client/:path*', 
+    '/commercial/:path*', 
+    '/expert/:path*', 
+    '/setter/:path*',      // ✅ AJOUTÉ
+    '/hos/:path*',         // ✅ AJOUTÉ
+    '/auth/login', 
+    '/login', 
+    '/dashboard'
+  ],
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { sendContractToYouSign } from '@/lib/yousign/yousignService';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +11,7 @@ const supabase = createClient(
 /**
  * Génère un contrat PDF selon le type
  * Types : client_subscription, team_onboarding
+ * + Envoie automatiquement via YouSign pour signature
  */
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload vers Supabase Storage
-    const fileName = `contract_${userId}_${Date.now()}.pdf`;
+    const fileName = `contracts/contract_${userId}_${Date.now()}.pdf`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('contracts')
       .upload(fileName, pdfBytes, {
@@ -55,12 +57,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erreur upload PDF' }, { status: 500 });
     }
 
-    // Récupérer l'URL publique
-    const { data: { publicUrl } } = supabase.storage
-      .from('contracts')
-      .getPublicUrl(fileName);
+    // ✅ NOUVEAU : Envoyer via YouSign pour signature
+    const packName = getPackDetails(packType)?.name || teamRole;
+    const yousignResponse = await sendContractToYouSign(
+      user.email,
+      `${user.first_name} ${user.last_name}`,
+      fileName,
+      packName
+    );
 
-    // Créer l'entrée dans la table contracts
+    // Créer l'entrée dans la table contracts avec yousign_signature_request_id
     const { data: contract, error: contractError } = await supabase
       .from('contracts')
       .insert({
@@ -68,9 +74,10 @@ export async function POST(req: NextRequest) {
         contract_type: contractType,
         pack_type: packType,
         team_role: teamRole,
-        pdf_url: publicUrl,
-        status: 'draft',
+        pdf_url: fileName,
+        status: 'sent', // ✅ CHANGÉ de 'draft' à 'sent'
         contract_data: contractData,
+        yousign_signature_request_id: yousignResponse.id, // ✅ AJOUTÉ
       })
       .select()
       .single();
@@ -83,7 +90,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       contract,
-      pdfUrl: publicUrl,
+      pdfUrl: uploadData.path,
+      yousignUrl: yousignResponse.url, // ✅ AJOUTÉ : URL pour signer
     });
   } catch (error: any) {
     console.error('Erreur génération contrat:', error);
@@ -348,6 +356,7 @@ function getRoleName(role: string): string {
     setter: 'Apporteur d\'affaires',
     closer: 'Commercial',
     expert: 'Expert Consultant',
+    hos: 'Head of Sales',
   };
   return names[role] || role;
 }
@@ -360,7 +369,7 @@ function getRoleDetails(role: string) {
         'Prise de RDV pour les closers',
         'Suivi des prospects qualifiés',
       ],
-      commission: 10,
+      commission: 5,
     },
     closer: {
       missions: [
@@ -368,7 +377,7 @@ function getRoleDetails(role: string) {
         'Présentation des offres',
         'Signature des contrats',
       ],
-      commission: 20,
+      commission: 10,
     },
     expert: {
       missions: [
@@ -376,7 +385,15 @@ function getRoleDetails(role: string) {
         'Conseil fiscal et juridique',
         'Formation et coaching',
       ],
-      commission: 15,
+      commission: 10,
+    },
+    hos: {
+      missions: [
+        'Management équipe commerciale',
+        'Suivi performance',
+        'Formation des commerciaux',
+      ],
+      commission: 10,
     },
   };
   return details[role] || details.setter;

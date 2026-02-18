@@ -44,11 +44,10 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
   commercial: [
     { label: "Dashboard", href: "/commercial", icon: LayoutDashboard },
     { label: "Pipeline", href: "/commercial/pipeline", icon: Target },
-    { label: "Mes Leads", href: "/commercial/leads", icon: Users },
+    { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },
     { label: "Statistiques", href: "/commercial/stats", icon: BarChart3 },
-    { label: "Mon Equipe", href: "/commercial/equipe", icon: Users },
     { label: "Messages", href: "/commercial/messages", icon: MessageSquare },
     { label: "Onboarding", href: "/commercial/onboarding", icon: UserCheck },
     { label: "Scripts", href: "/commercial/scripts", icon: FileText },

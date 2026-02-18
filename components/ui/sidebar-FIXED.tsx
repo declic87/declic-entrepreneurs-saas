@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
   UserCheck, FileText, Calculator, MessageSquare, LogOut, Building,
-  Play, Video, ChevronRight, Handshake, TrendingUp
+  Play, Video, ChevronRight, Handshake, TrendingUp, DollarSign
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,6 +29,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Clients", href: "/admin/clients", icon: Users },
     { label: "Equipe", href: "/admin/equipe", icon: Users },
     { label: "Experts", href: "/admin/experts", icon: Briefcase },
+    { label: "Contrats", href: "/admin/contrats", icon: FileText },
     { label: "Contenus", href: "/admin/contenus", icon: Video },
     { label: "Onboarding Staff", href: "/admin/onboarding-staff", icon: Play },
     { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video },
@@ -47,6 +48,8 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },
+    { label: "Mon Contrat", href: "/commercial/contrat", icon: FileText },
+    { label: "Mes Commissions", href: "/commercial/commissions", icon: DollarSign },
     { label: "Statistiques", href: "/commercial/stats", icon: BarChart3 },
     { label: "Messages", href: "/commercial/messages", icon: MessageSquare },
     { label: "Onboarding", href: "/commercial/onboarding", icon: UserCheck },
@@ -57,6 +60,8 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Dashboard", href: "/setter", icon: LayoutDashboard },
     { label: "Mes Leads", href: "/setter/leads", icon: Users },
     { label: "Mon Agenda", href: "/setter/agenda", icon: Calendar },
+    { label: "Mon Contrat", href: "/setter/contrat", icon: FileText },
+    { label: "Mes Commissions", href: "/setter/commissions", icon: DollarSign },
     { label: "Messages", href: "/setter/messages", icon: MessageSquare },
     { label: "Performances", href: "/setter/stats", icon: BarChart3 },
     { label: "Paramètres", href: "/setter/settings", icon: Settings },
@@ -77,6 +82,8 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Agenda", href: "/expert/agenda", icon: Calendar },
     { label: "Tâches", href: "/expert/taches", icon: CheckCircle },
     { label: "Documents", href: "/expert/documents", icon: FileText },
+    { label: "Mon Contrat", href: "/expert/contrat", icon: FileText },
+    { label: "Mes Commissions", href: "/expert/commissions", icon: DollarSign },
     { label: "Messages", href: "/expert/messages", icon: MessageSquare },
     { label: "Statistiques", href: "/expert/stats", icon: BarChart3 },
     { label: "Paramètres", href: "/expert/settings", icon: Settings },

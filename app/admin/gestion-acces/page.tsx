@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Search, UserCheck, Calendar, Award, Check, X, Edit2, Save } from 'lucide-react';
+import { Search, UserCheck, Calendar, Award, Check, Edit2, Save } from 'lucide-react';
 
 interface ClientAccess {
   id: string;
@@ -22,7 +22,7 @@ interface ClientAccess {
   has_rdv_vip: boolean;
   access_expires_at: string | null;
   is_active: boolean;
-  users: {
+  user?: {
     first_name: string;
     last_name: string;
     email: string;
@@ -55,25 +55,52 @@ export default function AdminGestionAccesPage() {
   }, []);
 
   async function loadClients() {
-    const { data, error } = await supabase
+    console.log('📥 Chargement des accès...');
+    
+    // 1. Charger les accès
+    const { data: accessData, error: accessError } = await supabase
       .from('client_access')
-      .select(`
-        *,
-        users!inner (
-          first_name,
-          last_name,
-          email
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Erreur chargement clients:', error);
+    if (accessError) {
+      console.error('❌ Erreur chargement accès:', accessError);
+      setLoading(false);
+      return;
     }
 
-    if (data) {
-      setClients(data as any);
+    console.log('✅ Accès chargés:', accessData?.length);
+
+    if (!accessData || accessData.length === 0) {
+      console.log('⚠️ Aucun accès trouvé');
+      setLoading(false);
+      return;
     }
+
+    // 2. Extraire les user_ids
+    const userIds = accessData.map((a: any) => a.user_id);
+    console.log('👥 User IDs:', userIds);
+
+    // 3. Charger les users
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, email')
+      .in('id', userIds);
+
+    if (usersError) {
+      console.error('❌ Erreur chargement users:', usersError);
+    }
+
+    console.log('✅ Users chargés:', usersData?.length);
+
+    // 4. Fusionner les données
+    const merged = accessData.map((access: any) => ({
+      ...access,
+      user: usersData?.find((u: any) => u.id === access.user_id)
+    }));
+
+    console.log('🔗 Données fusionnées:', merged);
+    setClients(merged);
     setLoading(false);
   }
 
@@ -115,9 +142,9 @@ export default function AdminGestionAccesPage() {
   }
 
   const filteredClients = clients.filter(c => 
-    c.users.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.users.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.users.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.user?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.user?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const stats = {
@@ -208,210 +235,221 @@ export default function AdminGestionAccesPage() {
 
         {/* Liste clients */}
         <div className="space-y-4">
-          {filteredClients.map((client) => {
-            const isEditing = editingId === client.id;
-            const packInfo = PACK_LABELS[client.pack_type] || PACK_LABELS.plateforme;
+          {filteredClients.length === 0 ? (
+            <div className="bg-white rounded-xl p-12 text-center">
+              <p className="text-gray-500">Aucun client trouvé</p>
+            </div>
+          ) : (
+            filteredClients.map((client) => {
+              const isEditing = editingId === client.id;
+              const packInfo = PACK_LABELS[client.pack_type] || PACK_LABELS.plateforme;
 
-            return (
-              <div key={client.id} className="bg-white rounded-xl shadow-sm border-2 border-gray-200 p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {client.users.first_name} {client.users.last_name}
-                    </h3>
-                    <p className="text-sm text-gray-600">{client.users.email}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${packInfo.color}`}>
-                      {packInfo.label} - {client.pack_price}€
-                    </span>
-                    {isEditing ? (
-                      <button
-                        onClick={() => updateAccess(client)}
-                        disabled={saving}
-                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-                      >
-                        <Save size={18} />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setEditingId(client.id)}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {isEditing ? (
-                  <div className="space-y-4">
-                    {/* Pack */}
+              return (
+                <div key={client.id} className="bg-white rounded-xl shadow-sm border-2 border-gray-200 p-6">
+                  <div className="flex items-start justify-between mb-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Pack</label>
-                      <select
-                        value={client.pack_type}
-                        onChange={(e) => updateLocal(client.id, 'pack_type', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      >
-                        {Object.entries(PACK_LABELS).map(([key, val]) => (
-                          <option key={key} value={key}>{val.label} - {val.price}€</option>
-                        ))}
-                      </select>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {client.user?.first_name} {client.user?.last_name}
+                      </h3>
+                      <p className="text-sm text-gray-600">{client.user?.email}</p>
                     </div>
-
-                    {/* Accès de base */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_tutos}
-                          onChange={(e) => updateLocal(client.id, 'has_tutos', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Tutos</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_coaching}
-                          onChange={(e) => updateLocal(client.id, 'has_coaching', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Coaching</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_ateliers}
-                          onChange={(e) => updateLocal(client.id, 'has_ateliers', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Ateliers</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_partenaire}
-                          onChange={(e) => updateLocal(client.id, 'has_partenaire', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Partenaire</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_simulateur}
-                          onChange={(e) => updateLocal(client.id, 'has_simulateur', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Simulateur</span>
-                      </label>
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${packInfo.color}`}>
+                        {packInfo.label} - {client.pack_price}€
+                      </span>
+                      {isEditing ? (
+                        <button
+                          onClick={() => updateAccess(client)}
+                          disabled={saving}
+                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50"
+                        >
+                          <Save size={18} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEditingId(client.id)}
+                          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Formations */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_formation_createur}
-                          onChange={(e) => updateLocal(client.id, 'has_formation_createur', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Formation Créateur</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={client.has_formation_agent_immo}
-                          onChange={(e) => updateLocal(client.id, 'has_formation_agent_immo', e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Formation Agent Immo</span>
-                      </label>
-                    </div>
-
-                    {/* RDV */}
-                    <div className="grid grid-cols-2 gap-4">
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      {/* Pack */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">RDV Total</label>
-                        <input
-                          type="number"
-                          value={client.rdv_total}
-                          onChange={(e) => updateLocal(client.id, 'rdv_total', parseInt(e.target.value))}
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Pack</label>
+                        <select
+                          value={client.pack_type}
+                          onChange={(e) => {
+                            const newPack = e.target.value;
+                            const newPrice = PACK_LABELS[newPack]?.price || 97;
+                            updateLocal(client.id, 'pack_type', newPack);
+                            updateLocal(client.id, 'pack_price', newPrice);
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
+                        >
+                          {Object.entries(PACK_LABELS).map(([key, val]) => (
+                            <option key={key} value={key}>{val.label} - {val.price}€</option>
+                          ))}
+                        </select>
                       </div>
-                      <label className="flex items-center gap-2 mt-7">
+
+                      {/* Accès de base */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_tutos}
+                            onChange={(e) => updateLocal(client.id, 'has_tutos', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Tutos</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_coaching}
+                            onChange={(e) => updateLocal(client.id, 'has_coaching', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Coaching</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_ateliers}
+                            onChange={(e) => updateLocal(client.id, 'has_ateliers', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Ateliers</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_partenaire}
+                            onChange={(e) => updateLocal(client.id, 'has_partenaire', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Partenaire</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_simulateur}
+                            onChange={(e) => updateLocal(client.id, 'has_simulateur', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Simulateur</span>
+                        </label>
+                      </div>
+
+                      {/* Formations */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_formation_createur}
+                            onChange={(e) => updateLocal(client.id, 'has_formation_createur', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Formation Créateur</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={client.has_formation_agent_immo}
+                            onChange={(e) => updateLocal(client.id, 'has_formation_agent_immo', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">Formation Agent Immo</span>
+                        </label>
+                      </div>
+
+                      {/* RDV */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">RDV Total</label>
+                          <input
+                            type="number"
+                            value={client.rdv_total}
+                            onChange={(e) => updateLocal(client.id, 'rdv_total', parseInt(e.target.value) || 0)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 mt-7">
+                          <input
+                            type="checkbox"
+                            checked={client.has_rdv_vip}
+                            onChange={(e) => updateLocal(client.id, 'has_rdv_vip', e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">RDV VIP (Fondateur)</span>
+                        </label>
+                      </div>
+
+                      {/* Statut */}
+                      <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={client.has_rdv_vip}
-                          onChange={(e) => updateLocal(client.id, 'has_rdv_vip', e.target.checked)}
+                          checked={client.is_active}
+                          onChange={(e) => updateLocal(client.id, 'is_active', e.target.checked)}
                           className="w-4 h-4"
                         />
-                        <span className="text-sm font-medium">RDV VIP (Fondateur)</span>
+                        <span className="text-sm font-medium">Accès actif</span>
                       </label>
                     </div>
-
-                    {/* Statut */}
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={client.is_active}
-                        onChange={(e) => updateLocal(client.id, 'is_active', e.target.checked)}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm font-medium">Accès actif</span>
-                    </label>
-                  </div>
-                ) : (
-                  <div className="grid md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600 font-medium mb-2">Accès de base</p>
-                      <div className="space-y-1">
-                        <p className={client.has_tutos ? 'text-green-600' : 'text-gray-400'}>
-                          {client.has_tutos ? '✓' : '✗'} Tutos
-                        </p>
-                        <p className={client.has_coaching ? 'text-green-600' : 'text-gray-400'}>
-                          {client.has_coaching ? '✓' : '✗'} Coaching
-                        </p>
-                        <p className={client.has_ateliers ? 'text-green-600' : 'text-gray-400'}>
-                          {client.has_ateliers ? '✓' : '✗'} Ateliers
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 font-medium mb-2">Formations</p>
-                      <div className="space-y-1">
-                        <p className={client.has_formation_createur ? 'text-green-600' : 'text-gray-400'}>
-                          {client.has_formation_createur ? '✓' : '✗'} Formation Créateur
-                        </p>
-                        <p className={client.has_formation_agent_immo ? 'text-green-600' : 'text-gray-400'}>
-                          {client.has_formation_agent_immo ? '✓' : '✗'} Formation Agent Immo
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 font-medium mb-2">RDV Expert</p>
-                      <div className="space-y-1">
-                        <p className="text-gray-900 font-bold">
-                          {client.rdv_remaining} / {client.rdv_total} restants
-                        </p>
-                        {client.has_rdv_vip && (
-                          <p className="text-yellow-600 font-medium">⭐ RDV VIP inclus</p>
-                        )}
-                        {client.access_expires_at && (
-                          <p className="text-gray-600 text-xs">
-                            Expire : {new Date(client.access_expires_at).toLocaleDateString('fr-FR')}
+                  ) : (
+                    <div className="grid md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600 font-medium mb-2">Accès de base</p>
+                        <div className="space-y-1">
+                          <p className={client.has_tutos ? 'text-green-600' : 'text-gray-400'}>
+                            {client.has_tutos ? '✓' : '✗'} Tutos
                           </p>
-                        )}
+                          <p className={client.has_coaching ? 'text-green-600' : 'text-gray-400'}>
+                            {client.has_coaching ? '✓' : '✗'} Coaching
+                          </p>
+                          <p className={client.has_ateliers ? 'text-green-600' : 'text-gray-400'}>
+                            {client.has_ateliers ? '✓' : '✗'} Ateliers
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 font-medium mb-2">Formations</p>
+                        <div className="space-y-1">
+                          <p className={client.has_formation_createur ? 'text-green-600' : 'text-gray-400'}>
+                            {client.has_formation_createur ? '✓' : '✗'} Formation Créateur
+                          </p>
+                          <p className={client.has_formation_agent_immo ? 'text-green-600' : 'text-gray-400'}>
+                            {client.has_formation_agent_immo ? '✓' : '✗'} Formation Agent Immo
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 font-medium mb-2">RDV Expert</p>
+                        <div className="space-y-1">
+                          <p className="text-gray-900 font-bold">
+                            {client.rdv_remaining} / {client.rdv_total} restants
+                          </p>
+                          {client.has_rdv_vip && (
+                            <p className="text-yellow-600 font-medium">⭐ RDV VIP inclus</p>
+                          )}
+                          {client.access_expires_at && (
+                            <p className="text-gray-600 text-xs">
+                              Expire : {new Date(client.access_expires_at).toLocaleDateString('fr-FR')}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

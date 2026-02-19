@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
   try {
     const { role, loomUrl, title, description } = await request.json();
 
+    console.log('📥 Received:', { role, loomUrl, title, description });
+
     if (!role || !loomUrl || !title) {
       return NextResponse.json(
         { error: 'Role, loomUrl et title sont requis' },
@@ -31,14 +33,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('DB Error:', error);
+      console.error('❌ DB Error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log('✅ Video saved:', data);
     return NextResponse.json({ success: true, video: data });
 
   } catch (error: any) {
-    console.error('API Error:', error);
+    console.error('❌ API Error:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

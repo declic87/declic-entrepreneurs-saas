@@ -83,6 +83,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Dashboard", href: "/expert", icon: LayoutDashboard },
     { label: "Mes Clients", href: "/expert/clients", icon: Users },
     { label: "Agenda", href: "/expert/agenda", icon: Calendar },
+    { label: "Formation", href: "/expert/onboarding", icon: Video },
     { label: "Tâches", href: "/expert/taches", icon: CheckCircle },
     { label: "Documents", href: "/expert/documents", icon: FileText },
     { label: "Mon Contrat", href: "/expert/contrat", icon: FileText },

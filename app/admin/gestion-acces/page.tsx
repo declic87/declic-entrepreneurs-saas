@@ -22,7 +22,7 @@ interface ClientAccess {
   has_rdv_vip: boolean;
   access_expires_at: string | null;
   is_active: boolean;
-  user: {
+  users: {
     first_name: string;
     last_name: string;
     email: string;
@@ -59,13 +59,17 @@ export default function AdminGestionAccesPage() {
       .from('client_access')
       .select(`
         *,
-        user:user_id (
+        users!inner (
           first_name,
           last_name,
           email
         )
       `)
       .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erreur chargement clients:', error);
+    }
 
     if (data) {
       setClients(data as any);
@@ -111,10 +115,17 @@ export default function AdminGestionAccesPage() {
   }
 
   const filteredClients = clients.filter(c => 
-    c.user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.users.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.users.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.users.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const stats = {
+    total: clients.length,
+    actifs: clients.filter(c => c.is_active).length,
+    expirés: clients.filter(c => !c.is_active).length,
+    expert: clients.filter(c => c.pack_type === 'expert').length,
+  };
 
   if (loading) {
     return (
@@ -142,7 +153,7 @@ export default function AdminGestionAccesPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Clients</p>
-                <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
               </div>
             </div>
           </div>
@@ -153,9 +164,7 @@ export default function AdminGestionAccesPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Actifs</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {clients.filter(c => c.is_active).length}
-                </p>
+                <p className="text-2xl font-bold text-green-600">{stats.actifs}</p>
               </div>
             </div>
           </div>
@@ -166,9 +175,7 @@ export default function AdminGestionAccesPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Expirés</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {clients.filter(c => !c.is_active).length}
-                </p>
+                <p className="text-2xl font-bold text-orange-600">{stats.expirés}</p>
               </div>
             </div>
           </div>
@@ -179,9 +186,7 @@ export default function AdminGestionAccesPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Pack Expert</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {clients.filter(c => c.pack_type === 'expert').length}
-                </p>
+                <p className="text-2xl font-bold text-purple-600">{stats.expert}</p>
               </div>
             </div>
           </div>
@@ -212,9 +217,9 @@ export default function AdminGestionAccesPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">
-                      {client.user.first_name} {client.user.last_name}
+                      {client.users.first_name} {client.users.last_name}
                     </h3>
-                    <p className="text-sm text-gray-600">{client.user.email}</p>
+                    <p className="text-sm text-gray-600">{client.users.email}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`px-3 py-1 rounded-full text-sm font-bold ${packInfo.color}`}>

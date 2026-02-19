@@ -6,9 +6,9 @@ import { Sidebar } from "@/components/ui/sidebar-FIXED";
 
 export default function ExpertLayout({ children }: { children: React.ReactNode }) {
   const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [userName, setUserName] = useState("Expert");
   const [userEmail, setUserEmail] = useState("");
 
@@ -18,12 +18,11 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Correction : on utilise 'id' (qui contient l'UUID Auth) 
-          // et on récupère first_name/last_name
+          // ✅ CORRECTION : utiliser auth_id au lieu de id
           const { data: profile } = await supabase
             .from("users")
             .select("first_name, last_name, email, role")
-            .eq("id", session.user.id)
+            .eq("auth_id", session.user.id)  // ← CHANGÉ ICI
             .single();
 
           if (profile) {
@@ -44,12 +43,10 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar fixe à gauche */}
       <div className="w-64 fixed inset-y-0">
         <Sidebar role="expert" userName={userName} userEmail={userEmail} />
       </div>
       
-      {/* Zone de contenu principale décalée de la largeur de la sidebar */}
       <main className="flex-1 ml-64 p-8">
         {children}
       </main>

@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Important : utiliser la service role key
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // Mapping des Payment Links Stripe vers les packs
@@ -18,49 +18,38 @@ const PAYMENT_LINK_TO_PACK: Record<string, {
   duration_months: number;
   rdv_expert_included: number;
 }> = {
-  // 🔵 Plateforme - 97€/mois (illimité)
   'plink_1SvfQEAl0RypxECL30FQAkFp': {
-    pack: 'PLATEFORME',
+    pack: 'plateforme',
     price: 97,
-    duration_months: 1, // Mensuel
+    duration_months: 1,
     rdv_expert_included: 0
   },
-  
-  // 🚀 Formation Créateur - 497€ (3 mois)
   'plink_1SvfP8Al0RypxECLOmBfTPBw': {
-    pack: 'FORMATION_CREATEUR',
+    pack: 'createur',
     price: 497,
     duration_months: 3,
     rdv_expert_included: 0
   },
-  
-  // 🏠 Formation Agent Immo - 897€ (3 mois)
   'plink_1SvfOrAl0RypxECLKQZR0Io1': {
-    pack: 'FORMATION_AGENT_IMMO',
+    pack: 'agent_immo',
     price: 897,
     duration_months: 3,
     rdv_expert_included: 0
   },
-  
-  // 💼 STARTER - 3600€ (6 mois, 3 RDV)
   'plink_1SvfQ4Al0RypxECLUaOUG52Y': {
-    pack: 'STARTER',
+    pack: 'starter',
     price: 3600,
     duration_months: 6,
     rdv_expert_included: 3
   },
-  
-  // 🔥 PRO - 4600€ (12 mois, 4 RDV)
   'plink_1SvfPsAl0RypxECLoXQfpyag': {
-    pack: 'PRO',
+    pack: 'pro',
     price: 4600,
     duration_months: 12,
     rdv_expert_included: 4
   },
-  
-  // ⭐ EXPERT - 6600€ (18 mois, 5 RDV)
   'plink_1SvfPiAl0RypxECLvjfNr4wv': {
-    pack: 'EXPERT',
+    pack: 'expert',
     price: 6600,
     duration_months: 18,
     rdv_expert_included: 5
@@ -84,11 +73,10 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('❌ Webhook signature verification failed:', err.message);
     return NextResponse.json({ error: 'Webhook error' }, { status: 400 });
   }
 
-  // Gérer les événements Stripe
   try {
     switch (event.type) {
       case 'checkout.session.completed':
@@ -110,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error('Error handling webhook:', error);
+    console.error('❌ Error handling webhook:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -122,42 +110,128 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const customerEmail = session.customer_email || session.customer_details?.email;
   
   if (!customerEmail) {
-    console.error('No customer email found');
+    console.error('❌ No customer email found');
     return;
   }
 
-  // Récupérer l'utilisateur depuis Supabase
-  const { data: user } = await supabase
-    .from('users')
-    .select('id, email')
-    .eq('email', customerEmail)
-    .single();
-
-  if (!user) {
-    console.error('User not found:', customerEmail);
-    return;
-  }
+  console.log('💰 Paiement reçu pour:', customerEmail);
 
   // Récupérer les détails du Payment Link
   const paymentLink = session.payment_link;
   const packConfig = PAYMENT_LINK_TO_PACK[paymentLink as string];
 
   if (!packConfig) {
-    console.error('Unknown payment link:', paymentLink);
+    console.error('❌ Unknown payment link:', paymentLink);
     return;
   }
 
-  // Calculer les dates
+  console.log('📦 Pack acheté:', packConfig.pack);
+
+  // Récupérer ou créer l'utilisateur
+  let { data: user } = await supabase
+    .from('users')
+    .select('id, auth_id, email')
+    .eq('email', customerEmail)
+    .single();
+
+  let userId: string;
+  let authId: string;
+  let isNewUser = false;
+
+  if (!user) {
+    // 🆕 NOUVEAU CLIENT - Créer le compte
+    console.log('🆕 Création nouveau client...');
+    isNewUser = true;
+
+    // Extraire prénom/nom
+    const name = session.customer_details?.name || '';
+    const [firstName, ...lastNameParts] = name.split(' ');
+    const lastName = lastNameParts.join(' ');
+
+    // Mot de passe temporaire
+    const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
+
+    // 1. Créer compte Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: customerEmail,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName || 'Client',
+        last_name: lastName || '',
+      },
+    });
+
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('Création Auth échouée');
+
+    authId = authData.user.id;
+
+    // 2. Créer l'utilisateur dans users
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert({
+        auth_id: authId,
+        email: customerEmail,
+        first_name: firstName || 'Client',
+        last_name: lastName || '',
+        role: 'CLIENT',
+        status: 'active',
+      })
+      .select()
+      .single();
+
+    if (userError) throw userError;
+    userId = userData.id;
+
+    console.log('✅ Compte créé:', userId);
+
+    // 3. Envoyer email de bienvenue avec création mot de passe
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(customerEmail, {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+    });
+
+    if (resetError) {
+      console.error('⚠️ Erreur envoi email:', resetError);
+    } else {
+      console.log('📧 Email de création de mot de passe envoyé');
+    }
+
+  } else {
+    // ✅ CLIENT EXISTANT
+    console.log('👤 Client existant trouvé:', user.id);
+    userId = user.id;
+    authId = user.auth_id;
+  }
+
+  // 4. Créer/Mettre à jour les accès via client_access
+  console.log('🔐 Création des accès...');
+  
+  await supabase.rpc('create_default_access', {
+    p_user_id: userId,
+    p_pack_type: packConfig.pack,
+    p_pack_price: packConfig.price,
+  });
+
+  console.log('✅ Accès créés');
+
+  // 5. Calculer les dates
   const startDate = new Date();
   const endDate = new Date();
-  endDate.setMonth(endDate.getMonth() + packConfig.duration_months);
+  
+  if (packConfig.pack === 'plateforme') {
+    // Plateforme = mensuel, pas de date de fin
+    endDate.setMonth(endDate.getMonth() + 1);
+  } else {
+    endDate.setMonth(endDate.getMonth() + packConfig.duration_months);
+  }
 
-  // Créer la subscription dans Supabase
-  const { error } = await supabase
+  // 6. Créer la subscription dans user_subscriptions (ton ancienne table)
+  const { error: subError } = await supabase
     .from('user_subscriptions')
     .insert({
-      user_id: user.id,
-      pack_type: packConfig.pack,
+      user_id: userId,
+      pack_type: packConfig.pack.toUpperCase(),
       price: packConfig.price,
       duration_months: packConfig.duration_months,
       start_date: startDate.toISOString().split('T')[0],
@@ -168,20 +242,41 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripe_subscription_id: session.subscription as string || session.id
     });
 
-  if (error) {
-    console.error('Error creating subscription:', error);
-    throw error;
+  if (subError) {
+    console.error('⚠️ Erreur création subscription:', subError);
   }
 
-  console.log(`✅ Subscription created for ${customerEmail}: ${packConfig.pack}`);
+  // 7. Enregistrer le paiement
+  await supabase.from('payments').insert({
+    user_id: userId,
+    stripe_session_id: session.id,
+    stripe_payment_intent: session.payment_intent as string,
+    amount: session.amount_total ? session.amount_total / 100 : packConfig.price,
+    currency: session.currency || 'eur',
+    pack_type: packConfig.pack,
+    status: 'succeeded',
+  });
 
-  // Générer et envoyer le contrat automatiquement
+  // 8. Créer une notification
+  await supabase.from('notifications').insert({
+    user_id: userId,
+    type: isNewUser ? 'welcome' : 'payment_success',
+    title: isNewUser ? '🎉 Bienvenue !' : '✅ Paiement confirmé',
+    message: isNewUser 
+      ? `Votre compte a été créé. Consultez votre email pour créer votre mot de passe.`
+      : `Votre pack ${packConfig.pack} a été activé avec succès !`,
+    link: '/client',
+  });
+
+  console.log('✅ Paiement traité avec succès');
+
+  // 9. Générer et envoyer le contrat
   try {
     const contractResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/contracts/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: user.id,
+        userId: userId,
         contractType: 'client_subscription',
         packType: packConfig.pack,
         contractData: {
@@ -194,7 +289,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const contractData = await contractResponse.json();
 
     if (contractData.success && process.env.YOUSIGN_API_KEY) {
-      // Envoyer à YouSign pour signature
       await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/yousign/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -203,11 +297,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }),
       });
       
-      console.log('✅ Contrat généré et envoyé à YouSign pour signature');
+      console.log('✅ Contrat généré et envoyé à YouSign');
     }
   } catch (error) {
-    console.error('❌ Erreur génération contrat:', error);
-    // On ne bloque pas le processus principal si le contrat échoue
+    console.error('⚠️ Erreur génération contrat:', error);
   }
 }
 
@@ -219,13 +312,11 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   
   if (!subscriptionId) return;
 
-  // Récupérer la subscription Stripe
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const customerEmail = await getCustomerEmail(subscription.customer as string);
 
   if (!customerEmail) return;
 
-  // Récupérer l'utilisateur
   const { data: user } = await supabase
     .from('users')
     .select('id')
@@ -234,7 +325,6 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   if (!user) return;
 
-  // Récupérer la subscription existante
   const { data: existingSub } = await supabase
     .from('user_subscriptions')
     .select('*')
@@ -258,7 +348,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     })
     .eq('id', existingSub.id);
 
-  console.log(`✅ Subscription renewed for ${customerEmail} until ${newEndDate.toISOString()}`);
+  console.log(`✅ Subscription renewed for ${customerEmail}`);
 }
 
 // ==========================================
@@ -277,7 +367,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   if (!user) return;
 
-  // Désactiver la subscription
   await supabase
     .from('user_subscriptions')
     .update({ 
@@ -286,6 +375,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     })
     .eq('user_id', user.id)
     .eq('stripe_subscription_id', subscription.id);
+
+  // Désactiver aussi client_access
+  await supabase
+    .from('client_access')
+    .update({ is_active: false })
+    .eq('user_id', user.id);
 
   console.log(`❌ Subscription cancelled for ${customerEmail}`);
 }
@@ -306,7 +401,6 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   if (!user) return;
 
-  // Mettre à jour le statut
   await supabase
     .from('user_subscriptions')
     .update({ 
@@ -316,7 +410,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .eq('user_id', user.id)
     .eq('stripe_subscription_id', subscription.id);
 
-  console.log(`🔄 Subscription updated for ${customerEmail}: ${subscription.status}`);
+  console.log(`🔄 Subscription updated for ${customerEmail}`);
 }
 
 // ==========================================

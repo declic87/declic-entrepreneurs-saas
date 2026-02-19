@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
   UserCheck, FileText, Calculator, MessageSquare, LogOut, Building,
-  Play, Video, ChevronRight, Handshake, TrendingUp, DollarSign
+  Play, Video, ChevronRight, Handshake, TrendingUp, DollarSign, UserPlus
 } from "lucide-react";
 
 interface SidebarProps {
@@ -28,6 +28,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Pipeline", href: "/admin/pipeline", icon: Target },
     { label: "Clients", href: "/admin/clients", icon: Users },
     { label: "Gestion Accès", href: "/admin/gestion-acces", icon: UserCheck },
+    { label: "Inviter Staff", href: "/admin/inviter-staff", icon: UserPlus },
     { label: "Equipe", href: "/admin/equipe", icon: Users },
     { label: "Experts", href: "/admin/experts", icon: Briefcase },
     { label: "Contrats", href: "/admin/contrats", icon: FileText },

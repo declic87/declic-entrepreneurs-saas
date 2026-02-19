@@ -27,6 +27,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "CRM Master", href: "/admin/crm", icon: Target },
     { label: "Pipeline", href: "/admin/pipeline", icon: Target },
     { label: "Clients", href: "/admin/clients", icon: Users },
+    { label: "Gestion Accès", href: "/admin/gestion-acces", icon: UserCheck },
     { label: "Equipe", href: "/admin/equipe", icon: Users },
     { label: "Experts", href: "/admin/experts", icon: Briefcase },
     { label: "Contrats", href: "/admin/contrats", icon: FileText },

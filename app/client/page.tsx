@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useUserAccess } from '@/hooks/useUserAccess';
+import { createBrowserClient } from '@supabase/ssr';
 import { OnboardingVideo } from '@/components/OnboardingVideo';
 
 // --- Interfaces ---
@@ -59,6 +59,24 @@ interface Atelier extends Session {
   atelier_date: string;
 }
 
+interface ClientAccess {
+  pack_type: string;
+  pack_price: number;
+  has_tutos: boolean;
+  has_coaching: boolean;
+  has_ateliers: boolean;
+  has_partenaire: boolean;
+  has_simulateur: boolean;
+  has_formation_createur: boolean;
+  has_formation_agent_immo: boolean;
+  rdv_total: number;
+  rdv_consumed: number;
+  rdv_remaining: number;
+  has_rdv_vip: boolean;
+  access_expires_at: string | null;
+  is_active: boolean;
+}
+
 export default function MemberDashboard({ 
   videos = [], 
   tutosPratiques = [],
@@ -74,13 +92,49 @@ export default function MemberDashboard({
   const [mounted, setMounted] = useState(false);
   const [coachingSubTab, setCoachingSubTab] = useState<"live" | "archives">("live");
   const [atelierSubTab, setAtelierSubTab] = useState<"live" | "archives">("live");
+  
+  // Système d'accès
+  const [userId, setUserId] = useState<string | null>(null);
+  const [access, setAccess] = useState<ClientAccess | null>(null);
+  const [accessLoading, setAccessLoading] = useState(true);
 
-  // Hook de gestion des accès
-  const { pack, hasAccess, loading: accessLoading, daysRemaining } = useUserAccess();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    async function loadUserAccess() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single();
+        
+        if (userData) {
+          setUserId(userData.id);
+          
+          // Charger les accès
+          const { data: accessData } = await supabase
+            .from('client_access')
+            .select('*')
+            .eq('user_id', userData.id)
+            .single();
+          
+          if (accessData) {
+            setAccess(accessData as ClientAccess);
+          }
+        }
+      }
+      setAccessLoading(false);
+    }
+    
+    loadUserAccess();
+  }, [supabase]);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -107,11 +161,41 @@ export default function MemberDashboard({
     });
   };
 
+  // Calcul des jours restants
+  const daysRemaining = access?.access_expires_at 
+    ? Math.ceil((new Date(access.access_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const PACK_LABELS: Record<string, string> = {
+    plateforme: 'Plateforme',
+    createur: 'Formation Créateur',
+    agent_immo: 'Formation Agent Immobilier',
+    starter: 'Starter',
+    pro: 'Pro',
+    expert: 'Expert',
+  };
+
   if (!mounted || isLoading || accessLoading) {
     return (
       <div className="max-w-6xl mx-auto p-8 space-y-4">
         <div className="h-10 w-48 bg-gray-200 animate-pulse rounded" />
         <div className="h-64 bg-gray-100 animate-pulse rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!access) {
+    return (
+      <div className="max-w-6xl mx-auto p-8">
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardContent className="p-12 text-center">
+            <Lock className="mx-auto text-red-500 mb-4" size={64} />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Aucun accès configuré</h2>
+            <p className="text-gray-600">
+              Contactez l'administration pour activer vos accès.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -122,43 +206,37 @@ export default function MemberDashboard({
       id: "tutos-pratiques", 
       label: "Tutos Pratiques", 
       icon: <BookOpen size={16} />, 
-      access: hasAccess.tutosPratiques 
+      access: access.has_tutos 
     },
     { 
       id: "formation-createur", 
       label: "Formation Créateur", 
       icon: <GraduationCap size={16} />, 
-      access: hasAccess.formationCreateur 
+      access: access.has_formation_createur 
     },
     { 
       id: "formation-agent-immo", 
       label: "Formation Agent Immo", 
       icon: <GraduationCap size={16} />, 
-      access: hasAccess.formationAgentImmo 
-    },
-    { 
-      id: "formations-accompagnement", 
-      label: "Formations", 
-      icon: <Video size={16} />, 
-      access: hasAccess.formationsAccompagnement 
+      access: access.has_formation_agent_immo 
     },
     { 
       id: "coaching", 
       label: "Coachings Live", 
       icon: <Users size={16} />, 
-      access: hasAccess.coachings 
+      access: access.has_coaching 
     },
     { 
       id: "ateliers", 
       label: "Ateliers", 
       icon: <Calendar size={16} />, 
-      access: hasAccess.ateliers 
+      access: access.has_ateliers 
     },
     { 
       id: "rdv-inclus", 
       label: "Mon RDV", 
       icon: <Phone size={16} />, 
-      access: hasAccess.rdvGratuit 
+      access: access.rdv_remaining > 0 
     },
     { 
       id: "rdv-payants", 
@@ -175,27 +253,31 @@ export default function MemberDashboard({
       <OnboardingVideo pageSlug="dashboard" />
 
       {/* Bandeau Pack actuel */}
-      {pack && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-amber-600 font-bold uppercase">Votre pack actuel</p>
-              <p className="text-lg font-black text-gray-900">{pack.replace(/_/g, ' ')}</p>
-              {daysRemaining !== null && daysRemaining > 0 && (
-                <p className="text-xs text-slate-600 mt-1">
-                  {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}
-                </p>
-              )}
-            </div>
-            {hasAccess.rdvExpertRestants > 0 && (
-              <div className="text-right">
-                <p className="text-xs text-slate-600">RDV Expert restants</p>
-                <p className="text-2xl font-black text-amber-600">{hasAccess.rdvExpertRestants}</p>
-              </div>
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-amber-600 font-bold uppercase">Votre pack actuel</p>
+            <p className="text-lg font-black text-gray-900">{PACK_LABELS[access.pack_type]}</p>
+            {daysRemaining !== null && daysRemaining > 0 && (
+              <p className="text-xs text-slate-600 mt-1">
+                {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}
+              </p>
+            )}
+            {access.pack_type === 'plateforme' && (
+              <p className="text-xs text-slate-600 mt-1">Accès illimité</p>
             )}
           </div>
+          {access.rdv_remaining > 0 && (
+            <div className="text-right">
+              <p className="text-xs text-slate-600">RDV Expert restants</p>
+              <p className="text-2xl font-black text-amber-600">{access.rdv_remaining}</p>
+              {access.has_rdv_vip && (
+                <p className="text-xs text-yellow-600 font-bold mt-1">⭐ +1 RDV VIP</p>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Menu Navigation */}
       <nav className="flex gap-2 border-b overflow-x-auto pb-px scrollbar-hide">
@@ -215,7 +297,7 @@ export default function MemberDashboard({
       </nav>
 
       {/* TUTOS PRATIQUES */}
-      {activeTab === "tutos-pratiques" && (
+      {activeTab === "tutos-pratiques" && access.has_tutos && (
         <div className="space-y-6">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <h2 className="text-3xl font-black text-gray-900 mb-4">Tutos Pratiques</h2>
@@ -311,7 +393,7 @@ export default function MemberDashboard({
       )}
 
       {/* FORMATION CRÉATEUR */}
-      {activeTab === "formation-createur" && (
+      {activeTab === "formation-createur" && access.has_formation_createur && (
         <div className="space-y-6">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <h2 className="text-3xl font-black text-gray-900 mb-4">Formation Créateur</h2>
@@ -344,7 +426,7 @@ export default function MemberDashboard({
       )}
 
       {/* FORMATION AGENT IMMO */}
-      {activeTab === "formation-agent-immo" && (
+      {activeTab === "formation-agent-immo" && access.has_formation_agent_immo && (
         <div className="space-y-6">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <h2 className="text-3xl font-black text-gray-900 mb-4">Formation Agent Immobilier</h2>
@@ -376,39 +458,11 @@ export default function MemberDashboard({
         </div>
       )}
 
-      {/* FORMATIONS ACCOMPAGNEMENT */}
-      {activeTab === "formations-accompagnement" && (
-        <div className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">Vos Formations</h2>
-            <p className="text-gray-600 leading-relaxed">
-              Contenu spécifique pour votre parcours d'accompagnement.
-            </p>
-          </div>
-
-          <div className="grid gap-4">
-            {videos.filter((v: VideoData) => v.category === "Accompagnement").map((video: VideoData) => (
-              <Card key={video.id} className="hover:border-amber-200 transition-all">
-                <CardContent className="p-4">
-                  <h4 className="font-bold text-[#123055] mb-2">{video.title}</h4>
-                  <p className="text-sm text-slate-600 mb-3">{video.description}</p>
-                  <Button className="bg-amber-500 hover:bg-amber-600 text-white" size="sm">
-                    <Video size={16} className="mr-2" />
-                    Voir le module
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* COACHING */}
       {activeTab === "coaching" && (
         <>
-          {hasAccess.coachings ? (
+          {access.has_coaching ? (
             <div className="space-y-6">
-              {/* Sous-navigation */}
               <div className="flex gap-2 border-b">
                 <button
                   onClick={() => setCoachingSubTab("live")}
@@ -500,9 +554,8 @@ export default function MemberDashboard({
       )}
 
       {/* ATELIERS */}
-      {activeTab === "ateliers" && (
+      {activeTab === "ateliers" && access.has_ateliers && (
         <div className="space-y-6">
-          {/* Sous-navigation */}
           <div className="flex gap-2 border-b">
             <button
               onClick={() => setAtelierSubTab("live")}
@@ -579,7 +632,7 @@ export default function MemberDashboard({
       )}
 
       {/* RDV INCLUS */}
-      {activeTab === "rdv-inclus" && (
+      {activeTab === "rdv-inclus" && access.rdv_remaining > 0 && (
         <Card className="border-none shadow-2xl bg-gradient-to-br from-white to-emerald-50">
           <CardContent className="p-10 text-center">
             <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-8">
@@ -591,8 +644,11 @@ export default function MemberDashboard({
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 inline-block">
               <p className="text-sm text-amber-800">
-                <strong>{hasAccess.rdvExpertRestants}</strong> RDV expert(s) restant(s)
+                <strong>{access.rdv_remaining}</strong> RDV expert(s) restant(s)
               </p>
+              {access.has_rdv_vip && (
+                <p className="text-xs text-yellow-600 font-bold mt-2">⭐ +1 RDV VIP avec le fondateur</p>
+              )}
             </div>
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold" asChild>
               <a href="https://calendly.com/contact-jj-conseil/rdv-analyste" target="_blank">Réserver maintenant</a>

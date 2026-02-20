@@ -111,6 +111,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [packType, setPackType] = useState<string | null>(null);
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -120,7 +121,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const currentRole = role?.toLowerCase() || "client";
   const items = navItemsByRole[currentRole] || [];
 
-  // Récupérer l'ID utilisateur
+  // Récupérer l'ID utilisateur ET le pack type
   useEffect(() => {
     async function fetchUserId() {
       console.log("🔍 Sidebar - Fetching userId...");
@@ -139,11 +140,25 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
         if (userData) {
           setUserId(userData.id);
           console.log("✅ Sidebar - UserId set:", userData.id);
+          
+          // Charger le pack type pour les clients
+          if (currentRole === 'client') {
+            const { data: accessData } = await supabase
+              .from("client_access")
+              .select("pack_type")
+              .eq("user_id", userData.id)
+              .single();
+            
+            if (accessData) {
+              setPackType(accessData.pack_type);
+              console.log("✅ Sidebar - Pack type:", accessData.pack_type);
+            }
+          }
         }
       }
     }
     fetchUserId();
-  }, [supabase]);
+  }, [supabase, currentRole]);
 
   // Hook pour les messages non lus
   const { unreadCount } = useUnreadMessages(userId);
@@ -167,6 +182,17 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
     client: "Espace Client",
   };
 
+  // Filtrer les items selon le pack pour les clients
+  const filteredItems = currentRole === 'client' 
+    ? items.filter(item => {
+        // Packs basiques : bloquer Création Société et Documents
+        if (['plateforme', 'createur', 'agent_immo'].includes(packType || '')) {
+          return !item.href.includes('/creation-societe') && !item.href.includes('/documents');
+        }
+        return true; // Starter, Pro, Expert : tout accessible
+      })
+    : items;
+
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0F172A] text-white flex flex-col z-50 shadow-2xl border-r border-white/5">
       {/* Header avec Logo et Notifications */}
@@ -184,7 +210,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
       {/* Navigation optimisée */}
       <nav className="flex-1 overflow-y-auto py-6 space-y-1 custom-scrollbar">
-        {items.map((item) => {
+        {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== `/${currentRole}` && pathname.startsWith(item.href));
           

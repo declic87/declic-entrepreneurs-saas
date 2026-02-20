@@ -124,6 +124,11 @@ export default function AdminGestionAccesPage() {
     total: clients.length,
     actifs: clients.filter(c => c.is_active).length,
     expirés: clients.filter(c => !c.is_active).length,
+    plateforme: clients.filter(c => c.pack_type === 'plateforme').length,
+    createur: clients.filter(c => c.pack_type === 'createur').length,
+    agent_immo: clients.filter(c => c.pack_type === 'agent_immo').length,
+    starter: clients.filter(c => c.pack_type === 'starter').length,
+    pro: clients.filter(c => c.pack_type === 'pro').length,
     expert: clients.filter(c => c.pack_type === 'expert').length,
   };
 
@@ -138,13 +143,12 @@ export default function AdminGestionAccesPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-4xl font-bold text-gray-900">Gestion des Accès Clients</h1>
           <p className="text-gray-600 mt-2">Modifier les contenus et durées d'accès par client</p>
         </div>
 
-        {/* Stats */}
+        {/* Stats principales */}
         <div className="grid md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3">
@@ -181,18 +185,41 @@ export default function AdminGestionAccesPage() {
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Award className="text-purple-600" size={24} />
+              <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                <Award className="text-slate-600" size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Pack Expert</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.expert}</p>
+                <p className="text-sm text-gray-600">Plateforme</p>
+                <p className="text-2xl font-bold text-slate-600">{stats.plateforme}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Stats packs */}
+        <div className="grid md:grid-cols-5 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-600 mb-1">Créateur</p>
+            <p className="text-xl font-bold text-purple-600">{stats.createur}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-600 mb-1">Agent Immo</p>
+            <p className="text-xl font-bold text-green-600">{stats.agent_immo}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-600 mb-1">Starter</p>
+            <p className="text-xl font-bold text-blue-600">{stats.starter}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-600 mb-1">Pro</p>
+            <p className="text-xl font-bold text-red-600">{stats.pro}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-600 mb-1">Expert</p>
+            <p className="text-xl font-bold text-yellow-600">{stats.expert}</p>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex items-center gap-3">
             <Search className="text-gray-400" size={20} />
@@ -206,7 +233,6 @@ export default function AdminGestionAccesPage() {
           </div>
         </div>
 
-        {/* Liste clients */}
         <div className="space-y-4">
           {filteredClients.length === 0 ? (
             <div className="bg-white rounded-xl p-12 text-center">
@@ -251,7 +277,6 @@ export default function AdminGestionAccesPage() {
 
                   {isEditing ? (
                     <div className="space-y-4">
-                      {/* Pack */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Pack</label>
                         <select
@@ -270,7 +295,6 @@ export default function AdminGestionAccesPage() {
                         </select>
                       </div>
 
-                      {/* Accès checkboxes... (reste du code identique) */}
                       <div className="grid grid-cols-2 gap-4">
                         <label className="flex items-center gap-2">
                           <input

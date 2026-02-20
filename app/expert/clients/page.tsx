@@ -5,7 +5,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Users, CheckCircle2, Clock, FileText } from "lucide-react";
+import { Loader2, Users, CheckCircle2, Clock, FileText, Eye, Calendar } from "lucide-react";
 
 interface Client {
   id: string;
@@ -153,13 +153,10 @@ export default function ExpertClientsPage() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="text-green-600" size={24} />
                 <div>
-                <p className="text-2xl font-bold text-green-900">
-  {
-    clients.filter((c) => c.company_data?.company_type !== null)
-      .length
-  }
-</p>
-<p className="text-xs text-green-600">Onboarding</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {clients.filter((c) => c.company_data?.company_type !== null).length}
+                  </p>
+                  <p className="text-xs text-green-600">Onboarding</p>
                 </div>
               </div>
             </CardContent>
@@ -173,7 +170,7 @@ export default function ExpertClientsPage() {
           <CardContent className="p-12 text-center">
             <Users size={64} className="mx-auto text-slate-300 mb-4" />
             <p className="text-lg font-semibold text-slate-600 mb-2">
-              Aucun client ne correspond à votre recherche.
+              Aucun client assigné
             </p>
             <p className="text-sm text-slate-500">
               Les clients vous seront assignés par l'administrateur.
@@ -198,7 +195,7 @@ export default function ExpertClientsPage() {
                   </div>
                 </div>
 
-                {client.company_data ? (
+                {client.company_data && (
                   <>
                     {client.company_data.company_type && (
                       <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded">
@@ -214,60 +211,38 @@ export default function ExpertClientsPage() {
                         {getStepLabel(client.company_data.step)}
                       </p>
                     </div>
-
-                    <div className="space-y-2">
-  {!client.company_data.company_type ? (
-    <Button
-      className="w-full bg-amber-500 hover:bg-amber-600"
-      onClick={() =>
-        router.push(`/expert/clients/${client.id}/valider-statut`)
-      }
-    >
-      <FileText size={16} className="mr-2" />
-      Valider le statut
-    </Button>
-  ) : (
-    <Button
-      className="w-full bg-blue-500 hover:bg-blue-600"
-      onClick={() =>
-        router.push(`/expert/clients/${client.id}/valider-statut`)
-      }
-    >
-      <FileText size={16} className="mr-2" />
-      Modifier le statut
-    </Button>
-  )}
-
-  <Button
-    variant="outline"
-    className="w-full"
-    onClick={() => {
-      // Se connecter en tant que client (impersonation)
-      window.open(`/client?impersonate=${client.id}`, '_blank');
-    }}
-  >
-    👤 Accès client
-  </Button>
-</div>        </>
-                ) : (
-                  <Button
-                    className="w-full bg-amber-500 hover:bg-amber-600"
-                    onClick={() =>
-                      router.push(`/expert/clients/${client.id}/valider-statut`)
-                    }
-                  >
-                    <FileText size={16} className="mr-2" />
-                    Démarrer l'onboarding
-                  </Button>
+                  </>
                 )}
 
-<Button
-  variant="outline"
-  className="w-full"
-  onClick={() => router.push(`/expert/clients/${client.id}/valider-statut`)}
->
-  Modifier le statut
-</Button>
+                <div className="space-y-2">
+                  {/* Bouton principal : Fiche client */}
+                  <Button
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                    onClick={() => router.push(`/expert/clients/${client.id}`)}
+                  >
+                    <Eye size={16} className="mr-2" />
+                    Voir la fiche client
+                  </Button>
+
+                  {/* Bouton RDV */}
+                  <Button
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={() => router.push(`/expert/clients/${client.id}/rdv`)}
+                  >
+                    <Calendar size={16} className="mr-2" />
+                    Démarrer un RDV
+                  </Button>
+
+                  {/* Bouton validation statut */}
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push(`/expert/clients/${client.id}/valider-statut`)}
+                  >
+                    <FileText size={16} className="mr-2" />
+                    {client.company_data?.company_type ? 'Modifier le statut' : 'Valider le statut'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

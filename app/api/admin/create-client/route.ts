@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { generateWelcomeEmail } from '@/lib/emails/welcome-email';
 import { generateContract } from '@/lib/contracts/contract-generator';
+import { sendContractToYouSign } from '@/lib/yousign/yousignService';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('📥 API: Création client...', email);
 
-    // 1. Créer le compte Auth avec admin API
+    // 1. Créer le compte Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -28,10 +29,9 @@ export async function POST(request: NextRequest) {
 
     if (authError) throw authError;
     if (!authData.user) throw new Error('Auth creation failed');
-
     console.log('✅ Auth créé:', authData.user.id);
 
-    // 2. Créer le user dans users
+    // 2. Créer le user
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError) throw userError;
-
     console.log('✅ User créé:', userData.id);
 
     // 3. Créer les accès
@@ -72,13 +71,67 @@ export async function POST(request: NextRequest) {
       packPrice: pack_price,
       createdAt: new Date().toISOString(),
     });
-
     console.log('📄 Contrat généré pour pack:', pack);
 
-    // TODO: Intégration YouSign pour signature électronique
-    // const signatureUrl = await sendToYouSign(contractContent, email);
+    // 5. Convertir contrat en PDF et uploader vers storage
+    const pdfBuffer = Buffer.from(contractContent);
+    const pdfPath = `${userData.id}/contrat_${pack}_${Date.now()}.txt`;
 
-    // 5. Générer l'email de bienvenue
+    const { error: uploadError } = await supabase.storage
+      .from('contracts')
+      .upload(pdfPath, pdfBuffer, {
+        contentType: 'text/plain',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('⚠️ Erreur upload contrat:', uploadError);
+    } else {
+      console.log('✅ Contrat uploadé:', pdfPath);
+    }
+
+    // 6. Stocker le contrat en base
+    const { data: contractData, error: contractError } = await supabase
+      .from('contracts')
+      .insert({
+        clientId: userData.id,
+        type: 'pack',
+        contract_type: pack,
+        url: pdfPath,
+      })
+      .select()
+      .single();
+
+    if (contractError) {
+      console.error('⚠️ Erreur stockage contrat:', contractError);
+    } else {
+      console.log('✅ Contrat stocké en base:', contractData.id);
+    }
+
+    // 7. Envoyer le contrat à YouSign
+    if (pdfPath && process.env.YOUSIGN_API_KEY) {
+      try {
+        const youSignResult = await sendContractToYouSign(
+          email,
+          `${first_name} ${last_name}`,
+          pdfPath,
+          pack
+        );
+
+        console.log('✅ Contrat envoyé à YouSign:', youSignResult.id);
+
+        // Mettre à jour le contrat avec l'ID YouSign
+        await supabase
+          .from('contracts')
+          .update({ signedAt: youSignResult.id })
+          .eq('id', contractData.id);
+
+      } catch (youSignError) {
+        console.error('⚠️ Exception YouSign:', youSignError);
+      }
+    }
+
+    // 8. Envoyer l'email de bienvenue
     const emailHtml = generateWelcomeEmail({
       firstName: first_name,
       email,
@@ -87,7 +140,6 @@ export async function POST(request: NextRequest) {
       loginUrl: 'https://declic-entrepreneurs-saas.vercel.app/auth/login',
     });
 
-    // 6. Envoyer l'email de bienvenue
     try {
       const { data: emailData, error: emailError } = await resend.emails.send({
         from: 'DÉCLIC Entrepreneurs <onboarding@resend.dev>',
@@ -103,13 +155,13 @@ export async function POST(request: NextRequest) {
       }
     } catch (emailError) {
       console.error('⚠️ Exception email:', emailError);
-      // On ne bloque pas la création si l'email échoue
     }
 
     return NextResponse.json({ 
       success: true, 
       user: userData,
-      message: 'Client créé avec succès. Email de bienvenue envoyé.'
+      contract: contractData,
+      message: 'Client créé avec succès. Email et contrat envoyés.'
     });
 
   } catch (error: any) {

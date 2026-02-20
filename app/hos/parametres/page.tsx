@@ -3,15 +3,11 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OnboardingVideo } from '@/components/OnboardingVideo';
 import { Bell, Lock, User } from 'lucide-react';
 
-export default function ParametresPage() {
+export default function HOSParametresPage() {
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-6">
-      {/* VIDÉO ONBOARDING */}
-      <OnboardingVideo pageSlug="parametres" role="CLIENT" />
-
       <h1 className="text-3xl font-bold text-[#123055]">Paramètres</h1>
 
       {/* Profil */}
@@ -25,15 +21,15 @@ export default function ParametresPage() {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Prénom</label>
-              <Input placeholder="Client" />
+              <Input placeholder="Pierre" />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Nom</label>
-              <Input placeholder="Test" />
+              <Input placeholder="HOS" />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Email</label>
-              <Input type="email" placeholder="contact@jj-conseil.fr" />
+              <Input type="email" placeholder="hos@declic.fr" />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Téléphone</label>
@@ -58,32 +54,32 @@ export default function ParametresPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-slate-800">Nouveaux coachings</p>
-                <p className="text-sm text-slate-500">Recevoir une notification lors de nouveaux coachings</p>
+                <p className="font-semibold text-slate-800">Nouveaux leads</p>
+                <p className="text-sm text-slate-500">Recevoir une notification pour chaque nouveau lead</p>
               </div>
               <input type="checkbox" className="w-5 h-5" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-slate-800">Nouveaux ateliers</p>
-                <p className="text-sm text-slate-500">Recevoir une notification lors de nouveaux ateliers</p>
+                <p className="font-semibold text-slate-800">RDV manqués</p>
+                <p className="text-sm text-slate-500">Alerte en cas de no-show</p>
               </div>
               <input type="checkbox" className="w-5 h-5" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-slate-800">Nouvelles vidéos</p>
-                <p className="text-sm text-slate-500">Recevoir une notification pour les nouveaux contenus</p>
+                <p className="font-semibold text-slate-800">Objectifs atteints</p>
+                <p className="text-sm text-slate-500">Notification quand un membre atteint ses objectifs</p>
               </div>
               <input type="checkbox" className="w-5 h-5" defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-slate-800">Messages experts</p>
-                <p className="text-sm text-slate-500">Notification quand un expert vous répond</p>
+                <p className="font-semibold text-slate-800">Rapports hebdomadaires</p>
+                <p className="text-sm text-slate-500">Recevoir un résumé chaque lundi</p>
               </div>
               <input type="checkbox" className="w-5 h-5" defaultChecked />
             </div>

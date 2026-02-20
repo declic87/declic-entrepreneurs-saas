@@ -3,6 +3,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { OnboardingVideo } from "@/components/OnboardingVideo";
 import { 
   Calculator, Car, Coins, Wallet, 
   BarChart3, Receipt, Shield, Clock,
@@ -79,6 +80,9 @@ const SIMULATEURS = [
 export default function SimulateurHubPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="simulateur" role="CLIENT" />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>

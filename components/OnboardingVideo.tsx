@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { Video, Play, ExternalLink } from "lucide-react";
+import { Video, Play, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -12,35 +12,48 @@ const supabase = createBrowserClient(
 );
 
 interface OnboardingVideoProps {
-  pageSlug: string; // 'dashboard', 'creation-societe', 'mon-dossier', etc.
+  pageSlug: string;
+  role?: string;
 }
 
 interface VideoData {
-  video_url: string;
-  video_type: string; // 'loom', 'fathom', 'youtube'
+  id: string;
+  pole: string;
   title: string;
-  description?: string;
+  loom_id: string;
+  description: string;
+  duration: string;
 }
 
-export function OnboardingVideo({ pageSlug }: OnboardingVideoProps) {
-  const [videoData, setVideoData] = useState<VideoData | null>(null);
+export function OnboardingVideo({ pageSlug, role = 'CLIENT' }: OnboardingVideoProps) {
+  const [video, setVideo] = useState<VideoData | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [hasWatched, setHasWatched] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadVideo();
-  }, [pageSlug]);
+    checkIfWatched();
+  }, [pageSlug, role]);
 
   async function loadVideo() {
     try {
-      const { data, error } = await supabase
-        .from('onboarding_videos_client')
-        .select('video_url, video_type, title, description')
-        .eq('page_slug', pageSlug)
-        .eq('is_active', true)
-        .single();
+      const { data } = await supabase
+        .from('onboarding_videos')
+        .select('*')
+        .eq('pole', role)
+        .eq('active', true)
+        .order('order_index');
 
-      if (!error && data) {
-        setVideoData(data);
+      if (data && data.length > 0) {
+        if (pageSlug === 'general') {
+          setVideo(data[0]);
+        } else {
+          const matchingVideo = data.find(v => 
+            v.title.toLowerCase().includes(pageSlug.toLowerCase())
+          );
+          setVideo(matchingVideo || null);
+        }
       }
     } catch (err) {
       console.error('Erreur chargement vidéo:', err);
@@ -49,66 +62,91 @@ export function OnboardingVideo({ pageSlug }: OnboardingVideoProps) {
     }
   }
 
-  // Extraire l'ID Loom de l'URL
-  function getLoomEmbedUrl(url: string): string {
-    const match = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
-    if (match) {
-      return `https://www.loom.com/embed/${match[1]}`;
-    }
-    return url;
+  function checkIfWatched() {
+    const key = `onboarding_watched_${role}_${pageSlug}`;
+    const watched = localStorage.getItem(key);
+    setHasWatched(!!watched);
   }
 
-  // Extraire l'ID Fathom de l'URL
-  function getFathomEmbedUrl(url: string): string {
-    if (url.includes('/embed/')) return url;
-    
-    const match = url.match(/fathom\.video\/share\/([a-zA-Z0-9]+)/);
-    if (match) {
-      return `https://fathom.video/embed/${match[1]}`;
-    }
-    return url;
+  function markAsWatched() {
+    const key = `onboarding_watched_${role}_${pageSlug}`;
+    localStorage.setItem(key, 'true');
+    setHasWatched(true);
+    setShowModal(false);
   }
 
-  // Extraire l'ID YouTube de l'URL
-  function getYouTubeEmbedUrl(url: string): string {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    if (match) {
-      return `https://www.youtube.com/embed/${match[1]}`;
-    }
-    return url;
-  }
-
-  if (loading || !videoData || !videoData.video_url) return null;
+  if (loading || !video) return null;
 
   return (
-    <div className="mb-6">
-      {/* Bannière vidéo */}
-      <Alert className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-        <Video className="h-5 w-5 text-purple-600" />
-        <AlertDescription>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-1">
-                🎥 {videoData.title}
-              </h3>
-              {videoData.description && (
-                <p className="text-sm text-slate-600">
-                  {videoData.description}
-                </p>
+    <>
+      <Alert className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 mb-6">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              {hasWatched ? (
+                <CheckCircle2 className="text-green-600" size={20} />
+              ) : (
+                <Video className="text-purple-600" size={20} />
               )}
             </div>
-            <Button
-              onClick={() => window.open(videoData.video_url, '_blank')}
-              variant="outline"
-              className="ml-4 border-purple-300 text-purple-700 hover:bg-purple-50"
-            >
-              <Play className="mr-2 h-4 w-4" />
-              Regarder la vidéo
-              <ExternalLink className="ml-2 h-3 w-3" />
-            </Button>
+            <div>
+              <h3 className="font-semibold text-slate-900">
+                🎥 {video.title}
+              </h3>
+              <p className="text-sm text-slate-600">
+                {video.description} • {video.duration}
+              </p>
+            </div>
           </div>
-        </AlertDescription>
+          <Button
+            onClick={() => setShowModal(true)}
+            variant="outline"
+            className="ml-4 border-purple-300 text-purple-700 hover:bg-purple-50"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            {hasWatched ? 'Revoir' : 'Voir la vidéo'}
+          </Button>
+        </div>
       </Alert>
-    </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{video.title}</h2>
+                <p className="text-sm text-gray-600">{video.description}</p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
+              <iframe
+                src={`https://www.loom.com/embed/${video.loom_id}?hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true`}
+                frameBorder="0"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full"
+              />
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+              <p className="text-sm text-gray-600">Durée : {video.duration}</p>
+              <Button
+                onClick={markAsWatched}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle2 className="mr-2" size={20} />
+                Marquer comme vue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

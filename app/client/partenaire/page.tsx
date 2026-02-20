@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { OnboardingVideo } from "@/components/OnboardingVideo";
 import { Handshake, Play, Video, Copy, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,10 +101,8 @@ export default function PartenairePage() {
   }
 
   function getFathomEmbedUrl(url: string): string {
-    // Si c'est déjà un lien d'embed, le retourner tel quel
     if (url.includes('/embed/')) return url;
     
-    // Sinon, extraire l'ID et construire l'URL d'embed
     const match = url.match(/fathom\.video\/share\/([a-zA-Z0-9]+)/);
     if (match) {
       return `https://fathom.video/embed/${match[1]}`;
@@ -138,6 +137,9 @@ export default function PartenairePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="partenaire" role="CLIENT" />
+
       {/* Header */}
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-4">

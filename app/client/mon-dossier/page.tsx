@@ -14,7 +14,6 @@ export default function MonDossierPage() {
 
   useEffect(() => {
     if (!loading && !hasAccess.monDossier) {
-      // Redirection si pas d'accès
       router.push('/client?error=access_denied');
     }
   }, [hasAccess, loading, router]);
@@ -49,7 +48,7 @@ export default function MonDossierPage() {
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-6">
       {/* VIDÉO ONBOARDING */}
-      <OnboardingVideo pageSlug="mon-dossier" />
+      <OnboardingVideo pageSlug="dossier" role="CLIENT" />
 
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-[#123055]">Mon Dossier</h1>

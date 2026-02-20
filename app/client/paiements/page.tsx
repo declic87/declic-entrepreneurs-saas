@@ -43,11 +43,9 @@ export default function PaiementsPage() {
   }, []);
 
   async function loadData() {
-    // Charger l'utilisateur
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Charger l'accès actuel
     const { data: userData } = await supabase
       .from('users')
       .select('id')
@@ -63,7 +61,6 @@ export default function PaiementsPage() {
 
       if (accessData) setAccess(accessData);
 
-      // Charger l'historique des paiements
       const { data: paymentsData } = await supabase
         .from('payments')
         .select('*')
@@ -86,7 +83,7 @@ export default function PaiementsPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-6">
-      <OnboardingVideo pageSlug="paiements" />
+      <OnboardingVideo pageSlug="paiements" role="CLIENT" />
 
       <h1 className="text-3xl font-bold text-[#123055]">Mes Paiements</h1>
 

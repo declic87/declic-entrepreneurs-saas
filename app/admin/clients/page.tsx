@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Search, Plus, UserPlus, Mail, Phone, Calendar, Award, X } from 'lucide-react';
+import { Search, Plus, UserPlus, Mail, Phone, X } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -52,25 +52,21 @@ export default function AdminClientsPage() {
   async function loadClients() {
     const { data: usersData } = await supabase
       .from('users')
-      .select(`
-        id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        created_at,
-        status,
-        client_access (
-          pack_type
-        )
-      `)
+      .select('id, first_name, last_name, email, phone, created_at, status')
       .eq('role', 'CLIENT')
       .order('created_at', { ascending: false });
 
     if (usersData) {
+      // Charger les packs séparément
+      const userIds = usersData.map(u => u.id);
+      const { data: accessData } = await supabase
+        .from('client_access')
+        .select('user_id, pack_type')
+        .in('user_id', userIds);
+
       const clientsWithPack = usersData.map((user: any) => ({
         ...user,
-        pack: user.client_access?.[0]?.pack_type || null,
+        pack: accessData?.find((a: any) => a.user_id === user.id)?.pack_type || null,
       }));
       setClients(clientsWithPack);
     }
@@ -82,47 +78,21 @@ export default function AdminClientsPage() {
     setSaving(true);
 
     try {
-      // 1. Créer le compte Auth Supabase
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newClient.email,
-        password: newClient.password,
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('Erreur lors de la création du compte');
-      }
-
-      // 2. Créer l'utilisateur dans la table users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .insert({
-          auth_id: authData.user.id,
-          email: newClient.email,
-          first_name: newClient.first_name,
-          last_name: newClient.last_name,
-          phone: newClient.phone,
-          role: 'CLIENT',
-          status: 'active',
-        })
-        .select()
-        .single();
-
-      if (userError) throw userError;
-
-      // 3. Créer les accès via la fonction SQL
       const packPrice = PACK_OPTIONS.find(p => p.value === newClient.pack)?.price || 97;
       
-      const { error: accessError } = await supabase.rpc('create_default_access', {
-        p_user_id: userData.id,
-        p_pack_type: newClient.pack,
-        p_pack_price: packPrice,
+      const response = await fetch('/api/admin/create-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newClient,
+          pack_price: packPrice,
+        }),
       });
 
-      if (accessError) {
-        console.error('Erreur création accès:', accessError);
-        // Pas critique, on continue
+      const result = await response.json();
+
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       alert('✅ Client créé avec succès !');
@@ -322,8 +292,7 @@ export default function AdminClientsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Award size={16} />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Pack initial *
                     </label>
                     <select
@@ -338,7 +307,7 @@ export default function AdminClientsPage() {
                       ))}
                     </select>
                     <p className="text-xs text-gray-500 mt-2">
-                      Les accès seront créés automatiquement selon le pack sélectionné
+                      Les accès seront créés automatiquement
                     </p>
                   </div>
 
@@ -428,7 +397,7 @@ export default function AdminClientsPage() {
                         {new Date(client.created_at).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="px-6 py-4">
-                        <a
+                        
                           href={`/admin/gestion-acces`}
                           className="text-orange-600 hover:text-orange-700 font-medium text-sm"
                         >

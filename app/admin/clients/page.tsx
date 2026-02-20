@@ -57,7 +57,6 @@ export default function AdminClientsPage() {
       .order('created_at', { ascending: false });
 
     if (usersData) {
-      // Charger les packs séparément
       const userIds = usersData.map(u => u.id);
       const { data: accessData } = await supabase
         .from('client_access')
@@ -141,7 +140,6 @@ export default function AdminClientsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-gray-900">Gestion des Clients</h1>
@@ -149,14 +147,13 @@ export default function AdminClientsPage() {
           </div>
           <button
             onClick={() => setShowAddForm(true)}
-            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl"
+            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2"
           >
             <Plus size={20} />
             Ajouter un client
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid md:grid-cols-6 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <p className="text-sm text-gray-600 mb-1">Total</p>
@@ -184,13 +181,12 @@ export default function AdminClientsPage() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex items-center gap-3">
             <Search className="text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Rechercher un client (nom, email)..."
+              placeholder="Rechercher un client..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 outline-none text-gray-900"
@@ -198,25 +194,16 @@ export default function AdminClientsPage() {
           </div>
         </div>
 
-        {/* Modal Ajout Client */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-8">
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                      <UserPlus className="text-orange-600" size={24} />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Ajouter un client</h2>
-                      <p className="text-sm text-gray-600">Création manuelle avec pack initial</p>
-                    </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Ajouter un client</h2>
+                    <p className="text-sm text-gray-600">Création manuelle</p>
                   </div>
-                  <button
-                    onClick={() => setShowAddForm(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
+                  <button onClick={() => setShowAddForm(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                     <X size={20} />
                   </button>
                 </div>
@@ -224,107 +211,88 @@ export default function AdminClientsPage() {
                 <form onSubmit={handleAddClient} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Prénom *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Prénom *</label>
                       <input
                         type="text"
                         required
                         value={newClient.first_name}
                         onChange={(e) => setNewClient({...newClient, first_name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nom *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
                       <input
                         type="text"
                         required
                         value={newClient.last_name}
                         onChange={(e) => setNewClient({...newClient, last_name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Mail size={16} />
-                      Email *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                     <input
                       type="email"
                       required
                       value={newClient.email}
                       onChange={(e) => setNewClient({...newClient, email: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Phone size={16} />
-                      Téléphone
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
                     <input
                       type="tel"
                       value={newClient.phone}
                       onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mot de passe temporaire *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
                     <input
                       type="password"
                       required
                       minLength={6}
                       value={newClient.password}
                       onChange={(e) => setNewClient({...newClient, password: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
                       placeholder="Min. 6 caractères"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pack initial *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Pack *</label>
                     <select
                       value={newClient.pack}
                       onChange={(e) => setNewClient({...newClient, pack: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
                     >
                       {PACK_OPTIONS.map(pack => (
-                        <option key={pack.value} value={pack.value}>
-                          {pack.label}
-                        </option>
+                        <option key={pack.value} value={pack.value}>{pack.label}</option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Les accès seront créés automatiquement
-                    </p>
                   </div>
 
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowAddForm(false)}
-                      className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                      className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold disabled:opacity-50"
                     >
-                      {saving ? 'Création...' : 'Créer le client'}
+                      {saving ? 'Création...' : 'Créer'}
                     </button>
                   </div>
                 </form>
@@ -333,83 +301,66 @@ export default function AdminClientsPage() {
           </div>
         )}
 
-        {/* Liste clients */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">CLIENT</th>
+                <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">CONTACT</th>
+                <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">PACK</th>
+                <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">STATUT</th>
+                <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">DATE</th>
+                <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClients.length === 0 ? (
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">CLIENT</th>
-                  <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">CONTACT</th>
-                  <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">PACK</th>
-                  <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">STATUT</th>
-                  <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">DATE</th>
-                  <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">ACTIONS</th>
+                  <td colSpan={6} className="text-center py-12 text-gray-500">
+                    Aucun client
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredClients.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-12 text-gray-500">
-                      Aucun client dans la base
+              ) : (
+                filteredClients.map((client) => (
+                  <tr key={client.id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center font-bold">
+                          {client.first_name?.[0]}{client.last_name?.[0]}
+                        </div>
+                        <p className="font-medium">{client.first_name} {client.last_name}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{client.email}</td>
+                    <td className="px-6 py-4">
+                      {client.pack ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                          {client.pack}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        client.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {client.status === 'active' ? 'Actif' : 'Attente'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(client.created_at).toLocaleDateString('fr-FR')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <a href="/admin/gestion-acces" className="text-orange-600 hover:text-orange-700 font-medium text-sm">
+                        Gérer →
+                      </a>
                     </td>
                   </tr>
-                ) : (
-                  filteredClients.map((client) => (
-                    <tr key={client.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold">
-                            {client.first_name?.[0]}{client.last_name?.[0]}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {client.first_name} {client.last_name}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-gray-600">{client.email}</p>
-                        {client.phone && (
-                          <p className="text-xs text-gray-500">{client.phone}</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {client.pack ? (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-                            {client.pack}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-400">Non défini</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          client.status === 'active' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-orange-100 text-orange-700'
-                        }`}>
-                          {client.status === 'active' ? 'Actif' : 'En attente'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(client.created_at).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="px-6 py-4">
-                        
-                          href={`/admin/gestion-acces`}
-                          className="text-orange-600 hover:text-orange-700 font-medium text-sm"
-                        >
-                          Gérer accès →
-                        </a>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

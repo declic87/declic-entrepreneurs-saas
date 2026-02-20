@@ -67,7 +67,7 @@ const OFFRES = [
   {
     name: "Starter",
     price: "3 600€",
-    bullets: ["Audit fiscal complet","Création de société","3 RDV de suivi","Support email 3 mois"],
+    bullets: ["Audit fiscal complet","Création de société","3 RDV de suivi","Support email 6 mois"],
     // 👉 Remplace par ton Payment Link Stripe exact (copie l’URL “Pay link” depuis Stripe)
     payLink: "https://buy.stripe.com/00weVcdi72ou8D34eX9fW06", 
     cta: "/signup?plan=starter",
@@ -76,7 +76,7 @@ const OFFRES = [
     name: "Pro",
     tag: "POPULAIRE",
     price: "4 600€",
-    bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 6 mois","Expert‑comptable partenaire"],
+    bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 12 mois","comptable partenaire"],
     // 👉 Remplace par ton Payment Link Stripe exact
     payLink: "https://buy.stripe.com/00w9AS7XNgfk5qR6n59fW05",
     cta: "/signup?plan=pro",
@@ -85,7 +85,7 @@ const OFFRES = [
   {
     name: "Expert",
     price: "6 600€",
-    bullets: ["Tout Pro inclus","Accompagnement premium","5 RDV de suivi","1er Audit annuel inclus","Support illimité 12 mois"],
+    bullets: ["Tout Pro inclus","Accompagnement premium","5 RDV de suivi","1er Audit annuel inclus","Support prioritaire 18 mois"],
     // 👉 Remplace par ton Payment Link Stripe exact
     payLink: "https://buy.stripe.com/fZueVcb9Z4wCf1r9zh9fW04",
     cta: "/signup?plan=expert",
@@ -802,7 +802,7 @@ export default function HomePage() {
       <div>
         <p className="font-semibold text-white mb-3">Contact</p>
         <ul className="space-y-2 text-sm">
-          <li><a href="mailto:contact@declic-entrepreneur.fr" className="hover:text-white">contact@declic-entrepreneur.fr</a></li>
+          <li><a href="mailto:contact@declic-entrepreneur.fr" className="hover:text-white">contact@declic-entrepreneurs.fr</a></li>
         </ul>
       </div>
     </div>

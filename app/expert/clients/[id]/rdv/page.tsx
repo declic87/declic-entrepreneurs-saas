@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Circle, Save, Video, ArrowLeft, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Circle, Save, Video, ArrowLeft, ExternalLink, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Question {
@@ -52,6 +52,7 @@ export default function ExpertRDVPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fathomUrl, setFathomUrl] = useState<string>('');
+  const [fathomStarted, setFathomStarted] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,6 +122,7 @@ export default function ExpertRDVPage() {
             setAppointment(appointmentData);
             if (appointmentData.fathom_recording_url) {
               setFathomUrl(appointmentData.fathom_recording_url);
+              setFathomStarted(true);
             }
 
             const { data: responsesData } = await supabase
@@ -190,6 +192,14 @@ export default function ExpertRDVPage() {
           .insert(responsesToInsert);
       }
 
+      // Sauvegarder l'URL Fathom si elle existe
+      if (fathomUrl && fathomUrl !== appointment.fathom_recording_url) {
+        await supabase
+          .from('expert_appointments')
+          .update({ fathom_recording_url: fathomUrl })
+          .eq('id', appointment.id);
+      }
+
       toast.success('Réponses enregistrées !');
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
@@ -199,26 +209,25 @@ export default function ExpertRDVPage() {
     }
   }
 
-  async function saveFathomUrl() {
-    if (!appointment || !fathomUrl) return;
-
-    try {
-      await supabase
-        .from('expert_appointments')
-        .update({ fathom_recording_url: fathomUrl })
-        .eq('id', appointment.id);
-
-      toast.success('URL Fathom enregistrée !');
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Erreur lors de la sauvegarde');
-    }
+  function startFathom() {
+    // Ouvrir Fathom dans un nouvel onglet
+    window.open('https://app.fathom.video', '_blank');
+    setFathomStarted(true);
+    toast.success('Fathom ouvert ! Démarrez l\'enregistrement et collez l\'URL ci-dessous après.');
   }
 
   async function completeRDV() {
     if (!appointment) return;
 
     try {
+      // Sauvegarder l'URL Fathom avant de terminer
+      if (fathomUrl && fathomUrl !== appointment.fathom_recording_url) {
+        await supabase
+          .from('expert_appointments')
+          .update({ fathom_recording_url: fathomUrl })
+          .eq('id', appointment.id);
+      }
+
       await supabase
         .from('expert_appointments')
         .update({
@@ -296,40 +305,54 @@ export default function ExpertRDVPage() {
       </div>
 
       <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Video className="text-purple-600" size={32} />
-            <div>
-              <h3 className="font-bold text-[#123055]">Enregistrement Fathom</h3>
-              <p className="text-sm text-gray-600">
-                1. Ouvrez Fathom et démarrez l'enregistrement<br />
-                2. Collez l'URL de partage ci-dessous
-              </p>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Video className="text-purple-600" size={32} />
+              <div>
+                <h3 className="font-bold text-[#123055]">Enregistrement Fathom</h3>
+                <p className="text-sm text-gray-600">
+                  {fathomStarted 
+                    ? 'Collez l\'URL de partage Fathom ci-dessous'
+                    : 'Cliquez pour ouvrir Fathom et démarrer l\'enregistrement'
+                  }
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-3">
-            <Input
-              placeholder="https://fathom.video/share/..."
-              value={fathomUrl}
-              onChange={(e) => setFathomUrl(e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              onClick={saveFathomUrl}
-              disabled={!fathomUrl}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              Enregistrer l'URL
-            </Button>
-            {fathomUrl && (
-              <Button variant="outline" asChild>
-                <a href={fathomUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink size={18} />
-                </a>
+            {!fathomStarted ? (
+              <Button
+                onClick={startFathom}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Play size={18} className="mr-2" />
+                Démarrer Fathom
               </Button>
+            ) : (
+              fathomUrl && (
+                <Button variant="outline" asChild>
+                  <a href={fathomUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={18} className="mr-2" />
+                    Voir l'enregistrement
+                  </a>
+                </Button>
+              )
             )}
           </div>
+
+          {fathomStarted && (
+            <div className="pt-2 border-t">
+              <Input
+                placeholder="https://fathom.video/share/..."
+                value={fathomUrl}
+                onChange={(e) => setFathomUrl(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                💡 Après avoir terminé l'enregistrement Fathom, collez l'URL de partage ici
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

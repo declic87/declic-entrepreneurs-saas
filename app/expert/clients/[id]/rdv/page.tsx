@@ -210,10 +210,9 @@ export default function ExpertRDVPage() {
   }
 
   function startFathom() {
-    // Ouvrir Fathom dans un nouvel onglet
-    window.open('https://fathom.video', '_blank');
+    // Juste activer le champ URL
     setFathomStarted(true);
-    toast.success('Fathom ouvert ! Démarrez l\'enregistrement et collez l\'URL ci-dessous après.');
+    toast.info('Ouvrez Fathom (app desktop ou extension Chrome) et démarrez l\'enregistrement. Puis collez l\'URL de partage ci-dessous.');
   }
 
   async function completeRDV() {
@@ -313,8 +312,8 @@ export default function ExpertRDVPage() {
                 <h3 className="font-bold text-[#123055]">Enregistrement Fathom</h3>
                 <p className="text-sm text-gray-600">
                   {fathomStarted 
-                    ? 'Collez l\'URL de partage Fathom ci-dessous'
-                    : 'Cliquez pour ouvrir Fathom et démarrer l\'enregistrement'
+                    ? 'Collez l\'URL de partage Fathom ci-dessous après l\'enregistrement'
+                    : 'Utilisez Fathom (app desktop ou extension Chrome) pour enregistrer ce RDV'
                   }
                 </p>
               </div>
@@ -325,8 +324,8 @@ export default function ExpertRDVPage() {
                 onClick={startFathom}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
-                <Play size={18} className="mr-2" />
-                Démarrer Fathom
+                <Video size={18} className="mr-2" />
+                Ajouter l'URL Fathom
               </Button>
             ) : (
               fathomUrl && (

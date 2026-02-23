@@ -211,7 +211,7 @@ export default function ExpertRDVPage() {
 
   function startFathom() {
     // Ouvrir Fathom dans un nouvel onglet
-    window.open('https://app.fathom.video', '_blank');
+    window.open('https://fathom.video', '_blank');
     setFathomStarted(true);
     toast.success('Fathom ouvert ! Démarrez l\'enregistrement et collez l\'URL ci-dessous après.');
   }

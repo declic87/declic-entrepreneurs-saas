@@ -172,7 +172,7 @@ export default function HomePage() {
 
       {/* Diagnostic — ORANGE plein */}
       <a
-        href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+        href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Prendre un diagnostic gratuit"
@@ -218,7 +218,7 @@ export default function HomePage() {
           </Link>
 
           <a
-            href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+            href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMobileMenuOpen(false)}
@@ -249,7 +249,7 @@ export default function HomePage() {
     {/* CTA buttons */}
     <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
       <a
-        href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+        href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -511,7 +511,7 @@ export default function HomePage() {
             "Réponses à toutes vos questions",
           ],
           premium: false,
-          cta: "https://calendly.com/contact-jj-conseil/rdv-analyste",
+          cta: "/rdv-expert-payant",
         },
         {
           name: "Appel avec Jérôme",
@@ -524,7 +524,7 @@ export default function HomePage() {
             "Suivi post‑appel inclus",
           ],
           premium: true,
-          cta: "https://calendly.com/contact-jj-conseil/rdv-analyste",
+          cta: "/rdv-jerome",
         },
       ].map((r) => (
         <div
@@ -762,7 +762,7 @@ export default function HomePage() {
       Réservez un diagnostic gratuit de 45 minutes avec un expert. Sans engagement, 100% personnalisé.
     </p>
     <a
-      href="https://calendly.com/contact-jj-conseil/rdv-analyste"
+      href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
       target="_blank"
       rel="noopener noreferrer"
     >

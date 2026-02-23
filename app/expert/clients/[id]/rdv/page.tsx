@@ -52,7 +52,6 @@ export default function ExpertRDVPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fathomUrl, setFathomUrl] = useState<string>('');
-  const [startingFathom, setStartingFathom] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,7 +64,6 @@ export default function ExpertRDVPage() {
 
   async function loadData() {
     try {
-      // Charger le client
       const { data: clientData } = await supabase
         .from('users')
         .select('id, first_name, last_name, email')
@@ -74,7 +72,6 @@ export default function ExpertRDVPage() {
 
       if (clientData) setClient(clientData);
 
-      // Charger le RDV en cours ou créer un nouveau
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: userData } = await supabase
@@ -84,7 +81,6 @@ export default function ExpertRDVPage() {
           .single();
 
         if (userData) {
-          // Chercher RDV en cours
           let { data: appointmentData } = await supabase
             .from('expert_appointments')
             .select('*')
@@ -95,7 +91,6 @@ export default function ExpertRDVPage() {
             .limit(1)
             .single();
 
-          // Si pas de RDV en cours, créer un nouveau
           if (!appointmentData) {
             const { data: countData } = await supabase
               .from('expert_appointments')
@@ -128,7 +123,6 @@ export default function ExpertRDVPage() {
               setFathomUrl(appointmentData.fathom_recording_url);
             }
 
-            // Charger les réponses existantes
             const { data: responsesData } = await supabase
               .from('expert_checklist_responses')
               .select('question_id, response_value, notes')
@@ -145,7 +139,6 @@ export default function ExpertRDVPage() {
         }
       }
 
-      // Charger les questions
       const { data: questionsData } = await supabase
         .from('expert_checklist_questions')
         .select('*')
@@ -179,13 +172,11 @@ export default function ExpertRDVPage() {
 
     setSaving(true);
     try {
-      // Supprimer les anciennes réponses
       await supabase
         .from('expert_checklist_responses')
         .delete()
         .eq('appointment_id', appointment.id);
 
-      // Insérer les nouvelles
       const responsesToInsert = Object.values(responses).map(r => ({
         appointment_id: appointment.id,
         question_id: r.question_id,
@@ -208,36 +199,19 @@ export default function ExpertRDVPage() {
     }
   }
 
-  async function startFathomRecording() {
-    if (!appointment || !client) return;
+  async function saveFathomUrl() {
+    if (!appointment || !fathomUrl) return;
 
-    setStartingFathom(true);
     try {
-      const response = await fetch('/api/fathom/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          appointmentId: appointment.id,
-          clientName: `${client.first_name} ${client.last_name}`,
-          rdvNumber: appointment.rdv_number,
-        }),
-      });
+      await supabase
+        .from('expert_appointments')
+        .update({ fathom_recording_url: fathomUrl })
+        .eq('id', appointment.id);
 
-      const data = await response.json();
-
-      if (data.success && data.fathom_url) {
-        setFathomUrl(data.fathom_url);
-        toast.success('Enregistrement Fathom créé !');
-        // Ouvrir Fathom dans un nouvel onglet
-        window.open(data.fathom_url, '_blank');
-      } else {
-        throw new Error(data.error || 'Erreur Fathom');
-      }
-    } catch (error: any) {
-      console.error('Erreur Fathom:', error);
-      toast.error('Impossible de démarrer Fathom');
-    } finally {
-      setStartingFathom(false);
+      toast.success('URL Fathom enregistrée !');
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error('Erreur lors de la sauvegarde');
     }
   }
 
@@ -269,7 +243,6 @@ export default function ExpertRDVPage() {
     );
   }
 
-  // Grouper questions par catégorie
   const questionsByCategory = questions.reduce((acc, q) => {
     if (!acc[q.category]) acc[q.category] = [];
     acc[q.category].push(q);
@@ -286,7 +259,6 @@ export default function ExpertRDVPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -323,44 +295,44 @@ export default function ExpertRDVPage() {
         </div>
       </div>
 
-      {/* Fathom Recording */}
       <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Video className="text-purple-600" size={32} />
-              <div>
-                <h3 className="font-bold text-[#123055]">Enregistrement Fathom</h3>
-                <p className="text-sm text-gray-600">
-                  Enregistrez automatiquement ce RDV avec Fathom
-                </p>
-              </div>
+          <div className="flex items-center gap-3 mb-4">
+            <Video className="text-purple-600" size={32} />
+            <div>
+              <h3 className="font-bold text-[#123055]">Enregistrement Fathom</h3>
+              <p className="text-sm text-gray-600">
+                1. Ouvrez Fathom et démarrez l'enregistrement<br />
+                2. Collez l'URL de partage ci-dessous
+              </p>
             </div>
+          </div>
 
-            {fathomUrl ? (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" asChild>
-                  <a href={fathomUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink size={18} className="mr-2" />
-                    Ouvrir Fathom
-                  </a>
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={startFathomRecording}
-                disabled={startingFathom}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <Video size={18} className="mr-2" />
-                {startingFathom ? 'Démarrage...' : 'Démarrer Fathom'}
+          <div className="flex gap-3">
+            <Input
+              placeholder="https://fathom.video/share/..."
+              value={fathomUrl}
+              onChange={(e) => setFathomUrl(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={saveFathomUrl}
+              disabled={!fathomUrl}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              Enregistrer l'URL
+            </Button>
+            {fathomUrl && (
+              <Button variant="outline" asChild>
+                <a href={fathomUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={18} />
+                </a>
               </Button>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Checklist par catégorie */}
       {Object.entries(questionsByCategory).map(([category, categoryQuestions]) => (
         <Card key={category}>
           <CardContent className="p-6">
@@ -427,7 +399,6 @@ export default function ExpertRDVPage() {
         </Card>
       ))}
 
-      {/* Bouton fixe de sauvegarde */}
       <div className="fixed bottom-8 right-8 flex gap-4">
         <Button
           onClick={saveResponses}

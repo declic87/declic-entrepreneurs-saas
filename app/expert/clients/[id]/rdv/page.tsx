@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Circle, Save, Video, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Circle, Save, Video, ArrowLeft, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Question {
@@ -51,6 +51,8 @@ export default function ExpertRDVPage() {
   const [responses, setResponses] = useState<Record<string, Response>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fathomUrl, setFathomUrl] = useState<string>('');
+  const [startingFathom, setStartingFathom] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -122,6 +124,9 @@ export default function ExpertRDVPage() {
 
           if (appointmentData) {
             setAppointment(appointmentData);
+            if (appointmentData.fathom_recording_url) {
+              setFathomUrl(appointmentData.fathom_recording_url);
+            }
 
             // Charger les réponses existantes
             const { data: responsesData } = await supabase
@@ -200,6 +205,39 @@ export default function ExpertRDVPage() {
       toast.error('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function startFathomRecording() {
+    if (!appointment || !client) return;
+
+    setStartingFathom(true);
+    try {
+      const response = await fetch('/api/fathom/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointmentId: appointment.id,
+          clientName: `${client.first_name} ${client.last_name}`,
+          rdvNumber: appointment.rdv_number,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.fathom_url) {
+        setFathomUrl(data.fathom_url);
+        toast.success('Enregistrement Fathom créé !');
+        // Ouvrir Fathom dans un nouvel onglet
+        window.open(data.fathom_url, '_blank');
+      } else {
+        throw new Error(data.error || 'Erreur Fathom');
+      }
+    } catch (error: any) {
+      console.error('Erreur Fathom:', error);
+      toast.error('Impossible de démarrer Fathom');
+    } finally {
+      setStartingFathom(false);
     }
   }
 
@@ -285,7 +323,7 @@ export default function ExpertRDVPage() {
         </div>
       </div>
 
-      {/* Lien Fathom */}
+      {/* Fathom Recording */}
       <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -294,29 +332,29 @@ export default function ExpertRDVPage() {
               <div>
                 <h3 className="font-bold text-[#123055]">Enregistrement Fathom</h3>
                 <p className="text-sm text-gray-600">
-                  Lancez l'enregistrement pour capturer le RDV
+                  Enregistrez automatiquement ce RDV avec Fathom
                 </p>
               </div>
             </div>
-            {appointment?.fathom_recording_url ? (
-              <Button variant="outline" asChild>
-                <a href={appointment.fathom_recording_url} target="_blank">
-                  Voir l'enregistrement
-                </a>
-              </Button>
+
+            {fathomUrl ? (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" asChild>
+                  <a href={fathomUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink size={18} className="mr-2" />
+                    Ouvrir Fathom
+                  </a>
+                </Button>
+              </div>
             ) : (
-              <Input
-                placeholder="URL Fathom..."
-                className="max-w-md"
-                onChange={(e) => {
-                  if (appointment) {
-                    supabase
-                      .from('expert_appointments')
-                      .update({ fathom_recording_url: e.target.value })
-                      .eq('id', appointment.id);
-                  }
-                }}
-              />
+              <Button
+                onClick={startFathomRecording}
+                disabled={startingFathom}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Video size={18} className="mr-2" />
+                {startingFathom ? 'Démarrage...' : 'Démarrer Fathom'}
+              </Button>
             )}
           </div>
         </CardContent>

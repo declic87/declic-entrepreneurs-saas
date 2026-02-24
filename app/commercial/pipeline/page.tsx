@@ -3,10 +3,11 @@ import React, { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ScheduleExpertRDV } from "@/components/closer/ScheduleExpertRDV";
 import { 
   Flame, ThermometerSun, Snowflake, ArrowRight, 
   Target, XCircle, LayoutGrid, List, Mail, Phone, 
-  ChevronRight, MoreHorizontal
+  ChevronRight, MoreHorizontal, Calendar
 } from "lucide-react";
 
 interface Lead { 
@@ -34,33 +35,42 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function PipelinePage() {
   const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "table">("kanban");
+  
+  // État pour le modal de réservation
+  const [bookingLead, setBookingLead] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
 
   useEffect(() => {
-    async function fetchLeads() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) { setLoading(false); return; }
-        
-        const { data: profile } = await supabase.from("users").select("id, role").eq("authId", session.user.id).single();
-        if (!profile) { setLoading(false); return; }
-
-        let query = supabase.from("leads").select("*");
-        if (profile.role === "CLOSER") query = query.eq("closerId", profile.id);
-        else if (profile.role === "SETTER") query = query.eq("setterId", profile.id);
-
-        const { data } = await query.order("createdAt", { ascending: false });
-        if (data) setLeads(data);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    }
     fetchLeads();
-  }, [supabase]);
+  }, []);
+
+  async function fetchLeads() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
+      
+      const { data: profile } = await supabase.from("users").select("id, role").eq("authId", session.user.id).single();
+      if (!profile) { setLoading(false); return; }
+
+      let query = supabase.from("leads").select("*");
+      if (profile.role === "CLOSER") query = query.eq("closerId", profile.id);
+      else if (profile.role === "SETTER") query = query.eq("setterId", profile.id);
+
+      const { data } = await query.order("createdAt", { ascending: false });
+      if (data) setLeads(data);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }
 
   async function moveStatus(id: string, newStatus: string) {
     const { error } = await supabase.from("leads").update({ 
@@ -148,8 +158,25 @@ export default function PipelinePage() {
                         
                         <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">{l.activite}</p>
                         
-                        <div className="flex items-center justify-between">
+                        <div className="space-y-2">
                           <p className="text-xs font-black text-emerald-600 italic">{(l.ca || 0).toLocaleString()} €</p>
+                          
+                          {/* Bouton RDV Expert pour leads QUALIFIE ou CLOSE */}
+                          {["QUALIFIE", "CLOSE"].includes(step) && (
+                            <Button
+                              onClick={() => setBookingLead({
+                                id: l.id,
+                                name: `${l.firstName} ${l.lastName}`,
+                                email: l.email
+                              })}
+                              size="sm"
+                              className="w-full bg-green-600 hover:bg-green-700 text-white h-7 text-[10px]"
+                            >
+                              <Calendar size={12} className="mr-1" />
+                              RDV Expert
+                            </Button>
+                          )}
+                          
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {step !== "CLOSE" && (
                               <button 
@@ -157,9 +184,9 @@ export default function PipelinePage() {
                                   const idx = PIPELINE_STEPS.indexOf(step);
                                   if (idx < PIPELINE_STEPS.length - 2) moveStatus(l.id, PIPELINE_STEPS[idx + 1]);
                                 }} 
-                                className="p-1 bg-white border border-gray-100 rounded shadow-sm text-orange-500"
+                                className="p-1 bg-white border border-gray-100 rounded shadow-sm text-orange-500 flex-1"
                               >
-                                <ChevronRight size={14} />
+                                <ChevronRight size={14} className="mx-auto" />
                               </button>
                             )}
                           </div>
@@ -198,8 +225,22 @@ export default function PipelinePage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-2">
-                           <Button size="sm" variant="ghost" onClick={() => moveStatus(l.id, "CLOSE")} className="h-7 text-emerald-600 hover:bg-emerald-50 font-black text-[9px] uppercase"><Target size={12} className="mr-1"/> Close</Button>
-                           <Button size="sm" variant="ghost" onClick={() => moveStatus(l.id, "PERDU")} className="h-7 text-red-400 hover:bg-red-50 font-black text-[9px] uppercase"><XCircle size={12} className="mr-1"/> Out</Button>
+                          {/* Bouton RDV Expert en mode table */}
+                          {["QUALIFIE", "CLOSE"].includes(l.status) && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => setBookingLead({
+                                id: l.id,
+                                name: `${l.firstName} ${l.lastName}`,
+                                email: l.email
+                              })}
+                              className="h-7 bg-green-600 hover:bg-green-700 text-white font-black text-[9px] uppercase"
+                            >
+                              <Calendar size={12} className="mr-1"/> RDV Expert
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => moveStatus(l.id, "CLOSE")} className="h-7 text-emerald-600 hover:bg-emerald-50 font-black text-[9px] uppercase"><Target size={12} className="mr-1"/> Close</Button>
+                          <Button size="sm" variant="ghost" onClick={() => moveStatus(l.id, "PERDU")} className="h-7 text-red-400 hover:bg-red-50 font-black text-[9px] uppercase"><XCircle size={12} className="mr-1"/> Out</Button>
                         </div>
                       </td>
                     </tr>
@@ -208,6 +249,20 @@ export default function PipelinePage() {
               </table>
             </div>
         </Card>
+      )}
+
+      {/* Modal ScheduleExpertRDV */}
+      {bookingLead && (
+        <ScheduleExpertRDV
+          leadId={bookingLead.id}
+          leadName={bookingLead.name}
+          leadEmail={bookingLead.email}
+          onSuccess={() => {
+            setBookingLead(null);
+            fetchLeads();
+          }}
+          onCancel={() => setBookingLead(null)}
+        />
       )}
     </div>
   );

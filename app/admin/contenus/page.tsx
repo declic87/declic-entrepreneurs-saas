@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { publishAndNotify } from "@/lib/notifications";
+import { UploadPDFTuto } from "@/components/admin/UploadPDFTuto";
 import { 
   Video, Plus, Trash2, Save, X, FileText, Calendar, 
   Users, Link as LinkIcon, Upload, CheckCircle2, Send
@@ -87,7 +88,7 @@ function FormationsTab({ supabase }: any) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
-    category: "Créateur", // Par défaut
+    category: "Créateur",
     description: "",
     duration: "",
     loom_id: "",
@@ -171,7 +172,6 @@ function FormationsTab({ supabase }: any) {
             {editingId ? "✏️ Modifier la vidéo" : "➕ Ajouter une vidéo"}
           </h3>
           
-          {/* Sélecteur de catégorie */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               📂 Catégorie (détermine l'accès)
@@ -327,11 +327,12 @@ function FormationsTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 2 : TUTOS PRATIQUES
+// ONGLET 2 : TUTOS PRATIQUES (AVEC UPLOAD PDF)
 // ============================================
 function TutosPratiquesTab({ supabase }: any) {
   const [tutos, setTutos] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -364,6 +365,7 @@ function TutosPratiquesTab({ supabase }: any) {
   function resetForm() {
     setFormData({ title: "", category: "", description: "", loom_id: "", pdf_url: "", duration: "", is_new: false });
     setEditingId(null);
+    setShowUpload(false);
   }
 
   async function deleteTuto(id: string) {
@@ -392,7 +394,36 @@ function TutosPratiquesTab({ supabase }: any) {
             <Input placeholder="Titre" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
             <Input placeholder="Catégorie" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
             <Input placeholder="Loom ID" value={formData.loom_id} onChange={e => setFormData({ ...formData, loom_id: e.target.value })} />
-            <Input placeholder="URL PDF" value={formData.pdf_url} onChange={e => setFormData({ ...formData, pdf_url: e.target.value })} />
+            
+            {/* Upload PDF ou URL manuelle */}
+            <div className="col-span-2">
+              {showUpload ? (
+                <UploadPDFTuto
+                  onSuccess={(url) => {
+                    setFormData({ ...formData, pdf_url: url });
+                    setShowUpload(false);
+                  }}
+                  onCancel={() => setShowUpload(false)}
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input 
+                    placeholder="URL PDF" 
+                    value={formData.pdf_url} 
+                    onChange={e => setFormData({ ...formData, pdf_url: e.target.value })} 
+                  />
+                  <Button 
+                    type="button"
+                    onClick={() => setShowUpload(true)}
+                    variant="outline"
+                  >
+                    <Upload size={16} className="mr-2" />
+                    Upload
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <Input placeholder="Durée (ex: 10 min)" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} />
           </div>
           <textarea

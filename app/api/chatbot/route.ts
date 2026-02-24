@@ -71,39 +71,6 @@ Tu peux recommander :
 - Formations (Créateur <30K CA, Agent Immobilier)
 - RDV Expert (pour analyse personnalisée approfondie)
 
-## 🚀 EXEMPLES DE RÉPONSES TOP
-
-**Question basique :**
-"L'IS (Impôt sur les Sociétés) taxe les bénéfices de votre société à 15% jusqu'à 42 500€, puis 25% au-delà.
-
-**Exemple concret :**
-- CA : 100 000€
-- Charges : 60 000€
-- Bénéfice : 40 000€
-→ IS = 40 000€ × 15% = **6 000€**
-
-💡 Pour comparer IS vs IR selon votre situation, utilisez notre simulateur."
-
-**Question complexe :**
-"Avec 80K de CA et une activité de location meublée, voici votre stratégie optimale :
-
-**📊 Structure recommandée :**
-1. **LMNP classique** pour le meublé (régime réel)
-   - Amortissement immobilier = grosse économie fiscale
-   - Charges déductibles : intérêts emprunt, travaux, charges copro
-
-2. **SASU** pour votre activité principale
-   - IS 15% sur les premiers 42 500€
-   - Dividendes flat tax 30% ensuite
-
-**💰 Simulation fiscale :**
-[Tableau comparatif détaillé]
-
-**🎯 Action immédiate :**
-1. Visionner la formation "Investissement Immobilier" (module LMNP)
-2. Utiliser notre simulateur LMNP vs SCI
-3. Réserver un RDV expert pour validation (inclus dans votre pack)"
-
 ## ⚠️ RÈGLES DE SÉCURITÉ
 - JAMAIS de conseil en investissement financier (actions, crypto)
 - JAMAIS de validation définitive sans "consultez un expert"
@@ -138,7 +105,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const { message, userId, conversationHistory = [] } = await req.json();
+    const { message, userId, conversationId, conversationHistory = [] } = await req.json();
 
     if (!message || !userId) {
       return NextResponse.json(
@@ -147,49 +114,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Récupérer ou créer la conversation
-    let { data: conversation } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("client_id", userId)
-      .single();
+    // Si conversationId n'est pas fourni, le récupérer/créer
+    let finalConversationId = conversationId;
 
-    if (!conversation) {
-      const { data: newConv } = await supabase.rpc(
-        "create_conversation_if_not_exists",
-        { p_client_id: userId }
-      );
+    if (!finalConversationId) {
+      let { data: conversation } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("client_id", userId)
+        .single();
 
-      if (newConv) {
-        const { data: createdConv } = await supabase
+      if (!conversation) {
+        const { data: newConv } = await supabase
           .from("conversations")
+          .insert({ client_id: userId })
           .select("id")
-          .eq("id", newConv)
           .single();
-        conversation = createdConv;
+
+        conversation = newConv;
       }
-    }
 
-    if (!conversation) {
-      return NextResponse.json(
-        { error: "Impossible de créer la conversation" },
-        { status: 500 }
-      );
-    }
+      if (!conversation) {
+        return NextResponse.json(
+          { error: "Impossible de créer la conversation" },
+          { status: 500 }
+        );
+      }
 
-    // Insérer le message utilisateur
-    const { error: userMsgError } = await supabase.from("messages").insert([
-      {
-        conversation_id: conversation.id,
-        sender_id: userId,
-        sender_type: "client",
-        content: message,
-        is_read: false,
-      },
-    ]);
-
-    if (userMsgError) {
-      console.error("Erreur insertion message utilisateur:", userMsgError);
+      finalConversationId = conversation.id;
     }
 
     // ============================================
@@ -199,7 +151,7 @@ export async function POST(req: NextRequest) {
     // Construire l'historique pour Claude
     const claudeMessages: Array<{ role: "user" | "assistant"; content: string }> = [];
     
-    // Ajouter l'historique (limité aux 10 derniers messages pour ne pas surcharger)
+    // Ajouter l'historique (limité aux 10 derniers messages)
     const recentHistory = conversationHistory.slice(-10);
     for (const msg of recentHistory) {
       claudeMessages.push({
@@ -247,8 +199,8 @@ export async function POST(req: NextRequest) {
     // Insérer la réponse IA dans messages
     const { error: aiMsgError } = await supabase.from("messages").insert([
       {
-        conversation_id: conversation.id,
-        sender_id: userId,
+        conversation_id: finalConversationId,
+        sender_id: null,
         sender_type: "ai",
         content: aiResponse,
         is_read: false,
@@ -257,6 +209,7 @@ export async function POST(req: NextRequest) {
 
     if (aiMsgError) {
       console.error("Erreur insertion réponse IA:", aiMsgError);
+      throw aiMsgError;
     }
 
     // Sauvegarder dans ai_chat_history
@@ -273,7 +226,7 @@ export async function POST(req: NextRequest) {
     await supabase
       .from("conversations")
       .update({ last_message_at: new Date().toISOString() })
-      .eq("id", conversation.id);
+      .eq("id", finalConversationId);
 
     return NextResponse.json({
       response: aiResponse,

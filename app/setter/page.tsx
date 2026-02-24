@@ -1,50 +1,56 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import { 
-  Users, 
-  Phone, 
-  Calendar, 
-  Clock, 
+import { useEffect, useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Phone,
   TrendingUp,
   Target,
-  AlertCircle,
-  CheckCircle2,
-  Zap
-} from 'lucide-react';
+  Calendar,
+  CheckCircle,
+  Clock,
+  Award,
+  Flame,
+  Users,
+  BarChart3,
+} from "lucide-react";
 
 interface SetterStats {
-  leadsAssigned: number;
-  callsToday: number;
-  callsTarget: number;
+  totalLeads: number;
+  qualifiedLeads: number;
   rdvBooked: number;
   conversionRate: number;
-  avgCallDuration: string;
+  todayCalls: number;
+  weekTarget: number;
+  weekProgress: number;
 }
 
 interface Lead {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
+  activite: string;
   status: string;
   temperature: string;
-  created_at: string;
-  last_contact: string | null;
+  createdAt: string;
 }
 
-export default function SetterDashboard() {
+export default function DashboardSetter() {
   const [stats, setStats] = useState<SetterStats>({
-    leadsAssigned: 0,
-    callsToday: 0,
-    callsTarget: 40,
+    totalLeads: 0,
+    qualifiedLeads: 0,
     rdvBooked: 0,
     conversionRate: 0,
-    avgCallDuration: '0:00',
+    todayCalls: 0,
+    weekTarget: 50,
+    weekProgress: 0,
   });
-  const [priorityLeads, setPriorityLeads] = useState<Lead[]>([]);
+
+  const [myLeads, setMyLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -54,266 +60,304 @@ export default function SetterDashboard() {
   );
 
   useEffect(() => {
-    loadUser();
+    loadDashboard();
   }, []);
 
-  useEffect(() => {
-    if (userId) {
-      loadStats();
-      loadPriorityLeads();
-    }
-  }, [userId]);
+  async function loadDashboard() {
+    try {
+      // 1. Récupérer l'ID du setter connecté
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
 
-  async function loadUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
       const { data: profile } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
+        .from("users")
+        .select("id")
+        .eq("authId", session.user.id)
         .single();
 
-      if (profile) {
-        setUserId(profile.id);
-      }
+      if (!profile) return;
+      setUserId(profile.id);
+
+      // 2. Récupérer les leads du setter
+      const { data: leads } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("setterId", profile.id)
+        .order("createdAt", { ascending: false });
+
+      if (!leads) return;
+      setMyLeads(leads);
+
+      // 3. Calculer les stats
+      const qualified = leads.filter((l) => 
+        ["QUALIFIE", "RDV_PLANIFIE", "RDV_EFFECTUE", "PROPOSITION", "NEGOCIE", "CLOSE"].includes(l.status)
+      );
+      
+      const rdvBooked = leads.filter((l) => 
+        ["RDV_PLANIFIE", "RDV_EFFECTUE", "PROPOSITION", "NEGOCIE", "CLOSE"].includes(l.status)
+      );
+
+      const conversionRate = leads.length > 0 
+        ? (qualified.length / leads.length) * 100 
+        : 0;
+
+      // Leads créés cette semaine
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const weekLeads = leads.filter((l) => 
+        new Date(l.createdAt) >= startOfWeek
+      );
+
+      // Leads créés aujourd'hui
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayLeads = leads.filter((l) => 
+        new Date(l.createdAt) >= today
+      );
+
+      setStats({
+        totalLeads: leads.length,
+        qualifiedLeads: qualified.length,
+        rdvBooked: rdvBooked.length,
+        conversionRate: Math.round(conversionRate * 10) / 10,
+        todayCalls: todayLeads.length,
+        weekTarget: 50,
+        weekProgress: weekLeads.length,
+      });
+
+    } catch (error) {
+      console.error("Erreur:", error);
+    } finally {
+      setLoading(false);
     }
   }
-
-  async function loadStats() {
-    // TODO: Implémenter les vraies stats depuis la base
-    // Pour l'instant, données de démonstration
-    setStats({
-      leadsAssigned: 62,
-      callsToday: 28,
-      callsTarget: 40,
-      rdvBooked: 12,
-      conversionRate: 19.4,
-      avgCallDuration: '3:24',
-    });
-    setLoading(false);
-  }
-
-  async function loadPriorityLeads() {
-    // TODO: Charger les vrais leads depuis la table
-    // Pour l'instant, données de démo
-    setPriorityLeads([
-      {
-        id: '1',
-        first_name: 'Jean',
-        last_name: 'Dupont',
-        email: 'jean@test.fr',
-        phone: '06 12 34 56 78',
-        status: 'NOUVEAU',
-        temperature: 'HOT',
-        created_at: new Date(Date.now() - 600000).toISOString(),
-        last_contact: null,
-      },
-      {
-        id: '2',
-        first_name: 'Marie',
-        last_name: 'Martin',
-        email: 'marie@test.fr',
-        phone: '06 98 76 54 32',
-        status: 'RELANCE',
-        temperature: 'WARM',
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-        last_contact: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: '3',
-        first_name: 'Pierre',
-        last_name: 'Durand',
-        email: 'pierre@test.fr',
-        phone: '06 11 22 33 44',
-        status: 'NOUVEAU',
-        temperature: 'HOT',
-        created_at: new Date(Date.now() - 1800000).toISOString(),
-        last_contact: null,
-      },
-    ]);
-  }
-
-  const callProgress = (stats.callsToday / stats.callsTarget) * 100;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div>
       </div>
     );
   }
 
+  const weekProgressPercent = (stats.weekProgress / stats.weekTarget) * 100;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">Dashboard Setter</h1>
-            <p className="text-gray-600 mt-2">
-              Objectif du jour : {stats.callsTarget} appels ({callProgress.toFixed(0)}% complété)
-            </p>
-          </div>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-            <Phone size={20} />
-            Nouvel Appel
-          </button>
-        </div>
+    <div className="p-8 space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-black text-gray-900 uppercase italic flex items-center gap-3">
+          <Phone className="text-blue-500" size={40} />
+          Mon Dashboard Setter
+        </h1>
+        <p className="text-gray-500 font-medium mt-2">
+          Tes performances et leads en cours
+        </p>
+      </div>
 
-        {/* Progress Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-600">Progression Journalière</span>
-            <span className="text-2xl font-bold text-gray-900">
-              {stats.callsToday} / {stats.callsTarget}
-            </span>
-          </div>
-          <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
-              style={{ width: `${Math.min(callProgress, 100)}%` }}
-            />
-          </div>
-        </div>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {/* KPIs Personnels */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-none shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Users size={24} className="text-blue-600" />
+              <Phone size={32} className="opacity-80" />
+              <div className="text-right">
+                <p className="text-xs opacity-80 uppercase tracking-wider">Appels Aujourd'hui</p>
+                <p className="text-3xl font-black">{stats.todayCalls}</p>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Leads à Appeler</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.leadsAssigned}</p>
-          </div>
+            <div className="flex items-center gap-2 text-xs opacity-80">
+              <Clock size={14} />
+              <span>Continue comme ça ! 🔥</span>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <Card className="border-none shadow-lg">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Phone size={24} className="text-green-600" />
+              <Users size={32} className="text-purple-600" />
+              <div className="text-right">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Total Leads</p>
+                <p className="text-3xl font-black text-gray-900">{stats.totalLeads}</p>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Appels Aujourd'hui</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.callsToday}</p>
-          </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <BarChart3 size={14} />
+              <span>{stats.qualifiedLeads} qualifiés</span>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <Card className="border-none shadow-lg">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Calendar size={24} className="text-orange-600" />
+              <Calendar size={32} className="text-green-600" />
+              <div className="text-right">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">RDV Bookés</p>
+                <p className="text-3xl font-black text-gray-900">{stats.rdvBooked}</p>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">RDV Bookés</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.rdvBooked}</p>
-          </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <CheckCircle size={14} />
+              <span>Mission accomplie !</span>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <Card className="border-none shadow-lg">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <TrendingUp size={24} className="text-purple-600" />
+              <Target size={32} className="text-orange-600" />
+              <div className="text-right">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Taux Qualification</p>
+                <p className="text-3xl font-black text-gray-900">{stats.conversionRate}%</p>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Taux de Conv.</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.conversionRate}%</p>
-          </div>
-        </div>
-
-        {/* Priority Leads */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="text-red-500" size={24} />
-              <h2 className="text-2xl font-bold text-gray-900">Leads Prioritaires</h2>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <TrendingUp size={14} />
+              <span>En progression</span>
             </div>
-            <a href="/setter/leads" className="text-blue-600 hover:text-blue-700 font-medium">
-              Voir tous →
-            </a>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
 
+      {/* Objectif de la semaine */}
+      <Card className="border-none shadow-lg bg-gradient-to-br from-purple-50 to-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-2xl font-black uppercase italic">
+            <Award className="text-purple-600" size={28} />
+            Objectif de la Semaine
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
-            {priorityLeads.map((lead) => {
-              const timeAgo = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 60000);
-              const isUrgent = timeAgo < 30 || lead.temperature === 'HOT';
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700 font-semibold">Progression</span>
+              <span className="text-2xl font-black text-purple-600">
+                {stats.weekProgress} / {stats.weekTarget} leads
+              </span>
+            </div>
 
-              return (
-                <div
-                  key={lead.id}
-                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:shadow-md ${
-                    isUrgent
-                      ? 'border-red-200 bg-red-50'
-                      : 'border-gray-200 bg-gray-50 hover:bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                      {lead.first_name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-gray-900 text-lg">
-                          {lead.first_name} {lead.last_name}
-                        </p>
-                        {lead.temperature === 'HOT' && (
-                          <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
-                            🔥 HOT
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm text-gray-500">{lead.phone}</span>
-                        <span className="text-xs text-gray-400">
-                          {timeAgo < 60 ? `Il y a ${timeAgo} min` : 'Il y a plusieurs heures'}
-                        </span>
-                      </div>
-                    </div>
+            {/* Barre de progression */}
+            <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
+                style={{ width: `${Math.min(weekProgressPercent, 100)}%` }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-black text-white drop-shadow">
+                  {Math.round(weekProgressPercent)}%
+                </span>
+              </div>
+            </div>
+
+            {weekProgressPercent >= 100 ? (
+              <div className="bg-green-100 border border-green-200 p-4 rounded-lg text-center">
+                <p className="text-green-800 font-bold text-lg">
+                  🎉 Objectif atteint ! Bravo champion ! 🏆
+                </p>
+              </div>
+            ) : (
+              <p className="text-gray-600 text-sm text-center">
+                Plus que <strong>{stats.weekTarget - stats.weekProgress} leads</strong> pour atteindre ton objectif !
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mes Leads en Cours */}
+      <Card className="border-none shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-3 text-2xl font-black uppercase italic">
+              <Flame className="text-orange-500" size={28} />
+              Mes Leads en Cours
+            </span>
+            <span className="text-sm font-normal text-gray-500">
+              {myLeads.length} total
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {myLeads.slice(0, 10).map((lead) => (
+              <div
+                key={lead.id}
+                className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Avatar */}
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white font-black text-lg">
+                    {lead.firstName.charAt(0)}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      lead.status === 'NOUVEAU' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
-                    }`}>
-                      {lead.status}
-                    </span>
-                    <button className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                      <Phone size={18} />
-                    </button>
+                  {/* Info */}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-black text-gray-900">
+                        {lead.firstName} {lead.lastName}
+                      </p>
+                      {lead.temperature === "HOT" && (
+                        <Flame size={16} className="text-red-500 fill-red-500" />
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      {lead.activite} • {lead.phone}
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Clock size={20} />
-              Temps Moyen d'Appel
-            </h3>
-            <p className="text-4xl font-bold text-gray-900">{stats.avgCallDuration}</p>
-          </div>
+                {/* Status */}
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
+                      lead.status === "NOUVEAU"
+                        ? "bg-blue-100 text-blue-700"
+                        : lead.status === "CONTACTE"
+                        ? "bg-cyan-100 text-cyan-700"
+                        : lead.status === "QUALIFIE"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {lead.status}
+                  </span>
 
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Zap size={20} />
-              Objectif du Mois
-            </h3>
-            <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-bold">{stats.rdvBooked * 2.5}</p>
-              <span className="text-blue-100">/ 200 RDV</span>
-            </div>
-            <div className="mt-4 w-full h-2 bg-blue-400 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white"
-                style={{ width: `${(stats.rdvBooked * 2.5 / 200) * 100}%` }}
-              />
-            </div>
+                  <Button
+                    size="sm"
+                    onClick={() => window.location.href = `/commercial/pipeline`}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Voir
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            {myLeads.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <Users size={48} className="mx-auto mb-4 opacity-20" />
+                <p>Aucun lead assigné pour le moment</p>
+              </div>
+            )}
+
+            {myLeads.length > 10 && (
+              <div className="text-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.href = `/commercial/pipeline`}
+                >
+                  Voir tous mes leads ({myLeads.length})
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

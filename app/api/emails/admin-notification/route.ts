@@ -1,26 +1,24 @@
-// app/api/emails/rdv-confirmation/route.ts
+// app/api/emails/admin-notification/route.ts
 import { NextResponse } from 'next/server';
-import { sendExpertRDVConfirmation } from '@/lib/email-service';
+import { sendAdminNewClientNotification } from '@/lib/email-service';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { clientName, clientEmail, expertName, rdvDate, rdvTime, meetLink } = body;
+    const { clientName, clientEmail, pack, amount } = body;
 
-    if (!clientName || !clientEmail || !expertName || !rdvDate || !rdvTime) {
+    if (!clientName || !clientEmail || !pack || !amount) {
       return NextResponse.json(
         { error: 'Paramètres manquants' },
         { status: 400 }
       );
     }
 
-    const result = await sendExpertRDVConfirmation({
+    const result = await sendAdminNewClientNotification({
       clientName,
       clientEmail,
-      expertName,
-      rdvDate,
-      rdvTime,
-      meetLink,
+      pack,
+      amount,
     });
 
     if (result.success) {

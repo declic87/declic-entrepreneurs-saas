@@ -304,14 +304,38 @@ export default function PartenairePage() {
                         <Video size={18} />
                         🎬 Échange avec le partenaire
                       </h3>
-                      <div className="aspect-video w-full bg-black rounded-lg overflow-hidden mb-3">
-                        <iframe
-                          src={getFathomEmbedUrl(item.fathom_recording_url)}
-                          frameBorder="0"
-                          allowFullScreen
-                          className="w-full h-full"
-                        />
-                      </div>
+                      
+                      {/* Carte avec bouton d'accès */}
+                      <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white mb-3">
+                        <CardContent className="p-6">
+                          <div className="flex flex-col items-center text-center space-y-4">
+                            <Video className="text-blue-600" size={48} />
+                            <div>
+                              <h4 className="text-xl font-bold text-blue-900 mb-2">
+                                Vidéo de présentation
+                              </h4>
+                              <p className="text-sm text-slate-600 mb-4">
+                                Découvrez notre échange avec le partenaire
+                              </p>
+                            </div>
+                            <Button
+                              asChild
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              size="lg"
+                            >
+                              <a 
+                                href={item.fathom_recording_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                              >
+                                <Play size={18} className="mr-2" />
+                                Voir la vidéo Fathom
+                              </a>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
                       {item.fathom_summary && (
                         <Alert className="border-blue-200 bg-blue-50">
                           <AlertDescription className="text-blue-800">

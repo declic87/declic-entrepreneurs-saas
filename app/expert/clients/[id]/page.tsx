@@ -9,8 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Calendar, Video, FileText, Plus, ArrowLeft, CheckCircle2, Clock,
-  Mail, Phone, MessageCircle, Package, CreditCard, Activity,
-  User, AlertCircle, TrendingUp, DollarSign, BarChart3
+  Mail, Phone, MessageCircle, Package, Activity, PhoneCall, User2
 } from 'lucide-react';
 
 interface Client {
@@ -37,6 +36,20 @@ interface Appointment {
   completed_at: string | null;
 }
 
+interface CloserRDV {
+  id: string;
+  closer_id: string;
+  rdv_date: string;
+  rdv_status: string;
+  fathom_recording_url: string | null;
+  fathom_summary: string | null;
+  closer_notes: string | null;
+  closer: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
 interface QuestionResponse {
   question: string;
   category: string;
@@ -56,16 +69,16 @@ interface CalendlyEvent {
   event_type: string;
   scheduled_at: string;
   status: string;
-  duration: number;
 }
 
-export default function ExpertFicheClientComplete() {
+export default function ExpertFicheClientFinal() {
   const params = useParams();
   const router = useRouter();
   const clientId = params.id as string;
 
   const [client, setClient] = useState<Client | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [closerRDVs, setCloserRDVs] = useState<CloserRDV[]>([]);
   const [calendlyEvents, setCalendlyEvents] = useState<CalendlyEvent[]>([]);
   const [selectedRDV, setSelectedRDV] = useState<Appointment | null>(null);
   const [responses, setResponses] = useState<QuestionResponse[]>([]);
@@ -128,6 +141,30 @@ export default function ExpertFicheClientComplete() {
         if (appointmentsData.length > 0) {
           setSelectedRDV(appointmentsData[0]);
         }
+      }
+
+      // Charger RDV Closer depuis leads
+      const { data: leadsData } = await supabase
+        .from('leads')
+        .select(`
+          id,
+          closer_id,
+          rdv_date,
+          rdv_status,
+          fathom_recording_url,
+          fathom_summary,
+          closer_notes,
+          closer:closer_id (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('email', clientData?.email)
+        .not('rdv_date', 'is', null)
+        .order('rdv_date', { ascending: false });
+
+      if (leadsData) {
+        setCloserRDVs(leadsData as any);
       }
 
       // Charger RDV Calendly
@@ -203,6 +240,23 @@ export default function ExpertFicheClientComplete() {
     return labels[pack] || pack;
   }
 
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case 'completed':
+      case 'close':
+        return <Badge className="bg-green-500">✓ Terminé</Badge>;
+      case 'no_show':
+        return <Badge className="bg-orange-500">⚠ No-show</Badge>;
+      case 'canceled':
+      case 'annule':
+        return <Badge className="bg-red-500">✗ Annulé</Badge>;
+      case 'scheduled':
+        return <Badge className="bg-blue-500">📅 Programmé</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -234,8 +288,9 @@ export default function ExpertFicheClientComplete() {
     recommandations: '✨ Recommandations',
   };
 
-  const totalRDV = appointments.length + calendlyEvents.length;
-  const completedRDV = appointments.filter(a => a.status === 'completed').length;
+  const totalRDV = appointments.length + calendlyEvents.length + closerRDVs.length;
+  const completedRDV = appointments.filter(a => a.status === 'completed').length + 
+                       closerRDVs.filter(c => c.rdv_status === 'close').length;
   const totalMessages = messages.length;
 
   return (
@@ -369,13 +424,78 @@ export default function ExpertFicheClientComplete() {
         </Card>
       </div>
 
-      {/* Contenu principal */}
+      {/* RDV Closer - Section spéciale */}
+      {closerRDVs.length > 0 && (
+        <Card className="border-2 border-green-200 bg-green-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-900">
+              <PhoneCall size={20} />
+              📞 RDV Closer ({closerRDVs.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {closerRDVs.map((rdv) => (
+              <Card key={rdv.id} className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <User2 size={16} className="text-green-600" />
+                        <span className="font-bold text-gray-900">
+                          {rdv.closer?.first_name} {rdv.closer?.last_name}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {new Date(rdv.rdv_date).toLocaleString('fr-FR')}
+                      </p>
+                    </div>
+                    {getStatusBadge(rdv.rdv_status)}
+                  </div>
+
+                  {rdv.fathom_recording_url && (
+                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200 mb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Video className="text-purple-600" size={16} />
+                          <span className="text-sm font-semibold text-purple-900">
+                            Enregistrement Fathom
+                          </span>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={rdv.fathom_recording_url} target="_blank">
+                            Voir
+                          </a>
+                        </Button>
+                      </div>
+                      {rdv.fathom_summary && (
+                        <p className="text-xs text-gray-700">{rdv.fathom_summary}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {rdv.closer_notes && (
+                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                      <p className="text-xs font-semibold text-amber-900 mb-1">
+                        Notes du closer
+                      </p>
+                      <p className="text-xs text-gray-700 whitespace-pre-wrap">
+                        {rdv.closer_notes}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Contenu principal - RDV Experts */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Colonne 1 : RDV Experts + Calendly */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-[#123055]">📅 Historique RDV</h2>
+          <h2 className="text-xl font-bold text-[#123055]">📅 RDV Experts</h2>
 
-          {/* RDV Experts */}
           {appointments.map((rdv) => (
             <Card
               key={rdv.id}
@@ -388,7 +508,7 @@ export default function ExpertFicheClientComplete() {
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-[#123055]">RDV Expert #{rdv.rdv_number}</span>
+                  <span className="font-bold text-[#123055]">RDV #{rdv.rdv_number}</span>
                   {rdv.status === 'completed' ? (
                     <CheckCircle2 className="text-green-600" size={20} />
                   ) : (
@@ -408,7 +528,6 @@ export default function ExpertFicheClientComplete() {
             </Card>
           ))}
 
-          {/* RDV Calendly */}
           {calendlyEvents.length > 0 && (
             <>
               <h3 className="text-sm font-bold text-gray-600 mt-6">RDV Calendly</h3>
@@ -419,9 +538,6 @@ export default function ExpertFicheClientComplete() {
                       <span className="text-sm font-semibold text-blue-900">
                         {event.event_type}
                       </span>
-                      <Badge variant="outline" className="text-xs">
-                        {event.duration}min
-                      </Badge>
                     </div>
                     <p className="text-xs text-gray-600">
                       {new Date(event.scheduled_at).toLocaleString('fr-FR')}
@@ -435,17 +551,16 @@ export default function ExpertFicheClientComplete() {
           {appointments.length === 0 && calendlyEvents.length === 0 && (
             <Card>
               <CardContent className="p-8 text-center text-gray-500">
-                Aucun RDV pour l'instant
+                Aucun RDV expert pour l'instant
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Colonne 2 : Détails RDV sélectionné */}
+        {/* Colonne 2 : Détails RDV sélectionné + Messages */}
         <div className="lg:col-span-2 space-y-6">
           {selectedRDV ? (
             <>
-              {/* Infos RDV */}
               <Card>
                 <CardContent className="p-6">
                   <h3 className="text-xl font-bold text-[#123055] mb-4">
@@ -467,13 +582,7 @@ export default function ExpertFicheClientComplete() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Statut</p>
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                        selectedRDV.status === 'completed'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-orange-100 text-orange-700'
-                      }`}>
-                        {selectedRDV.status === 'completed' ? 'Terminé' : 'En cours'}
-                      </span>
+                      {getStatusBadge(selectedRDV.status)}
                     </div>
                   </div>
 
@@ -507,14 +616,12 @@ export default function ExpertFicheClientComplete() {
                 </CardContent>
               </Card>
 
-              {/* Réponses aux questions */}
               {Object.entries(responsesByCategory).map(([category, categoryResponses]) => (
                 <Card key={category}>
                   <CardContent className="p-6">
                     <h3 className="text-lg font-bold text-[#123055] mb-4">
                       {categoryLabels[category] || category}
                     </h3>
-
                     <div className="space-y-4">
                       {categoryResponses.map((response, idx) => (
                         <div key={idx} className="border-l-4 border-orange-200 pl-4">
@@ -544,59 +651,6 @@ export default function ExpertFicheClientComplete() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Messages récents */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageCircle size={18} />
-                    Messages récents ({messages.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 max-h-96 overflow-y-auto">
-                  {messages.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-8">
-                      Aucun message
-                    </p>
-                  ) : (
-                    messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`p-3 rounded-lg ${
-                          msg.sender_type === "client"
-                            ? "bg-gray-100"
-                            : msg.sender_type === "expert"
-                            ? "bg-blue-50"
-                            : "bg-purple-50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            {msg.sender_type === "client" ? "Client" : 
-                             msg.sender_type === "expert" ? "Expert" : "IA"}
-                          </Badge>
-                          <span className="text-xs text-gray-500">
-                            {new Date(msg.created_at).toLocaleDateString("fr-FR")}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-700 line-clamp-3">
-                          {msg.content}
-                        </p>
-                      </div>
-                    ))
-                  )}
-
-                  {conversationId && messages.length > 0 && (
-                    <Button
-                      variant="outline"
-                      className="w-full mt-4"
-                      onClick={() => router.push(`/expert/messagerie?client=${clientId}`)}
-                    >
-                      Voir toute la conversation
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
             </>
           ) : (
             <Card>
@@ -606,6 +660,59 @@ export default function ExpertFicheClientComplete() {
               </CardContent>
             </Card>
           )}
+
+          {/* Messages récents */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle size={18} />
+                Messages récents ({messages.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+              {messages.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  Aucun message
+                </p>
+              ) : (
+                messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`p-3 rounded-lg ${
+                      msg.sender_type === "client"
+                        ? "bg-gray-100"
+                        : msg.sender_type === "expert"
+                        ? "bg-blue-50"
+                        : "bg-purple-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <Badge variant="outline" className="text-xs">
+                        {msg.sender_type === "client" ? "Client" : 
+                         msg.sender_type === "expert" ? "Expert" : "IA"}
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {new Date(msg.created_at).toLocaleDateString("fr-FR")}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 line-clamp-3">
+                      {msg.content}
+                    </p>
+                  </div>
+                ))
+              )}
+
+              {conversationId && messages.length > 0 && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-4"
+                  onClick={() => router.push(`/expert/messagerie?client=${clientId}`)}
+                >
+                  Voir toute la conversation
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

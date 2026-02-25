@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Bot, User, Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -27,7 +27,9 @@ export default function ClientMessagerieComplete() {
   const [isAIMode, setIsAIMode] = useState(true);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [aiThinking, setAiThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<any>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,6 +38,12 @@ export default function ClientMessagerieComplete() {
 
   useEffect(() => {
     loadUserAndConversation();
+    
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -47,11 +55,10 @@ export default function ClientMessagerieComplete() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, aiThinking]);
 
   async function loadUserAndConversation() {
     try {
-      // 1. Récupérer user
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
@@ -64,7 +71,6 @@ export default function ClientMessagerieComplete() {
       if (!profile) return;
       setUserId(profile.id);
 
-      // 2. Récupérer ou créer conversation
       let { data: conv } = await supabase
         .from("conversations")
         .select("*, expert:expert_id(first_name, last_name, email)")
@@ -72,7 +78,6 @@ export default function ClientMessagerieComplete() {
         .single();
 
       if (!conv) {
-        // Créer nouvelle conversation
         const { data: newConv } = await supabase
           .from("conversations")
           .insert({ client_id: profile.id })
@@ -108,7 +113,6 @@ export default function ClientMessagerieComplete() {
     if (data) {
       setMessages(data);
       
-      // Marquer comme lus
       const unreadIds = data
         .filter(m => !m.is_read && m.sender_type !== "client")
         .map(m => m.id);
@@ -124,9 +128,14 @@ export default function ClientMessagerieComplete() {
 
   function subscribeToMessages() {
     if (!conversationId) return;
+    
+    // Nettoyer l'ancien channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
 
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(`messages-${conversationId}`)
       .on(
         "postgres_changes",
         {
@@ -136,10 +145,19 @@ export default function ClientMessagerieComplete() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          console.log("📨 Nouveau message reçu:", payload);
           const newMsg = payload.new as Message;
-          setMessages((prev) => [...prev, newMsg]);
           
-          // Marquer comme lu si pas envoyé par moi
+          setMessages((prev) => {
+            // Éviter les doublons
+            if (prev.some(m => m.id === newMsg.id)) {
+              return prev;
+            }
+            return [...prev, newMsg];
+          });
+          
+          setAiThinking(false);
+          
           if (newMsg.sender_type !== "client") {
             supabase
               .from("messages")
@@ -149,11 +167,11 @@ export default function ClientMessagerieComplete() {
           }
         }
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      .subscribe((status) => {
+        console.log("📡 Real-time status:", status);
+      });
+    
+    channelRef.current = channel;
   }
 
   async function handleSendMessage(e: React.FormEvent) {
@@ -166,27 +184,37 @@ export default function ClientMessagerieComplete() {
 
     try {
       if (isAIMode) {
-        // Mode IA
-        const { error: clientMsgError } = await supabase
+        // Mode IA - Insérer message client
+        const { data: clientMsg, error: clientMsgError } = await supabase
           .from("messages")
           .insert({
             conversation_id: conversationId,
             sender_id: userId,
             sender_type: "client",
             content: content,
-          });
+          })
+          .select()
+          .single();
 
         if (clientMsgError) throw clientMsgError;
 
-        // Appeler l'API IA
+        // Ajouter immédiatement à l'UI
+        setMessages(prev => [...prev, clientMsg]);
+
+        // Afficher loader IA
+        setAiThinking(true);
+
+        // Appeler API IA
         const response = await fetch("/api/chatbot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: content,
             userId: userId,
+            conversationId: conversationId,
             conversationHistory: messages
               .filter(m => m.sender_type === "client" || m.sender_type === "ai")
+              .slice(-10)
               .map(m => ({
                 role: m.sender_type === "ai" ? "assistant" : "user",
                 content: m.content,
@@ -195,33 +223,41 @@ export default function ClientMessagerieComplete() {
         });
 
         const data = await response.json();
-        if (data.error) throw new Error(data.error);
+        if (data.error) {
+          setAiThinking(false);
+          throw new Error(data.error);
+        }
 
       } else {
         // Mode Expert
-        const { error } = await supabase
+        const { data: clientMsg, error } = await supabase
           .from("messages")
           .insert({
             conversation_id: conversationId,
             sender_id: userId,
             sender_type: "client",
             content: content,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
-        // Mettre à jour last_message_at
+        // Ajouter immédiatement à l'UI
+        setMessages(prev => [...prev, clientMsg]);
+
         await supabase
           .from("conversations")
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", conversationId);
-      }
 
-      toast.success("Message envoyé");
+        toast.success("Message envoyé à votre expert");
+      }
 
     } catch (error: any) {
       console.error("Erreur:", error);
       toast.error("Erreur lors de l'envoi");
+      setAiThinking(false);
     } finally {
       setSending(false);
     }
@@ -312,60 +348,74 @@ export default function ClientMessagerieComplete() {
       {/* Messages */}
       <Card className="h-[500px] flex flex-col">
         <CardContent className="flex-1 overflow-y-auto p-6 space-y-4">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !aiThinking ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
               <MessageCircle size={64} className="mb-4 opacity-20" />
               <p className="text-lg font-semibold">Aucun message</p>
               <p className="text-sm">Commencez la conversation !</p>
             </div>
           ) : (
-            messages.map((msg) => {
-              const isMe = msg.sender_type === "client";
-              const isAI = msg.sender_type === "ai";
+            <>
+              {messages.map((msg) => {
+                const isMe = msg.sender_type === "client";
+                const isAI = msg.sender_type === "ai";
 
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                >
+                return (
                   <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                      isMe
-                        ? "bg-blue-600 text-white"
-                        : isAI
-                        ? "bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 text-slate-900"
-                        : "bg-emerald-100 border border-emerald-200 text-slate-900"
-                    }`}
+                    key={msg.id}
+                    className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                   >
-                    {isAI && (
-                      <div className="flex items-center gap-1 mb-2 text-xs text-purple-600 font-semibold">
-                        <Bot size={14} />
-                        Assistant IA
-                      </div>
-                    )}
-                    {msg.sender_type === "expert" && (
-                      <div className="flex items-center gap-1 mb-2 text-xs text-emerald-600 font-semibold">
-                        <User size={14} />
-                        Expert
-                      </div>
-                    )}
-
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-
-                    <p
-                      className={`text-[10px] mt-2 ${
-                        isMe ? "text-white/70" : "text-slate-500"
+                    <div
+                      className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                        isMe
+                          ? "bg-blue-600 text-white"
+                          : isAI
+                          ? "bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 text-slate-900"
+                          : "bg-emerald-100 border border-emerald-200 text-slate-900"
                       }`}
                     >
-                      {new Date(msg.created_at).toLocaleTimeString("fr-FR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
+                      {isAI && (
+                        <div className="flex items-center gap-1 mb-2 text-xs text-purple-600 font-semibold">
+                          <Bot size={14} />
+                          Assistant IA
+                        </div>
+                      )}
+                      {msg.sender_type === "expert" && (
+                        <div className="flex items-center gap-1 mb-2 text-xs text-emerald-600 font-semibold">
+                          <User size={14} />
+                          Expert
+                        </div>
+                      )}
+
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+
+                      <p
+                        className={`text-[10px] mt-2 ${
+                          isMe ? "text-white/70" : "text-slate-500"
+                        }`}
+                      >
+                        {new Date(msg.created_at).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Loader IA */}
+              {aiThinking && (
+                <div className="flex justify-start">
+                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+                    <Loader2 className="animate-spin text-purple-600" size={16} />
+                    <span className="text-sm text-slate-700">
+                      L&apos;IA réfléchit...
+                    </span>
                   </div>
                 </div>
-              );
-            })
+              )}
+            </>
           )}
           <div ref={messagesEndRef} />
         </CardContent>

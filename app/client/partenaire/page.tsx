@@ -3,10 +3,14 @@
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { OnboardingVideo } from "@/components/OnboardingVideo";
-import { Handshake, Play, Video, Copy, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { 
+  Handshake, Play, Video, Copy, CheckCircle2, ExternalLink, Loader2, 
+  FileDown, Download
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 
@@ -15,15 +19,16 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-interface PartnerVideo {
-  id: string;
-  content_type: string;
-  title: string;
-  description: string;
-  video_url: string;
-  video_type: string;
-  order_index: number;
-}
+type CategoryType = 'all' | 'comptabilite' | 'placement_financier' | 'investissement' | 'placement_structure' | 'autres';
+
+const CATEGORIES = [
+  { id: 'all' as CategoryType, label: '📚 Tous', color: 'slate' },
+  { id: 'comptabilite' as CategoryType, label: '📊 Comptabilité', color: 'blue' },
+  { id: 'placement_financier' as CategoryType, label: '💰 Placement Financier', color: 'green' },
+  { id: 'investissement' as CategoryType, label: '🏢 Investissement', color: 'purple' },
+  { id: 'placement_structure' as CategoryType, label: '📈 Placement Structuré', color: 'orange' },
+  { id: 'autres' as CategoryType, label: '🤝 Autres', color: 'indigo' },
+];
 
 interface AffiliateInfo {
   link_template: string;
@@ -32,30 +37,33 @@ interface AffiliateInfo {
 }
 
 export default function PartenairePage() {
-  const [videos, setVideos] = useState<PartnerVideo[]>([]);
+  const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
+  const [content, setContent] = useState<any[]>([]);
   const [affiliateInfo, setAffiliateInfo] = useState<AffiliateInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    loadPartnerContent();
-  }, []);
+    loadContent();
+  }, [activeCategory]);
 
-  async function loadPartnerContent() {
+  async function loadContent() {
     try {
-      // 1. Charger les vidéos
-      const { data: videosData } = await supabase
+      // Charger les contenus par catégorie
+      let query = supabase
         .from('partner_content')
         .select('*')
-        .in('content_type', ['video_intro', 'video_demo'])
         .eq('is_active', true)
         .order('order_index');
 
-      if (videosData) {
-        setVideos(videosData);
+      if (activeCategory !== 'all') {
+        query = query.eq('category', activeCategory);
       }
 
-      // 2. Charger le template de lien d'affiliation
+      const { data } = await query;
+      setContent(data || []);
+
+      // Charger le lien d'affiliation (pour toutes les catégories)
       const { data: affiliateData } = await supabase
         .from('partner_content')
         .select('link_template')
@@ -63,7 +71,7 @@ export default function PartenairePage() {
         .eq('is_active', true)
         .single();
 
-      // 3. Récupérer l'ID utilisateur pour générer le lien personnalisé
+      // Générer le code utilisateur
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
@@ -74,7 +82,6 @@ export default function PartenairePage() {
           .single();
 
         if (userData && affiliateData?.link_template) {
-          // Générer un code unique basé sur l'ID utilisateur
           const userCode = `DECLIC${userData.id.substring(0, 8).toUpperCase()}`;
           const fullLink = affiliateData.link_template.replace('{USER_CODE}', userCode);
 
@@ -86,13 +93,14 @@ export default function PartenairePage() {
         }
       }
     } catch (err) {
-      console.error('Erreur chargement contenu partenaire:', err);
+      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }
   }
 
   function getLoomEmbedUrl(url: string): string {
+    if (!url) return '';
     const match = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
     if (match) {
       return `https://www.loom.com/embed/${match[1]}`;
@@ -101,8 +109,8 @@ export default function PartenairePage() {
   }
 
   function getFathomEmbedUrl(url: string): string {
+    if (!url) return '';
     if (url.includes('/embed/')) return url;
-    
     const match = url.match(/fathom\.video\/share\/([a-zA-Z0-9]+)/);
     if (match) {
       return `https://fathom.video/embed/${match[1]}`;
@@ -132,12 +140,9 @@ export default function PartenairePage() {
     );
   }
 
-  const videoIntro = videos.find(v => v.content_type === 'video_intro');
-  const videoDemo = videos.find(v => v.content_type === 'video_demo');
-
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* VIDÉO ONBOARDING */}
+      {/* Vidéo onboarding */}
       <OnboardingVideo pageSlug="partenaire" role="CLIENT" />
 
       {/* Header */}
@@ -145,88 +150,32 @@ export default function PartenairePage() {
         <div className="flex items-center justify-center gap-3 mb-4">
           <Handshake className="text-amber-500" size={40} />
           <h1 className="text-4xl font-black text-slate-900">
-            Programme Partenaire
+            Nos Partenaires
           </h1>
         </div>
         <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-          Découvrez notre programme et gagnez des revenus en recommandant Déclic Entrepreneurs
+          Découvrez notre réseau de partenaires experts pour vous accompagner
         </p>
       </div>
 
-      {/* Vidéo d'introduction */}
-      {videoIntro && videoIntro.video_url && (
-        <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Play className="text-purple-600" size={24} />
-              {videoIntro.title}
-            </CardTitle>
-            {videoIntro.description && (
-              <p className="text-sm text-slate-600">{videoIntro.description}</p>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-              {videoIntro.video_type === 'loom' ? (
-                <iframe
-                  src={getLoomEmbedUrl(videoIntro.video_url)}
-                  frameBorder="0"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              ) : (
-                <video
-                  src={videoIntro.video_url}
-                  controls
-                  className="w-full h-full"
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Filtres par catégorie */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              activeCategory === cat.id
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Vidéo de démonstration */}
-      {videoDemo && videoDemo.video_url && (
-        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Video className="text-blue-600" size={24} />
-              {videoDemo.title}
-            </CardTitle>
-            {videoDemo.description && (
-              <p className="text-sm text-slate-600">{videoDemo.description}</p>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
-              {videoDemo.video_type === 'fathom' ? (
-                <iframe
-                  src={getFathomEmbedUrl(videoDemo.video_url)}
-                  frameBorder="0"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              ) : videoDemo.video_type === 'loom' ? (
-                <iframe
-                  src={getLoomEmbedUrl(videoDemo.video_url)}
-                  frameBorder="0"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              ) : (
-                <video
-                  src={videoDemo.video_url}
-                  controls
-                  className="w-full h-full"
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Lien d'affiliation */}
+      {/* Lien d'affiliation (affiché en haut si disponible) */}
       {affiliateInfo && (
         <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
           <CardHeader>
@@ -239,7 +188,6 @@ export default function PartenairePage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Code partenaire */}
             <div>
               <label className="text-sm font-semibold text-slate-700 mb-2 block">
                 Votre code partenaire
@@ -251,7 +199,6 @@ export default function PartenairePage() {
               </div>
             </div>
 
-            {/* Lien complet */}
             <div>
               <label className="text-sm font-semibold text-slate-700 mb-2 block">
                 Votre lien personnalisé
@@ -285,7 +232,6 @@ export default function PartenairePage() {
               </div>
             </div>
 
-            {/* Instructions */}
             <Alert className="border-amber-300 bg-amber-50">
               <AlertDescription className="text-amber-800">
                 <p className="font-semibold mb-2">💡 Comment utiliser votre lien ?</p>
@@ -301,19 +247,161 @@ export default function PartenairePage() {
         </Card>
       )}
 
-      {/* Absence de contenu */}
-      {!videoIntro && !videoDemo && !affiliateInfo && (
+      {/* Liste des partenaires */}
+      {content.length === 0 ? (
         <Card className="border-2 border-slate-200">
           <CardContent className="p-12 text-center">
             <Handshake className="mx-auto text-slate-300 mb-4" size={64} />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
-              Programme Partenaire
-            </h3>
             <p className="text-slate-600">
-              Le contenu du programme partenaire sera bientôt disponible.
+              Aucun partenaire dans cette catégorie pour le moment
             </p>
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-8">
+          {content.map((item) => {
+            const category = CATEGORIES.find(c => c.id === item.category);
+            
+            return (
+              <Card key={item.id} className="border-2 border-slate-200 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-white">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-2xl">{item.title}</CardTitle>
+                    {category && (
+                      <Badge className="bg-blue-100 text-blue-700">
+                        {category.label}
+                      </Badge>
+                    )}
+                  </div>
+                  {item.description && (
+                    <p className="text-slate-600 mt-2">{item.description}</p>
+                  )}
+                </CardHeader>
+
+                <CardContent className="p-6 space-y-6">
+                  {/* Vidéo Loom Intro */}
+                  {item.video_url && (
+                    <div>
+                      <h3 className="text-lg font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        <Play size={18} />
+                        🎥 Présentation
+                      </h3>
+                      <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                        <iframe
+                          src={getLoomEmbedUrl(item.video_url)}
+                          frameBorder="0"
+                          allowFullScreen
+                          className="w-full h-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vidéo Fathom */}
+                  {item.fathom_recording_url && (
+                    <div>
+                      <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                        <Video size={18} />
+                        🎬 Échange avec le partenaire
+                      </h3>
+                      <div className="aspect-video w-full bg-black rounded-lg overflow-hidden mb-3">
+                        <iframe
+                          src={getFathomEmbedUrl(item.fathom_recording_url)}
+                          frameBorder="0"
+                          allowFullScreen
+                          className="w-full h-full"
+                        />
+                      </div>
+                      {item.fathom_summary && (
+                        <Alert className="border-blue-200 bg-blue-50">
+                          <AlertDescription className="text-blue-800">
+                            <p className="font-semibold mb-1">📝 Résumé de l'échange</p>
+                            <p className="text-sm">{item.fathom_summary}</p>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+
+                  {/* PDF + Lien */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* PDF Explicatif */}
+                    {item.pdf_file_url && (
+                      <Card className="border-2 border-green-200 bg-green-50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <FileDown className="text-green-600" size={24} />
+                            <div>
+                              <p className="font-semibold text-green-900">
+                                📄 Documentation
+                              </p>
+                              <p className="text-xs text-green-700">
+                                {item.pdf_file_name || 'Document explicatif'}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            asChild
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <a 
+                              href={item.pdf_file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              download
+                            >
+                              <Download size={16} className="mr-2" />
+                              Télécharger le PDF
+                            </a>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Lien contact partenaire */}
+                    {item.link_template && (
+                      <Card className="border-2 border-amber-200 bg-amber-50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <ExternalLink className="text-amber-600" size={24} />
+                            <div>
+                              <p className="font-semibold text-amber-900">
+                                🔗 Contact Partenaire
+                              </p>
+                              <p className="text-xs text-amber-700">
+                                {item.link_template.includes('@') ? 'Email' : 'Site web'}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            asChild
+                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                          >
+                            {item.link_template.includes('@') ? (
+                              <a href={`mailto:${item.link_template}`}>
+                                <ExternalLink size={16} className="mr-2" />
+                                Envoyer un email
+                              </a>
+                            ) : (
+                              <a 
+                                href={item.link_template} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink size={16} className="mr-2" />
+                                Accéder au site
+                              </a>
+                            )}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
     </div>
   );

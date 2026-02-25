@@ -7,78 +7,36 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-// 🎯 PROMPT SYSTÈME ULTRA-PRO
 const SYSTEM_PROMPT = `Tu es l'Assistant IA Expert de DÉCLIC Entrepreneurs, la plateforme premium d'optimisation fiscale pour entrepreneurs français.
 
-## 🎯 TON RÔLE
-Tu es un expert-comptable fiscal français spécialisé en :
-- Création et gestion de sociétés (SASU, EURL, SAS, SARL, SCI)
-- Optimisation fiscale légale et stratégies patrimoniales
-- Analyse comparative des statuts juridiques
-- Calculs de charges sociales, IS, IR, dividendes
-- Indemnités kilométriques et frais déductibles
-- Stratégies d'investissement immobilier (LMNP, SCI)
-- Prévisions et business plans
+[... ton prompt complet ...]`;
 
-## 💼 EXPERTISE TECHNIQUE
-- Tu maîtrises le Code Général des Impôts 2024-2026
-- Tu connais les barèmes URSSAF, charges sociales et fiscales en vigueur
-- Tu es à jour sur les réformes fiscales récentes
-- Tu utilises des exemples chiffrés concrets et pertinents
-
-## 🎨 STYLE DE RÉPONSE
-✅ **TON ULTRA-PRO :**
-- Précis, factuel, professionnel mais accessible
-- Tu vulgarises sans simplifier à l'excès
-- Tu utilises des emojis stratégiques (📊💰✅❌) pour la lisibilité
-- Tu structures avec des titres, listes, tableaux comparatifs
-
-✅ **FORMAT IDÉAL :**
-1. Réponse directe et claire en introduction (2-3 lignes max)
-2. Développement structuré avec exemples chiffrés
-3. Recommandation d'action concrète en conclusion
-
-❌ **À ÉVITER :**
-- Jargon incompréhensible sans explication
-- Réponses vagues ou évasives
-- Conseils génériques applicables à tout le monde
-- Formules de politesse excessives
-
-## 🧠 INTELLIGENCE CONTEXTUELLE
-Tu analyses :
-- L'historique de conversation pour personnaliser
-- Les indices sur la situation du client (CA, secteur, projet)
-- Le niveau de complexité attendu selon la question
-
-## 🎯 STRATÉGIE DE RÉPONSE
-
-### Pour une QUESTION SIMPLE (ex: "C'est quoi l'IS ?")
-→ Réponse directe + exemple chiffré + lien vers ressource
-
-### Pour une COMPARAISON (ex: "SASU ou EURL ?")
-→ Tableau comparatif + cas d'usage typiques + recommandation conditionnelle
-
-### Pour un CAS COMPLEXE (ex: "J'ai 80K de CA, location meublée...")
-→ Analyse structurée + simulation chiffrée + plan d'action 3 étapes
-
-### Pour une QUESTION HORS PÉRIMÈTRE
-→ Reconnaissance honnête + redirection vers l'expert humain
-
-## 📚 RESSOURCES DISPONIBLES
-Tu peux recommander :
-- Simulateurs (comparateur statuts, IK, immobilier, dividendes)
-- Tutos Pratiques (vidéos courtes thématiques)
-- Formations (Créateur <30K CA, Agent Immobilier)
-- RDV Expert (pour analyse personnalisée approfondie)
-
-## ⚠️ RÈGLES DE SÉCURITÉ
-- JAMAIS de conseil en investissement financier (actions, crypto)
-- JAMAIS de validation définitive sans "consultez un expert"
-- TOUJOURS préciser "selon les règles 2024-2026"
-- En cas de doute technique : rediriger vers RDV Expert
-
-## 🎖️ SIGNATURE
-Termine TOUJOURS par une recommandation d'action concrète ou une question de clarification si besoin.`;
+// Fonction retry avec backoff exponentiel
+async function callClaudeWithRetry(messages: any[], maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages: messages,
+      });
+      
+      return response;
+    } catch (error: any) {
+      // Si overloaded, attendre et réessayer
+      if (error.status === 529 && attempt < maxRetries - 1) {
+        const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+        console.log(`⏳ Retry ${attempt + 1}/${maxRetries} après ${waitTime}ms`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      // Autre erreur ou max retries atteint
+      throw error;
+    }
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -96,7 +54,6 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // Vérifier l'authentification
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -114,7 +71,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Si conversationId n'est pas fourni, le récupérer/créer
     let finalConversationId = conversationId;
 
     if (!finalConversationId) {
@@ -144,14 +100,9 @@ export async function POST(req: NextRequest) {
       finalConversationId = conversation.id;
     }
 
-    // ============================================
-    // 🚀 APPEL À L'API ANTHROPIC CLAUDE
-    // ============================================
-    
-    // Construire l'historique pour Claude
+    // Construire l'historique
     const claudeMessages: Array<{ role: "user" | "assistant"; content: string }> = [];
     
-    // Ajouter l'historique (limité aux 10 derniers messages)
     const recentHistory = conversationHistory.slice(-10);
     for (const msg of recentHistory) {
       claudeMessages.push({
@@ -160,27 +111,33 @@ export async function POST(req: NextRequest) {
       });
     }
     
-    // Ajouter le message actuel
     claudeMessages.push({
       role: "user",
       content: message,
     });
 
-    // Appeler Claude
-    const claudeResponse = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      messages: claudeMessages,
-    });
+    // ✅ APPEL AVEC RETRY
+    let claudeResponse;
+    try {
+      claudeResponse = await callClaudeWithRetry(claudeMessages);
+    } catch (error: any) {
+      // Si toujours overloaded après retry
+      if (error.status === 529) {
+        return NextResponse.json({
+          response: "⚠️ L'IA est temporairement surchargée. Réessayez dans quelques secondes ou passez en mode Expert.",
+          intent: "overloaded",
+          success: false,
+        });
+      }
+      throw error;
+    }
 
-    // Extraire la réponse
     const aiResponse = claudeResponse.content
       .filter((block) => block.type === "text")
       .map((block) => (block as any).text)
       .join("\n\n");
 
-    // Détection d'intent basique
+    // Détection d'intent
     const messageLower = message.toLowerCase();
     let intent = "general";
     
@@ -196,7 +153,7 @@ export async function POST(req: NextRequest) {
       intent = "charges_sociales";
     }
 
-    // Insérer la réponse IA dans messages
+    // Insérer la réponse IA
     const { error: aiMsgError } = await supabase.from("messages").insert([
       {
         conversation_id: finalConversationId,
@@ -236,9 +193,8 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Erreur API chatbot:", error);
     
-    // Fallback si Claude ne répond pas
     return NextResponse.json({
-      response: "⚠️ L'IA est temporairement indisponible. Veuillez passer en mode Expert pour contacter directement un conseiller.",
+      response: "⚠️ Une erreur est survenue. Veuillez passer en mode Expert pour contacter directement un conseiller.",
       intent: "error",
       success: false,
       error: error.message,

@@ -60,6 +60,7 @@ export default function ExpertMessagerieComplete() {
 
   useEffect(() => {
     if (expertId) {
+      console.log("🔥 EXPERT ID:", expertId);
       loadConversations();
     }
   }, [expertId]);
@@ -100,7 +101,9 @@ export default function ExpertMessagerieComplete() {
     if (!expertId) return;
 
     try {
-      const { data } = await supabase
+      console.log("🔥 CHARGEMENT CONVERSATIONS POUR EXPERT:", expertId);
+      
+      const { data, error } = await supabase
         .from("conversations")
         .select(`
           id,
@@ -114,6 +117,9 @@ export default function ExpertMessagerieComplete() {
         `)
         .eq("expert_id", expertId)
         .order("last_message_at", { ascending: false });
+
+      console.log("🔥 DATA BRUTE:", data);
+      console.log("🔥 ERREUR?:", error);
 
       if (data) {
         // Compter messages non lus pour chaque conversation
@@ -133,19 +139,23 @@ export default function ExpertMessagerieComplete() {
           })
         );
 
+        console.log("🔥 CONVERSATIONS AVEC UNREAD:", conversationsWithUnread);
+        
         setConversations(conversationsWithUnread as any);
 
         // Auto-sélectionner la première
         if (conversationsWithUnread.length > 0 && !selectedClientId) {
+          console.log("🔥 AUTO-SÉLECTION PREMIÈRE CONVERSATION");
           selectConversation(conversationsWithUnread[0]);
         }
       }
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("🔥 ERREUR LOAD CONVERSATIONS:", error);
     }
   }
 
   function selectConversation(conv: any) {
+    console.log("🔥 CONVERSATION SÉLECTIONNÉE:", conv);
     setSelectedClientId(conv.client_id);
     setConversationId(conv.id);
   }
@@ -153,11 +163,15 @@ export default function ExpertMessagerieComplete() {
   async function loadMessages() {
     if (!conversationId) return;
 
+    console.log("🔥 CHARGEMENT MESSAGES POUR:", conversationId);
+
     const { data } = await supabase
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
+
+    console.log("🔥 MESSAGES CHARGÉS:", data);
 
     if (data) {
       setMessages(data);
@@ -194,6 +208,7 @@ export default function ExpertMessagerieComplete() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          console.log("🔥 NOUVEAU MESSAGE REÇU:", payload);
           const newMsg = payload.new as Message;
           
           setMessages((prev) => {
@@ -275,6 +290,10 @@ export default function ExpertMessagerieComplete() {
   );
 
   const selectedConv = conversations.find((c) => c.client_id === selectedClientId);
+
+  console.log("🔥 RENDER - conversations:", conversations.length);
+  console.log("🔥 RENDER - filteredConversations:", filteredConversations.length);
+  console.log("🔥 RENDER - selectedConv:", selectedConv);
 
   if (loading) {
     return (

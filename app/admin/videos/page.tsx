@@ -43,7 +43,6 @@ export default function AdminVideosPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
@@ -56,7 +55,6 @@ export default function AdminVideosPage() {
         <Video className="text-amber-500" size={40} />
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b overflow-x-auto pb-px">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -77,7 +75,6 @@ export default function AdminVideosPage() {
         })}
       </div>
 
-      {/* Content */}
       <div className="space-y-6">
         {activeTab === 'admin' && <VideosAdminSection />}
         {activeTab === 'client' && <VideosClientSection />}
@@ -89,9 +86,6 @@ export default function AdminVideosPage() {
   );
 }
 
-// ==========================================
-// SECTION 1 : VIDÉOS STAFF (Closers, HOS, Experts)
-// ==========================================
 function VideosAdminSection() {
   return (
     <Card>
@@ -113,9 +107,6 @@ function VideosAdminSection() {
   );
 }
 
-// ==========================================
-// SECTION 2 : VIDÉOS CLIENT (Welcome + 9 pages) ⭐ FIXED
-// ==========================================
 function VideosClientSection() {
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,10 +132,11 @@ function VideosClientSection() {
   }
 
   async function handleSave(video: any) {
+    console.log('🔵 AVANT SAVE - video_url:', video.video_url);
     setSaving(video.id);
 
     try {
-      const { error } = await supabase
+      const { data: savedData, error } = await supabase
         .from('onboarding_videos_client')
         .update({
           video_url: video.video_url,
@@ -154,17 +146,23 @@ function VideosClientSection() {
           is_active: video.is_active,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', video.id);
+        .eq('id', video.id)
+        .select()
+        .single();
 
       if (error) throw error;
 
+      console.log('✅ APRÈS SAVE - Données en BDD:', savedData);
+
       toast.success('Vidéo mise à jour !');
       
-      // ✅ FIX : Attendre 500ms avant reload
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await loadVideos();
+      // ⭐ NE PAS RECHARGER - Juste mettre à jour l'état local
+      setVideos(prev => 
+        prev.map(v => v.id === video.id ? { ...v, ...savedData } : v)
+      );
       
     } catch (err: any) {
+      console.error('❌ ERREUR SAVE:', err);
       toast.error(err.message);
     } finally {
       setSaving(null);
@@ -172,6 +170,7 @@ function VideosClientSection() {
   }
 
   function updateVideo(id: string, field: string, value: any) {
+    console.log(`🔄 UPDATE LOCAL - ${field}:`, value);
     setVideos(prev => 
       prev.map(v => v.id === id ? { ...v, [field]: value } : v)
     );
@@ -309,9 +308,6 @@ function VideosClientSection() {
   );
 }
 
-// ==========================================
-// SECTION 3 : FORMATIONS
-// ==========================================
 function FormationsSection() {
   return (
     <Card>
@@ -333,9 +329,6 @@ function FormationsSection() {
   );
 }
 
-// ==========================================
-// SECTION 4 : LIVES (Ateliers & Coachings)
-// ==========================================
 function LivesSection() {
   return (
     <Card>
@@ -357,9 +350,6 @@ function LivesSection() {
   );
 }
 
-// ==========================================
-// SECTION 5 : PARTENAIRE AVEC CATÉGORIES + FATHOM + PDF
-// ==========================================
 function PartenaireSection() {
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -484,7 +474,6 @@ function PartenaireSection() {
 
   return (
     <div className="space-y-6">
-      {/* Filtres par catégorie */}
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setSelectedCategory('all')}
@@ -559,7 +548,6 @@ function PartenaireSection() {
                   )}
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
-                  {/* Vidéo Loom */}
                   <div className="border-l-4 border-purple-500 pl-4">
                     <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
                       <Play size={18} />
@@ -573,7 +561,6 @@ function PartenaireSection() {
                     />
                   </div>
 
-                  {/* Vidéo Fathom */}
                   <div className="border-l-4 border-blue-500 pl-4">
                     <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
                       <Video size={18} />
@@ -595,7 +582,6 @@ function PartenaireSection() {
                     </div>
                   </div>
 
-                  {/* PDF */}
                   <div className="border-l-4 border-green-500 pl-4">
                     <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
                       <FileText size={18} />
@@ -650,7 +636,6 @@ function PartenaireSection() {
                     )}
                   </div>
 
-                  {/* Lien affiliation */}
                   <div className="border-l-4 border-amber-500 pl-4">
                     <h4 className="font-bold text-amber-900 mb-3">
                       🔗 Lien d'affiliation ou Email
@@ -662,7 +647,6 @@ function PartenaireSection() {
                     />
                   </div>
 
-                  {/* Description */}
                   <div>
                     <Label>Description</Label>
                     <Textarea
@@ -672,7 +656,6 @@ function PartenaireSection() {
                     />
                   </div>
 
-                  {/* Actions */}
                   <div className="flex justify-end pt-4 border-t">
                     <Button
                       onClick={() => handleSave(item)}

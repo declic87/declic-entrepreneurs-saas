@@ -59,7 +59,7 @@ export default function PipelinePage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
       
-      const { data: profile } = await supabase.from("users").select("id, role").eq("authId", session.user.id).single();
+      const { data: profile } = await supabase.from("users").select("id, role").eq("auth_id", session.user.id).single();
       if (!profile) { setLoading(false); return; }
 
       let query = supabase.from("leads").select("*");
@@ -267,3 +267,4 @@ export default function PipelinePage() {
     </div>
   );
 }
+

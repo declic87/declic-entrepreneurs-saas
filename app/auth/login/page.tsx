@@ -38,7 +38,7 @@ export default function LoginPage() {
       const { data: userData, error: roleError } = await supabase
         .from('users')
         .select('role')
-        .eq('authId', data.session?.user.id)
+        .eq('auth_id', data.session?.user.id)
         .single();
 
       if (roleError) {
@@ -154,3 +154,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

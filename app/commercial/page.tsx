@@ -68,7 +68,7 @@ export default function CommercialDashboard() {
         const { data: profile } = await supabase
           .from("users")
           .select("id, role")
-          .eq("authId", session.user.id)
+          .eq("auth_id", session.user.id)
           .single();
 
         if (!profile) { setLoading(false); return; }
@@ -254,3 +254,4 @@ export default function CommercialDashboard() {
     </div>
   );
 }
+

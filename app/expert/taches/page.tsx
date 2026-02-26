@@ -40,7 +40,7 @@ export default function TachesPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
 
-        const { data: profile } = await supabase.from("users").select("id").eq("authId", session.user.id).single();
+        const { data: profile } = await supabase.from("users").select("id").eq("auth_id", session.user.id).single();
         if (!profile) return;
         setProfileId(profile.id);
 
@@ -271,3 +271,4 @@ function StatMiniCard({ label, value, color = "text-gray-900", highlight = false
     </Card>
   );
 }
+

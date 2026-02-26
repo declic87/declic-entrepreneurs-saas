@@ -72,7 +72,7 @@ export default function DashboardSetter() {
       const { data: profile } = await supabase
         .from("users")
         .select("id")
-        .eq("authId", session.user.id)
+        .eq("auth_id", session.user.id)
         .single();
 
       if (!profile) return;
@@ -361,3 +361,4 @@ export default function DashboardSetter() {
     </div>
   );
 }
+

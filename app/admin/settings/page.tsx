@@ -45,7 +45,7 @@ export default function SettingsPage() {
     async function fetchUser() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        const { data: profile } = await supabase.from("users").select("*").eq("authId", authUser.id).single();
+        const { data: profile } = await supabase.from("users").select("*").eq("auth_id", authUser.id).single();
         if (profile) {
           setName(profile.name || "");
           setEmail(profile.email || authUser.email || "");
@@ -74,7 +74,7 @@ export default function SettingsPage() {
         name, 
         phone, 
         updatedAt: new Date().toISOString() 
-      }).eq("authId", authUser.id);
+      }).eq("auth_id", authUser.id);
       
       if (error) showFeedback(error.message, true);
       else showFeedback("Profil mis à jour avec succès !");
@@ -263,3 +263,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

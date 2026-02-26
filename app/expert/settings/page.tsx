@@ -30,7 +30,7 @@ export default function ExpertSettingsPage() {
         const { data: profile } = await supabase
           .from("users")
           .select("*")
-          .eq("authId", session.user.id)
+          .eq("auth_id", session.user.id)
           .single();
 
         if (profile) {
@@ -80,7 +80,7 @@ export default function ExpertSettingsPage() {
       const { error: userErr } = await supabase
         .from("users")
         .update({ name: profileData.name, phone: profileData.phone })
-        .eq("authId", session.user.id);
+        .eq("auth_id", session.user.id);
 
       // Update Expert table
       if (expertData.id) {
@@ -283,3 +283,4 @@ export default function ExpertSettingsPage() {
     </div>
   );
 }
+

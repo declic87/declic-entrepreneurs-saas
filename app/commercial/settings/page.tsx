@@ -37,7 +37,7 @@ export default function CommercialSettingsPage() {
           const { data: profile } = await supabase
             .from("users")
             .select("*")
-            .eq("authId", session.user.id)
+            .eq("auth_id", session.user.id)
             .single();
 
           if (profile) {
@@ -74,7 +74,7 @@ export default function CommercialSettingsPage() {
           phone: formData.phone, 
           updatedAt: new Date().toISOString() 
         })
-        .eq("authId", session.user.id);
+        .eq("auth_id", session.user.id);
       
       if (error) showStatus('error', "Erreur lors de la sauvegarde");
       else showStatus('success', "Profil mis à jour avec succès");
@@ -230,3 +230,4 @@ export default function CommercialSettingsPage() {
     </div>
   );
 }
+

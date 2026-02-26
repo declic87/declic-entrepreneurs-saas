@@ -39,7 +39,7 @@ export default function ExpertStatsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
 
-        const { data: profile } = await supabase.from("users").select("id").eq("authId", session.user.id).single();
+        const { data: profile } = await supabase.from("users").select("id").eq("auth_id", session.user.id).single();
         if (!profile) return;
 
         const { data: expert } = await supabase.from("experts").select("id").eq("userId", profile.id).single();
@@ -234,3 +234,4 @@ function ChartSection({ title, data }: { title: string, data: any[] }) {
     </Card>
   );
 }
+

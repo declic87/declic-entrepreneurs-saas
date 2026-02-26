@@ -34,7 +34,7 @@ export default function NonClosesPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) { setLoading(false); return; }
-        const { data: profile } = await supabase.from("users").select("id, role").eq("authId", session.user.id).single();
+        const { data: profile } = await supabase.from("users").select("id, role").eq("auth_id", session.user.id).single();
         if (!profile) { setLoading(false); return; }
 
         let query = supabase.from("leads").select("*").in("status", ["RDV_EFFECTUE", "PROPOSITION", "NEGOCIE"]);
@@ -164,3 +164,4 @@ function StatCard({ label, val, color }: { label: string, val: any, color: strin
     </Card>
   );
 }
+

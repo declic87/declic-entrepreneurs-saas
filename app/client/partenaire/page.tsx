@@ -19,7 +19,7 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type CategoryType = 'all' | 'comptabilite' | 'placement_financier' | 'investissement' | 'placement_structure' | 'autres';
+type CategoryType = 'all' | 'comptabilite' | 'placement_financier' | 'investissement' | 'placement_structure' | 'banque' | 'autres';
 
 const CATEGORIES = [
   { id: 'all' as CategoryType, label: '📚 Tous', color: 'slate' },
@@ -27,6 +27,7 @@ const CATEGORIES = [
   { id: 'placement_financier' as CategoryType, label: '💰 Placement Financier', color: 'green' },
   { id: 'investissement' as CategoryType, label: '🏢 Investissement', color: 'purple' },
   { id: 'placement_structure' as CategoryType, label: '📈 Placement Structuré', color: 'orange' },
+  { id: 'banque' as CategoryType, label: '🏦 Banque', color: 'indigo' },
   { id: 'autres' as CategoryType, label: '🤝 Autres', color: 'indigo' },
 ];
 

@@ -362,6 +362,7 @@ function PartenaireSection() {
     placement_financier: { label: 'Placement Financier', icon: '💰', color: 'green' },
     investissement: { label: 'Investissement', icon: '🏢', color: 'purple' },
     placement_structure: { label: 'Placement Structuré', icon: '📈', color: 'orange' },
+    banque: { label: 'Banque', icon: '🏦', color: 'indigo' },
     autres: { label: 'Autres', icon: '🤝', color: 'slate' },
   };
 

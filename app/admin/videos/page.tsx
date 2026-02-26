@@ -114,7 +114,7 @@ function VideosAdminSection() {
 }
 
 // ==========================================
-// SECTION 2 : VIDÉOS CLIENT (Welcome + 9 pages)
+// SECTION 2 : VIDÉOS CLIENT (Welcome + 9 pages) ⭐ FIXED
 // ==========================================
 function VideosClientSection() {
   const [videos, setVideos] = useState<any[]>([]);
@@ -159,6 +159,7 @@ function VideosClientSection() {
       if (error) throw error;
 
       toast.success('Vidéo mise à jour !');
+      loadVideos(); // ⭐ FIX : RECHARGE LES VIDÉOS
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -246,7 +247,7 @@ function VideosClientSection() {
                 <Input
                   type="url"
                   placeholder="https://www.loom.com/share/..."
-                  value={video.video_url}
+                  value={video.video_url || ''}
                   onChange={(e) => updateVideo(video.id, 'video_url', e.target.value)}
                 />
               </div>

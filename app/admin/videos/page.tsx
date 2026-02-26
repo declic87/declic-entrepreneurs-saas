@@ -159,7 +159,11 @@ function VideosClientSection() {
       if (error) throw error;
 
       toast.success('Vidéo mise à jour !');
-      loadVideos(); // ⭐ FIX : RECHARGE LES VIDÉOS
+      
+      // ✅ FIX : Attendre 500ms avant reload
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await loadVideos();
+      
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -181,7 +185,12 @@ function VideosClientSection() {
     paiements: '💳 Paiements',
     documents: '📄 Documents',
     simulateur: '🧮 Simulateur',
-    messages: '💬 Messages',
+    messagerie: '💬 Messagerie',
+    tutos: '📚 Tutos Pratiques',
+    formations: '📹 Formations',
+    coachings: '🎥 Coachings',
+    ateliers: '🎓 Ateliers',
+    messages: '💬 Messages (old)',
     parametres: '⚙️ Paramètres',
     partenaire: '🤝 Partenaire',
   };

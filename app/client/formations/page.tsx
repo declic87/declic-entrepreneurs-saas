@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, Play, Clock, Lock } from 'lucide-react';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 
 interface Video {
   id: string;
@@ -33,7 +34,6 @@ export default function ClientFormationsPage() {
 
   async function loadUserData() {
     try {
-      // Récupérer le pack de l'utilisateur
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -48,7 +48,6 @@ export default function ClientFormationsPage() {
         }
       }
 
-      // Charger toutes les vidéos
       const { data, error } = await supabase
         .from('videos')
         .select('*')
@@ -66,17 +65,14 @@ export default function ClientFormationsPage() {
   function hasAccess(video: Video): boolean {
     if (!video.category) return true;
     
-    // Formation Créateur accessible si pack = "formation_createur"
     if (video.category === 'Créateur') {
       return userPack === 'formation_createur';
     }
     
-    // Formation Agent Immo accessible si pack = "formation_agent_immo"
     if (video.category === 'Agent Immo') {
       return userPack === 'formation_agent_immo';
     }
     
-    // Formation Accompagnement accessible pour starter/pro/expert
     if (video.category === 'Accompagnement') {
       return ['starter', 'pro', 'expert'].includes(userPack || '');
     }
@@ -100,6 +96,9 @@ export default function ClientFormationsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
+      {/* ⭐ ONBOARDING VIDEO */}
+      <OnboardingVideo pageSlug="formations" role="CLIENT" />
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-[#123055] mb-3">
@@ -142,14 +141,12 @@ export default function ClientFormationsPage() {
           return (
             <Card key={video.id} className={`hover:shadow-xl transition-shadow ${!access ? 'opacity-60' : ''}`}>
               <CardContent className="p-6">
-                {/* Badge Nouveau */}
                 {video.is_new && (
                   <span className="inline-block px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full mb-3">
                     ✨ NOUVEAU
                   </span>
                 )}
 
-                {/* Catégorie */}
                 {video.category && (
                   <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full mb-3 ${
                     video.category === 'Créateur' ? 'bg-blue-100 text-blue-700' :
@@ -160,19 +157,16 @@ export default function ClientFormationsPage() {
                   </span>
                 )}
 
-                {/* Titre */}
                 <h3 className="text-xl font-bold text-[#123055] mb-3">
                   {video.title}
                 </h3>
 
-                {/* Description */}
                 {video.description && (
                   <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                     {video.description}
                   </p>
                 )}
 
-                {/* Durée */}
                 {video.duration && (
                   <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
                     <Clock size={16} />
@@ -180,7 +174,6 @@ export default function ClientFormationsPage() {
                   </div>
                 )}
 
-                {/* Action */}
                 {access ? (
                   video.loom_id && (
                     <a

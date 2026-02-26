@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, Download, Video, Clock, Tag } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { FileText, Download, Video, Clock, Tag, Search } from 'lucide-react';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 
 interface Tuto {
   id: string;
@@ -20,6 +22,7 @@ interface Tuto {
 export default function ClientTutosPage() {
   const [tutos, setTutos] = useState<Tuto[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   const supabase = createBrowserClient(
@@ -49,9 +52,15 @@ export default function ClientTutosPage() {
 
   const categories = ['all', ...new Set(tutos.map(t => t.category).filter(Boolean))];
   
-  const filteredTutos = selectedCategory === 'all' 
-    ? tutos 
-    : tutos.filter(t => t.category === selectedCategory);
+  const filteredTutos = tutos.filter(tuto => {
+    const matchesCategory = selectedCategory === 'all' || tuto.category === selectedCategory;
+    const matchesSearch = searchQuery === '' || 
+      tuto.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tuto.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tuto.category?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesCategory && matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -63,6 +72,9 @@ export default function ClientTutosPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
+      {/* ⭐ ONBOARDING VIDEO */}
+      <OnboardingVideo pageSlug="tutos" role="CLIENT" />
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-[#123055] mb-3">
@@ -71,6 +83,25 @@ export default function ClientTutosPage() {
         <p className="text-lg text-gray-600">
           Guides pas à pas pour optimiser votre fiscalité au quotidien
         </p>
+      </div>
+
+      {/* ⭐ BARRE DE RECHERCHE */}
+      <div className="max-w-2xl mx-auto mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <Input
+            type="text"
+            placeholder="Rechercher un tuto par titre, catégorie..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-12 text-base border-2 border-gray-200 focus:border-orange-500"
+          />
+        </div>
+        {searchQuery && (
+          <p className="text-sm text-gray-600 mt-2 text-center">
+            {filteredTutos.length} résultat{filteredTutos.length > 1 ? 's' : ''} trouvé{filteredTutos.length > 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       {/* Filtres catégories */}
@@ -97,14 +128,12 @@ export default function ClientTutosPage() {
         {filteredTutos.map(tuto => (
           <Card key={tuto.id} className="hover:shadow-xl transition-shadow">
             <CardContent className="p-6">
-              {/* Badge Nouveau */}
               {tuto.is_new && (
                 <span className="inline-block px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full mb-3">
                   ✨ NOUVEAU
                 </span>
               )}
 
-              {/* Catégorie */}
               {tuto.category && (
                 <div className="flex items-center gap-2 mb-3">
                   <Tag className="text-orange-500" size={16} />
@@ -114,19 +143,16 @@ export default function ClientTutosPage() {
                 </div>
               )}
 
-              {/* Titre */}
               <h3 className="text-xl font-bold text-[#123055] mb-3">
                 {tuto.title}
               </h3>
 
-              {/* Description */}
               {tuto.description && (
                 <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                   {tuto.description}
                 </p>
               )}
 
-              {/* Durée */}
               {tuto.duration && (
                 <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
                   <Clock size={16} />
@@ -134,9 +160,7 @@ export default function ClientTutosPage() {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="space-y-2">
-                {/* Vidéo Loom */}
                 {tuto.loom_id && (
                   <a
                     href={`https://www.loom.com/share/${tuto.loom_id}`}
@@ -149,7 +173,6 @@ export default function ClientTutosPage() {
                   </a>
                 )}
 
-                {/* PDF */}
                 {tuto.pdf_url && (
                   <a
                     href={tuto.pdf_url}
@@ -172,7 +195,10 @@ export default function ClientTutosPage() {
           <CardContent className="p-12 text-center">
             <FileText size={64} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 text-lg">
-              Aucun tuto disponible dans cette catégorie
+              {searchQuery 
+                ? `Aucun tuto trouvé pour "${searchQuery}"`
+                : 'Aucun tuto disponible dans cette catégorie'
+              }
             </p>
           </CardContent>
         </Card>

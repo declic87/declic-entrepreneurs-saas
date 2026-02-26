@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Bot, User, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { OnboardingVideo } from "@/components/OnboardingVideo";
 
 interface Message {
   id: string;
@@ -129,7 +130,6 @@ export default function ClientMessagerieComplete() {
   function subscribeToMessages() {
     if (!conversationId) return;
     
-    // Nettoyer l'ancien channel
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
@@ -145,11 +145,9 @@ export default function ClientMessagerieComplete() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          console.log("📨 Nouveau message reçu:", payload);
           const newMsg = payload.new as Message;
           
           setMessages((prev) => {
-            // Éviter les doublons
             if (prev.some(m => m.id === newMsg.id)) {
               return prev;
             }
@@ -167,9 +165,7 @@ export default function ClientMessagerieComplete() {
           }
         }
       )
-      .subscribe((status) => {
-        console.log("📡 Real-time status:", status);
-      });
+      .subscribe();
     
     channelRef.current = channel;
   }
@@ -184,7 +180,6 @@ export default function ClientMessagerieComplete() {
 
     try {
       if (isAIMode) {
-        // Mode IA - Insérer message client
         const { data: clientMsg, error: clientMsgError } = await supabase
           .from("messages")
           .insert({
@@ -198,13 +193,9 @@ export default function ClientMessagerieComplete() {
 
         if (clientMsgError) throw clientMsgError;
 
-        // Ajouter immédiatement à l'UI
         setMessages(prev => [...prev, clientMsg]);
-
-        // Afficher loader IA
         setAiThinking(true);
 
-        // Appeler API IA
         const response = await fetch("/api/chatbot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -229,7 +220,6 @@ export default function ClientMessagerieComplete() {
         }
 
       } else {
-        // Mode Expert
         const { data: clientMsg, error } = await supabase
           .from("messages")
           .insert({
@@ -243,7 +233,6 @@ export default function ClientMessagerieComplete() {
 
         if (error) throw error;
 
-        // Ajouter immédiatement à l'UI
         setMessages(prev => [...prev, clientMsg]);
 
         await supabase
@@ -279,6 +268,9 @@ export default function ClientMessagerieComplete() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-6">
+      {/* ⭐ ONBOARDING VIDEO */}
+      <OnboardingVideo pageSlug="messagerie" role="CLIENT" />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -404,7 +396,6 @@ export default function ClientMessagerieComplete() {
                 );
               })}
 
-              {/* Loader IA */}
               {aiThinking && (
                 <div className="flex justify-start">
                   <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-2xl px-4 py-3 flex items-center gap-2">
@@ -420,7 +411,6 @@ export default function ClientMessagerieComplete() {
           <div ref={messagesEndRef} />
         </CardContent>
 
-        {/* Input */}
         <div className="border-t p-4">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <Input

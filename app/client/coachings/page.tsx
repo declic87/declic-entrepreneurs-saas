@@ -5,6 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Card, CardContent } from '@/components/ui/card';
 import { Video, Calendar, ExternalLink, Play, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 
 interface CoachingLive {
   id: string;
@@ -69,6 +70,9 @@ export default function ClientCoachingsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
+      {/* ⭐ ONBOARDING VIDEO */}
+      <OnboardingVideo pageSlug="coachings" role="CLIENT" />
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-[#123055] mb-3">
@@ -121,7 +125,6 @@ export default function ClientCoachingsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      {/* Date & Heure */}
                       <div className="flex items-center gap-2 text-sm text-orange-600 font-semibold mb-2">
                         <Calendar size={16} />
                         <span>
@@ -140,19 +143,16 @@ export default function ClientCoachingsPage() {
                         )}
                       </div>
 
-                      {/* Titre */}
                       <h3 className="text-2xl font-bold text-[#123055] mb-3">
                         {live.title}
                       </h3>
 
-                      {/* Description */}
                       {live.description && (
                         <p className="text-gray-600 mb-4">
                           {live.description}
                         </p>
                       )}
 
-                      {/* Lien Meet */}
                       {live.meet_link && (
                         <Button
                           asChild
@@ -199,7 +199,6 @@ export default function ClientCoachingsPage() {
             archives.map(archive => (
               <Card key={archive.id} className="hover:shadow-xl transition-shadow">
                 <CardContent className="p-6">
-                  {/* Date */}
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                     <Calendar size={14} />
                     <span>
@@ -207,19 +206,16 @@ export default function ClientCoachingsPage() {
                     </span>
                   </div>
 
-                  {/* Titre */}
                   <h3 className="text-lg font-bold text-[#123055] mb-3">
                     {archive.title}
                   </h3>
 
-                  {/* Description */}
                   {archive.description && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                       {archive.description}
                     </p>
                   )}
 
-                  {/* Action */}
                   {archive.fathom_id && (
                     <a
                       href={`https://fathom.video/share/${archive.fathom_id}`}

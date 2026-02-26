@@ -5,6 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Card, CardContent } from '@/components/ui/card';
 import { Users, Calendar, ExternalLink, Play, Clock, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 
 interface AtelierLive {
   id: string;
@@ -71,6 +72,9 @@ export default function ClientAteliersPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
+      {/* ⭐ ONBOARDING VIDEO */}
+      <OnboardingVideo pageSlug="ateliers" role="CLIENT" />
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-[#123055] mb-3">
@@ -127,7 +131,6 @@ export default function ClientAteliersPage() {
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        {/* Date & Heure */}
                         <div className="flex items-center gap-4 text-sm text-orange-600 font-semibold mb-2">
                           <div className="flex items-center gap-2">
                             <Calendar size={16} />
@@ -148,19 +151,16 @@ export default function ClientAteliersPage() {
                           )}
                         </div>
 
-                        {/* Titre */}
                         <h3 className="text-2xl font-bold text-[#123055] mb-3">
                           {atelier.title}
                         </h3>
 
-                        {/* Description */}
                         {atelier.description && (
                           <p className="text-gray-600 mb-4">
                             {atelier.description}
                           </p>
                         )}
 
-                        {/* Places */}
                         {atelier.max_places > 0 && (
                           <div className="flex items-center gap-2 text-sm mb-4">
                             <UserCheck size={16} className={isComplet ? 'text-red-500' : 'text-green-600'} />
@@ -173,7 +173,6 @@ export default function ClientAteliersPage() {
                           </div>
                         )}
 
-                        {/* Inscription */}
                         {atelier.lien_inscription && (
                           <Button
                             asChild
@@ -225,7 +224,6 @@ export default function ClientAteliersPage() {
             archives.map(archive => (
               <Card key={archive.id} className="hover:shadow-xl transition-shadow">
                 <CardContent className="p-6">
-                  {/* Date */}
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                     <Calendar size={14} />
                     <span>
@@ -233,19 +231,16 @@ export default function ClientAteliersPage() {
                     </span>
                   </div>
 
-                  {/* Titre */}
                   <h3 className="text-lg font-bold text-[#123055] mb-3">
                     {archive.title}
                   </h3>
 
-                  {/* Description */}
                   {archive.description && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                       {archive.description}
                     </p>
                   )}
 
-                  {/* Action */}
                   {archive.fathom_id && (
                     <a
                       href={`https://fathom.video/share/${archive.fathom_id}`}

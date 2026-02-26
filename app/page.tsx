@@ -710,10 +710,10 @@ export default function HomePage() {
     </div>
 
     <div className="text-center text-xs text-slate-400 pb-8">
-      © {new Date().getFullYear()} Déclic‑Entrepreneur. Tous droits réservés. •{" "}
-      <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>{" "}•{" "}
-      <Link href="/cgv" className="hover:text-white">CGV</Link>{" "}•{" "}
-      <Link href="/confidentialite" className="hover:text-white">Confidentialité</Link>
+    © {new Date().getFullYear()} Déclic‑Entrepreneurs. Tous droits réservés. •{" "}
+    <Link href="/confidentialite" className="hover:text-white">Confidentialité</Link>{" "}•{" "}
+    <Link href="/cgv" className="hover:text-white">CGV</Link>{" "}•{" "}
+    <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>
     </div>
   </footer>
 </section>

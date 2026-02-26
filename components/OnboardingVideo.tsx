@@ -13,16 +13,17 @@ const supabase = createBrowserClient(
 
 interface OnboardingVideoProps {
   pageSlug: string;
-  role?: string;
+  role?: 'CLIENT' | 'ADMIN' | 'HOS' | 'CLOSER' | 'SETTER' | 'EXPERT';
 }
 
 interface VideoData {
   id: string;
-  pole: string;
+  page_slug: string;
+  video_url: string;
+  video_type: string;
   title: string;
-  loom_id: string;
   description: string;
-  duration: string;
+  is_active: boolean;
 }
 
 export function OnboardingVideo({ pageSlug, role = 'CLIENT' }: OnboardingVideoProps) {
@@ -38,23 +39,17 @@ export function OnboardingVideo({ pageSlug, role = 'CLIENT' }: OnboardingVideoPr
 
   async function loadVideo() {
     try {
+      // ✅ Charger depuis la bonne table selon le rôle
+      const tableName = role === 'CLIENT' ? 'onboarding_videos_client' : 'onboarding_videos';
+      
       const { data } = await supabase
-        .from('onboarding_videos')
+        .from(tableName)
         .select('*')
-        .eq('pole', role)
-        .eq('active', true)
-        .order('order_index');
+        .eq('page_slug', pageSlug)
+        .eq('is_active', true)
+        .single();
 
-      if (data && data.length > 0) {
-        if (pageSlug === 'general') {
-          setVideo(data[0]);
-        } else {
-          const matchingVideo = data.find(v => 
-            v.title.toLowerCase().includes(pageSlug.toLowerCase())
-          );
-          setVideo(matchingVideo || null);
-        }
-      }
+      setVideo(data || null);
     } catch (err) {
       console.error('Erreur chargement vidéo:', err);
     } finally {
@@ -75,7 +70,23 @@ export function OnboardingVideo({ pageSlug, role = 'CLIENT' }: OnboardingVideoPr
     setShowModal(false);
   }
 
+  // ✅ Extraire l'ID Loom de l'URL complète
+  function extractLoomId(url: string): string {
+    if (!url) return '';
+    
+    // Si c'est déjà un ID (pas d'URL), retourner tel quel
+    if (!url.includes('http') && !url.includes('/')) {
+      return url;
+    }
+    
+    // Extraire l'ID depuis l'URL Loom
+    const match = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : url;
+  }
+
   if (loading || !video) return null;
+
+  const loomId = extractLoomId(video.video_url);
 
   return (
     <>
@@ -94,7 +105,7 @@ export function OnboardingVideo({ pageSlug, role = 'CLIENT' }: OnboardingVideoPr
                 🎥 {video.title}
               </h3>
               <p className="text-sm text-slate-600">
-                {video.description} • {video.duration}
+                {video.description}
               </p>
             </div>
           </div>
@@ -126,16 +137,36 @@ export function OnboardingVideo({ pageSlug, role = 'CLIENT' }: OnboardingVideoPr
             </div>
 
             <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
-              <iframe
-                src={`https://www.loom.com/embed/${video.loom_id}?hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true`}
-                frameBorder="0"
-                allowFullScreen
-                className="absolute top-0 left-0 w-full h-full"
-              />
+              {video.video_type === 'loom' && loomId && (
+                <iframe
+                  src={`https://www.loom.com/embed/${loomId}?hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true`}
+                  frameBorder="0"
+                  allowFullScreen
+                  className="absolute top-0 left-0 w-full h-full"
+                />
+              )}
+              {video.video_type === 'fathom' && video.video_url && (
+                <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-slate-900">
+                  <Button
+                    onClick={() => window.open(video.video_url, '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Play className="mr-2" size={20} />
+                    Ouvrir la vidéo Fathom
+                  </Button>
+                </div>
+              )}
+              {video.video_type === 'youtube' && loomId && (
+                <iframe
+                  src={`https://www.youtube.com/embed/${loomId}`}
+                  frameBorder="0"
+                  allowFullScreen
+                  className="absolute top-0 left-0 w-full h-full"
+                />
+              )}
             </div>
 
-            <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
-              <p className="text-sm text-gray-600">Durée : {video.duration}</p>
+            <div className="p-6 border-t bg-gray-50 flex justify-end items-center">
               <Button
                 onClick={markAsWatched}
                 className="bg-green-600 hover:bg-green-700"

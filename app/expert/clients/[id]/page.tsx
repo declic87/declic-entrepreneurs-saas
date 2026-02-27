@@ -9,8 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Calendar, Video, FileText, Plus, ArrowLeft, CheckCircle2, Clock,
-  Mail, Phone, MessageCircle, Package, Activity, PhoneCall, User2
+  Mail, Phone, MessageCircle, Package, Activity, PhoneCall, User2,
+  Play, BookOpen, Users, XCircle, Loader2
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Client {
   id: string;
@@ -71,6 +79,31 @@ interface CalendlyEvent {
   status: string;
 }
 
+interface VideoStats {
+  formations_total: number;
+  formations_vues: number;
+  tutos_total: number;
+  tutos_vues: number;
+  coachings_total: number;
+  coachings_vues: number;
+  ateliers_total: number;
+  ateliers_vues: number;
+  total_vues: number;
+  total_disponibles: number;
+}
+
+interface VideoDetail {
+  video_id: string;
+  video_type: string;
+  title: string;
+  description: string;
+  category: string;
+  viewed: boolean;
+  viewed_at: string | null;
+  progress_percentage: number;
+  completed: boolean;
+}
+
 export default function ExpertFicheClientFinal() {
   const params = useParams();
   const router = useRouter();
@@ -86,6 +119,13 @@ export default function ExpertFicheClientFinal() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ⭐ NOUVEAU : État pour le tracking vidéos
+  const [videoStats, setVideoStats] = useState<VideoStats | null>(null);
+  const [videoDetails, setVideoDetails] = useState<VideoDetail[]>([]);
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [loadingVideos, setLoadingVideos] = useState(false);
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -100,6 +140,13 @@ export default function ExpertFicheClientFinal() {
       loadRDVResponses(selectedRDV.id);
     }
   }, [selectedRDV]);
+
+  // ⭐ NOUVEAU : Charger tracking vidéos
+  useEffect(() => {
+    if (clientId) {
+      loadVideoTracking();
+    }
+  }, [clientId, filterType, filterStatus]);
 
   async function loadClientData() {
     try {
@@ -204,6 +251,37 @@ export default function ExpertFicheClientFinal() {
     }
   }
 
+  // ⭐ NOUVEAU : Fonction de chargement tracking vidéos
+  async function loadVideoTracking() {
+    setLoadingVideos(true);
+    try {
+      // Charger les stats
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_client_video_stats', { p_user_id: clientId });
+
+      if (statsError) throw statsError;
+      if (statsData && statsData.length > 0) {
+        setVideoStats(statsData[0]);
+      }
+
+      // Charger le détail
+      const { data: videosData, error: videosError } = await supabase
+        .rpc('get_client_videos_detail', {
+          p_user_id: clientId,
+          p_video_type: filterType === 'all' ? null : filterType,
+          p_only_viewed: filterStatus === 'all' ? null : filterStatus === 'viewed'
+        });
+
+      if (videosError) throw videosError;
+      setVideoDetails(videosData || []);
+
+    } catch (error) {
+      console.error('Erreur chargement tracking:', error);
+    } finally {
+      setLoadingVideos(false);
+    }
+  }
+
   async function loadRDVResponses(appointmentId: string) {
     const { data } = await supabase
       .from('expert_checklist_responses')
@@ -292,6 +370,10 @@ export default function ExpertFicheClientFinal() {
   const completedRDV = appointments.filter(a => a.status === 'completed').length + 
                        closerRDVs.filter(c => c.rdv_status === 'close').length;
   const totalMessages = messages.length;
+  
+  const progressPercentage = videoStats 
+    ? Math.round((videoStats.total_vues / videoStats.total_disponibles) * 100) 
+    : 0;
 
   return (
     <div className="max-w-7xl mx-auto p-8 space-y-6">
@@ -423,6 +505,254 @@ export default function ExpertFicheClientFinal() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ⭐⭐⭐ NOUVEAU : SECTION TRACKING VIDÉOS ⭐⭐⭐ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video size={20} />
+            📹 Progression Contenus
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {videoStats ? (
+            <>
+              {/* Barre de progression globale */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-slate-600">
+                    Avancement global
+                  </span>
+                  <span className="text-2xl font-bold text-[#123055]">
+                    {progressPercentage}%
+                  </span>
+                </div>
+                <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-500"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1 text-right">
+                  {videoStats.total_vues} / {videoStats.total_disponibles} contenus vus
+                </p>
+              </div>
+
+              {/* Stats par type */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {/* Formations */}
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Play className="text-blue-600" size={18} />
+                    <span className="text-sm font-semibold text-blue-900">Formations</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {videoStats.formations_vues} / {videoStats.formations_total}
+                  </p>
+                  <div className="w-full bg-blue-200 h-1.5 rounded-full mt-2">
+                    <div 
+                      className="bg-blue-600 h-full rounded-full transition-all"
+                      style={{ 
+                        width: `${videoStats.formations_total > 0 ? (videoStats.formations_vues / videoStats.formations_total) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Tutos */}
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="text-purple-600" size={18} />
+                    <span className="text-sm font-semibold text-purple-900">Tutos</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-700">
+                    {videoStats.tutos_vues} / {videoStats.tutos_total}
+                  </p>
+                  <div className="w-full bg-purple-200 h-1.5 rounded-full mt-2">
+                    <div 
+                      className="bg-purple-600 h-full rounded-full transition-all"
+                      style={{ 
+                        width: `${videoStats.tutos_total > 0 ? (videoStats.tutos_vues / videoStats.tutos_total) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Coachings */}
+                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="text-green-600" size={18} />
+                    <span className="text-sm font-semibold text-green-900">Coachings</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-700">
+                    {videoStats.coachings_vues} / {videoStats.coachings_total}
+                  </p>
+                  <div className="w-full bg-green-200 h-1.5 rounded-full mt-2">
+                    <div 
+                      className="bg-green-600 h-full rounded-full transition-all"
+                      style={{ 
+                        width: `${videoStats.coachings_total > 0 ? (videoStats.coachings_vues / videoStats.coachings_total) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Ateliers */}
+                <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="text-amber-600" size={18} />
+                    <span className="text-sm font-semibold text-amber-900">Ateliers</span>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-700">
+                    {videoStats.ateliers_vues} / {videoStats.ateliers_total}
+                  </p>
+                  <div className="w-full bg-amber-200 h-1.5 rounded-full mt-2">
+                    <div 
+                      className="bg-amber-600 h-full rounded-full transition-all"
+                      style={{ 
+                        width: `${videoStats.ateliers_total > 0 ? (videoStats.ateliers_vues / videoStats.ateliers_total) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tableau détaillé avec filtres */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-[#123055]">Détail des contenus</h3>
+                  <div className="flex gap-3">
+                    <Select value={filterType} onValueChange={setFilterType}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les types</SelectItem>
+                        <SelectItem value="formation">Formations</SelectItem>
+                        <SelectItem value="tuto">Tutos</SelectItem>
+                        <SelectItem value="coaching">Coachings</SelectItem>
+                        <SelectItem value="atelier">Ateliers</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous</SelectItem>
+                        <SelectItem value="viewed">Vues</SelectItem>
+                        <SelectItem value="not_viewed">Non vues</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {loadingVideos ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="animate-spin text-amber-500" size={32} />
+                  </div>
+                ) : videoDetails.length === 0 ? (
+                  <div className="text-center p-8 text-slate-500">
+                    Aucun contenu trouvé avec ces filtres
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {videoDetails.map((video) => (
+                      <div 
+                        key={`${video.video_type}-${video.video_id}`}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <Badge 
+                              variant="outline"
+                              className={`${
+                                video.video_type === 'formation' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                video.video_type === 'tuto' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                video.video_type === 'coaching' ? 'bg-green-50 text-green-700 border-green-200' :
+                                'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}
+                            >
+                              {video.video_type === 'formation' ? '📹 Formation' :
+                               video.video_type === 'tuto' ? '📚 Tuto' :
+                               video.video_type === 'coaching' ? '🎥 Coaching' :
+                               '🎓 Atelier'}
+                            </Badge>
+
+                            {video.category && (
+                              <Badge variant="outline" className="text-xs">
+                                {video.category}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <p className="font-semibold text-slate-800">
+                            {video.title}
+                          </p>
+
+                          {video.description && (
+                            <p className="text-sm text-slate-500 mt-1 line-clamp-1">
+                              {video.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 ml-4">
+                          {/* Progression */}
+                          {video.viewed && (
+                            <div className="text-right min-w-[80px]">
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
+                                  <div 
+                                    className="bg-green-500 h-full rounded-full transition-all"
+                                    style={{ width: `${video.progress_percentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold text-slate-600">
+                                  {video.progress_percentage}%
+                                </span>
+                              </div>
+                              {video.viewed_at && (
+                                <p className="text-xs text-slate-400 mt-1">
+                                  {new Date(video.viewed_at).toLocaleDateString('fr-FR')}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Statut */}
+                          <div className="flex items-center gap-2 min-w-[100px] justify-end">
+                            {video.viewed ? (
+                              <>
+                                <CheckCircle2 className="text-green-500" size={20} />
+                                <span className="text-sm font-semibold text-green-700">
+                                  {video.completed ? 'Complétée' : 'En cours'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="text-slate-400" size={20} />
+                                <span className="text-sm text-slate-500">Non vue</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center p-8 text-slate-500">
+              <Loader2 className="animate-spin mx-auto mb-4" size={32} />
+              Chargement des statistiques...
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {/* ⭐⭐⭐ FIN SECTION TRACKING ⭐⭐⭐ */}
 
       {/* RDV Closer - Section spéciale */}
       {closerRDVs.length > 0 && (

@@ -12,7 +12,8 @@ import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
   UserCheck, FileText, Calculator, MessageSquare, LogOut, Building,
-  Play, Video, ChevronRight, Handshake, TrendingUp, DollarSign, UserPlus
+  Play, Video, ChevronRight, Handshake, TrendingUp, DollarSign, UserPlus,
+  BookOpen, GraduationCap
 } from "lucide-react";
 
 interface SidebarProps {
@@ -50,6 +51,12 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },
+    // ⭐ NOUVEAU : Section Contenus
+    { label: "📚 Formations", href: "/commercial/formations", icon: GraduationCap },
+    { label: "📖 Tutos", href: "/commercial/tutos", icon: BookOpen },
+    { label: "🎥 Coachings", href: "/commercial/coachings", icon: Video },
+    { label: "🎓 Ateliers", href: "/commercial/ateliers", icon: Users },
+    // Fin section contenus
     { label: "Mon Contrat", href: "/commercial/contrat", icon: FileText },
     { label: "Mes Commissions", href: "/commercial/commissions", icon: DollarSign },
     { label: "Statistiques", href: "/commercial/stats", icon: BarChart3 },
@@ -87,6 +94,12 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Dashboard", href: "/expert", icon: LayoutDashboard },
     { label: "Mes Clients", href: "/expert/clients", icon: Users },
     { label: "Agenda", href: "/expert/agenda", icon: Calendar },
+    // ⭐ NOUVEAU : Section Contenus Expert
+    { label: "📚 Formations", href: "/expert/formations", icon: GraduationCap },
+    { label: "📖 Tutos", href: "/expert/tutos", icon: BookOpen },
+    { label: "🎥 Coachings", href: "/expert/coachings", icon: Video },
+    { label: "🎓 Ateliers", href: "/expert/ateliers", icon: Users },
+    // Fin section contenus
     { label: "Formation", href: "/expert/onboarding", icon: Video },
     { label: "Tâches", href: "/expert/taches", icon: CheckCircle },
     { label: "Documents", href: "/expert/documents", icon: FileText },

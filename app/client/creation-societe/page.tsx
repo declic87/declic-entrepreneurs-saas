@@ -17,6 +17,8 @@ import {
   FileSignature,
   Send,
   Loader2,
+  Plus,
+  Building2,
 } from "lucide-react";
 
 interface CompanyData {
@@ -78,6 +80,7 @@ export default function CreationSocietePage() {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -92,7 +95,6 @@ export default function CreationSocietePage() {
     if (userId) {
       loadData();
       
-      // Auto-refresh toutes les 3 secondes
       const interval = setInterval(() => {
         loadData();
       }, 3000);
@@ -117,14 +119,12 @@ export default function CreationSocietePage() {
   }
 
   async function loadData() {
-    // Charger les données de création
     let { data: company } = await supabase
       .from("company_creation_data")
       .select("*")
       .eq("user_id", userId)
       .single();
 
-    // Si pas de données, créer l'entrée
     if (!company) {
       const { data: newCompany } = await supabase
         .from("company_creation_data")
@@ -136,13 +136,46 @@ export default function CreationSocietePage() {
 
     setCompanyData(company);
 
-    // Charger les documents
     const { data: docs } = await supabase
       .from("company_documents")
       .select("*")
       .eq("user_id", userId);
 
     setDocuments(docs || []);
+  }
+
+  async function createNewCompany() {
+    setCreating(true);
+    try {
+      const { data: newCompanyId, error } = await supabase.rpc('create_user_company', {
+        p_company_name: `Nouvelle Société`,
+        p_legal_form: 'SASU'
+      });
+
+      if (error) throw error;
+
+      if (newCompanyId) {
+        // Désactiver toutes les autres sociétés
+        await supabase
+          .from('user_companies')
+          .update({ is_active: false })
+          .neq('id', newCompanyId);
+        
+        // Activer la nouvelle
+        await supabase
+          .from('user_companies')
+          .update({ is_active: true })
+          .eq('id', newCompanyId);
+
+        // Rafraîchir
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Erreur création société:', error);
+      alert('Erreur lors de la création de la société');
+    } finally {
+      setCreating(false);
+    }
   }
 
   function getStepStatus(stepId: string): "completed" | "current" | "upcoming" {
@@ -162,18 +195,15 @@ export default function CreationSocietePage() {
 
     switch (companyData.step) {
       case "rdv_expert":
-        // Vérifier qu'un expert a validé le statut
         return !!companyData.company_type;
 
       case "info_collection":
-        // Vérifier que toutes les infos sont remplies
         return !!(
           companyData.company_name &&
           companyData.company_type
         );
 
       case "documents_upload":
-        // Vérifier que les 3 documents sont uploadés
         const requiredDocs = [
           "piece_identite",
           "justificatif_domicile",
@@ -247,14 +277,35 @@ export default function CreationSocietePage() {
       {/* VIDÉO ONBOARDING */}
       <OnboardingVideo pageSlug="creation-societe" />
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-[#123055]">
-          🏢 Création de votre société
-        </h1>
-        <p className="text-slate-600 mt-1">
-          Suivez les étapes pour créer votre entreprise en toute simplicité
-        </p>
+      {/* Header avec bouton création */}
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-bold text-[#123055] mb-2">
+            🏢 Création de votre société
+          </h1>
+          <p className="text-slate-600">
+            Suivez les étapes pour créer votre entreprise en toute simplicité
+          </p>
+        </div>
+
+        {/* ⭐ BOUTON CRÉER NOUVELLE SOCIÉTÉ */}
+        <Button
+          onClick={createNewCompany}
+          disabled={creating}
+          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-6 h-12 shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
+        >
+          {creating ? (
+            <>
+              <Loader2 className="animate-spin mr-2" size={20} />
+              Création...
+            </>
+          ) : (
+            <>
+              <Plus size={20} className="mr-2" />
+              Créer une nouvelle société
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Statut choisi */}
@@ -295,7 +346,6 @@ export default function CreationSocietePage() {
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  {/* Icon */}
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center ${
                       status === "completed"
@@ -314,7 +364,6 @@ export default function CreationSocietePage() {
                     )}
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3
@@ -347,7 +396,6 @@ export default function CreationSocietePage() {
                     </p>
                   </div>
 
-                  {/* Status */}
                   <div>
                     {status === "completed" && (
                       <span className="text-sm font-semibold text-green-600">
@@ -400,7 +448,7 @@ export default function CreationSocietePage() {
         </Card>
       )}
 
-      {/* Documents générés (visible après génération) */}
+      {/* Documents générés */}
       {companyData?.step &&
         ["documents_generation", "signature", "completed"].includes(
           companyData.step

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2, Check } from 'lucide-react';
+import { Plus, Building2, Check, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,39 +88,62 @@ export default function CompanySelector() {
 
   if (loading) return null;
 
+  // Si aucune société, afficher juste le bouton de création
+  if (companies.length === 0) {
+    return (
+      <Button 
+        onClick={createNewCompany}
+        className="w-full bg-emerald-600 hover:bg-emerald-700 h-10 font-bold"
+      >
+        <Plus size={16} className="mr-2" />
+        Créer ma société
+      </Button>
+    );
+  }
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Building2 size={16} />
-          {activeCompany?.company_name || 'Sélectionner une société'}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>Mes sociétés</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {companies.map((company) => (
-          <DropdownMenuItem
-            key={company.id}
-            onClick={() => switchCompany(company.id)}
-            className="flex items-center justify-between"
-          >
-            <div>
-              <p className="font-semibold">{company.company_name}</p>
-              <p className="text-xs text-slate-500">{company.legal_form}</p>
+    <div className="space-y-2">
+      {/* Dropdown pour changer de société */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-full justify-between h-10 bg-slate-800 border-slate-700 hover:bg-slate-700">
+            <div className="flex items-center gap-2">
+              <Building2 size={16} className="text-orange-400" />
+              <span className="text-xs font-semibold truncate">
+                {activeCompany?.company_name || 'Sélectionner'}
+              </span>
             </div>
-            {company.is_active && <Check size={16} className="text-emerald-600" />}
-          </DropdownMenuItem>
-        ))}
-        
-        <DropdownMenuSeparator />
-        
-        <DropdownMenuItem onClick={createNewCompany} className="text-indigo-600">
-          <Plus size={16} className="mr-2" />
-          Créer une nouvelle société
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <ChevronDown size={14} className="text-slate-400" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel>Mes sociétés ({companies.length})</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          {companies.map((company) => (
+            <DropdownMenuItem
+              key={company.id}
+              onClick={() => switchCompany(company.id)}
+              className="flex items-center justify-between cursor-pointer"
+            >
+              <div>
+                <p className="font-semibold">{company.company_name}</p>
+                <p className="text-xs text-slate-500">{company.legal_form}</p>
+              </div>
+              {company.is_active && <Check size={16} className="text-emerald-600" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Bouton de création bien visible */}
+      <Button 
+        onClick={createNewCompany}
+        className="w-full bg-emerald-600 hover:bg-emerald-700 h-9 font-bold text-xs"
+      >
+        <Plus size={14} className="mr-1.5" />
+        Créer une nouvelle société
+      </Button>
+    </div>
   );
 }

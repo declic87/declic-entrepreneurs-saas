@@ -40,6 +40,7 @@ interface UserCompany {
   company_name: string;
   legal_form: string;
   is_active: boolean;
+  created_at: string;
 }
 
 const STEPS = [
@@ -97,7 +98,7 @@ export default function CreationSocietePage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [totalCompanies, setTotalCompanies] = useState(0);
+  const [isFirstCompanyEver, setIsFirstCompanyEver] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -136,12 +137,11 @@ export default function CreationSocietePage() {
   }
 
   async function loadData() {
-    // Compter le nombre total de sociétés
+    // ⭐ IMPORTANT : Charger TOUTES les sociétés pour trouver la première
     const { data: allCompanies } = await supabase
       .from("user_companies")
-      .select("id");
-    
-    setTotalCompanies(allCompanies?.length || 0);
+      .select("*")
+      .order('created_at', { ascending: true }); // Trier par date de création
 
     // Charger la société active
     const { data: companies } = await supabase
@@ -150,8 +150,13 @@ export default function CreationSocietePage() {
       .eq("is_active", true)
       .single();
 
-    if (companies) {
+    if (companies && allCompanies) {
       setActiveCompany(companies);
+
+      // ⭐ Vérifier si la société active EST la toute première créée
+      const firstCompanyId = allCompanies[0]?.id;
+      const isFirst = companies.id === firstCompanyId;
+      setIsFirstCompanyEver(isFirst);
 
       let { data: company } = await supabase
         .from("company_creation_data")
@@ -165,7 +170,7 @@ export default function CreationSocietePage() {
           .insert({ 
             user_id: userId, 
             company_id: companies.id,
-            step: "info_collection"
+            step: isFirst ? "rdv_expert" : "info_collection" // ⭐ Si première = RDV, sinon = infos
           })
           .select()
           .single();
@@ -290,12 +295,11 @@ export default function CreationSocietePage() {
   }
 
   const nextAction = getNextStepAction();
-  const isFirstCompany = totalCompanies <= 1;
 
-  // Filtrer les étapes selon si c'est la 1ère société ou non
+  // ⭐ Filtrer les étapes : afficher RDV SEULEMENT si c'est LA première société jamais créée
   const visibleSteps = STEPS.filter(step => {
     if (step.onlyFirstCompany) {
-      return isFirstCompany; // Afficher RDV seulement pour société 1
+      return isFirstCompanyEver; // Afficher RDV seulement pour LA première société
     }
     return true;
   });
@@ -323,9 +327,14 @@ export default function CreationSocietePage() {
                 {activeCompany.legal_form}
               </span>
             )}
-            {!isFirstCompany && (
+            {!isFirstCompanyEver && (
               <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-sm font-semibold mr-2">
-                Société n°{totalCompanies}
+                Société supplémentaire
+              </span>
+            )}
+            {isFirstCompanyEver && (
+              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-sm font-semibold mr-2">
+                Première société
               </span>
             )}
             Suivez les étapes pour créer votre entreprise

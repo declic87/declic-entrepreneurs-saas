@@ -5,470 +5,460 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock, FileText, FileSpreadsheet, ArrowLeft, Info, TrendingUp, Calendar, Award } from 'lucide-react';
+import { Clock, FileText, FileSpreadsheet, ArrowLeft, Info, Plus, Trash2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
+// CONSTANTES OFFICIELLES 2026
 const SMIC_ANNUEL_2026 = 21203;
+const PASS_2026 = 48060; // Plafond Annuel Securite Sociale 2026
 
-type StatutType = 'micro_bnc' | 'micro_bic' | 'micro_mixte' | 'president_sas' | 'gerant_tns' | 'ei_reel_tns' | 'salarie';
+// AGIRC-ARRCO 2026 (assimile salarie)
+const VALEUR_POINT_AGIRC = 1.4159; // euros
+const PRIX_ACHAT_POINT_AGIRC = 18.7726; // euros
+const TAUX_COTIS_AGIRC_T1 = 0.0787; // 7.87% tranche 1 (0-1 PASS)
+const TAUX_COTIS_AGIRC_T2 = 0.2159; // 21.59% tranche 2 (1-8 PASS)
 
-interface StatutConfig {
-  nom: string;
-  tauxCotisations: number;
-  regime: string;
-  description: string;
+// SSI BASE 2026 (TNS)
+const VALEUR_POINT_SSI_BASE = 0.6155; // euros
+const TAUX_COTIS_SSI_BASE_T1 = 0.1775; // 17.75% tranche 1 (0-1 PASS)
+const TAUX_COTIS_SSI_BASE_T2 = 0.006; // 0.60% tranche 2 (1-5 PASS)
+
+// SSI COMPLEMENTAIRE RCI 2026 (TNS)
+const VALEUR_POINT_RCI = 1.2588; // euros
+const TAUX_COTIS_RCI = 0.07; // 7% (0-4 PASS)
+
+type StatutType = 'micro_bnc' | 'micro_bic' | 'president_sas' | 'gerant_tns' | 'ei_tns' | 'salarie';
+
+interface Periode {
+  id: string;
+  debut: number;
+  fin: number;
+  statut: StatutType;
+  revenuBrutAnnuel: number;
 }
 
-const STATUTS: Record<StatutType, StatutConfig> = {
-  micro_bnc: {
-    nom: 'Micro-entreprise BNC',
-    tauxCotisations: 0.22,
-    regime: 'SSI (Sécurité Sociale Indépendants)',
-    description: 'Prestations de services / Professions libérales'
-  },
-  micro_bic: {
-    nom: 'Micro-entreprise BIC',
-    tauxCotisations: 0.128,
-    regime: 'SSI (Sécurité Sociale Indépendants)',
-    description: 'Vente de marchandises / Fourniture logement'
-  },
-  micro_mixte: {
-    nom: 'Micro-entreprise Mixte',
-    tauxCotisations: 0.175,
-    regime: 'SSI (Sécurité Sociale Indépendants)',
-    description: 'Activité mixte BIC + BNC'
-  },
-  president_sas: {
-    nom: 'Président SAS/SASU',
-    tauxCotisations: 0.80,
-    regime: 'Régime général (Assimilé salarié)',
-    description: 'Cotisations patronales + salariales'
-  },
-  gerant_tns: {
-    nom: 'Gérant TNS (EURL/SARL)',
-    tauxCotisations: 0.45,
-    regime: 'SSI (Travailleur Non Salarié)',
-    description: 'Gérant majoritaire SARL ou associé unique EURL'
-  },
-  ei_reel_tns: {
-    nom: 'EI au réel (TNS)',
-    tauxCotisations: 0.45,
-    regime: 'SSI (Travailleur Non Salarié)',
-    description: 'Entreprise Individuelle au régime réel'
-  },
-  salarie: {
-    nom: 'Salarié',
-    tauxCotisations: 0.22,
-    regime: 'Régime général',
-    description: 'Salarié classique (non dirigeant)'
-  }
+const STATUTS = {
+  micro_bnc: { nom: 'Micro BNC', type: 'tns' },
+  micro_bic: { nom: 'Micro BIC', type: 'tns' },
+  president_sas: { nom: 'President SAS', type: 'salarie' },
+  gerant_tns: { nom: 'Gerant TNS', type: 'tns' },
+  ei_tns: { nom: 'EI TNS', type: 'tns' },
+  salarie: { nom: 'Salarie', type: 'salarie' }
 };
 
 export default function SimulateurRetraite() {
-  const [inputs, setInputs] = useState({
-    revenuAnnuel: 30000,
-    anneeNaissance: 1990,
-    statut: 'president_sas' as StatutType,
-    nbAnneesActivite: 35,
-  });
+  const [anneeNaissance, setAnneeNaissance] = useState(1990);
+  const [periodes, setPeriodes] = useState<Periode[]>([
+    { id: '1', debut: 2025, fin: 2060, statut: 'gerant_tns', revenuBrutAnnuel: 30000 }
+  ]);
 
-  const [exportingPDF, setExportingPDF] = useState(false);
-  const [exportingExcel, setExportingExcel] = useState(false);
-
-  const currency = (n: number) => n.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' EUR';
+  const fmt = (n: number) => Math.round(n).toLocaleString('fr-FR');
+  const currency = (n: number) => fmt(n) + ' EUR';
 
   const results = useMemo(() => {
-    const statutConfig = STATUTS[inputs.statut];
-    
-    // VALIDATION TRIMESTRES
-    const seuilTrimestre = SMIC_ANNUEL_2026 * 0.25;
-    const trimestresValides = Math.min(4, Math.floor(inputs.revenuAnnuel / seuilTrimestre));
-    
-    let commentaireTrimestres = '';
-    if (trimestresValides === 4) {
-      commentaireTrimestres = 'Vous validez les 4 trimestres maximum. Parfait pour votre retraite !';
-    } else if (trimestresValides >= 2) {
-      commentaireTrimestres = `Vous validez ${trimestresValides} trimestres sur 4. Pour valider les 4, il faut gagner ${currency(SMIC_ANNUEL_2026)} minimum/an.`;
-    } else {
-      commentaireTrimestres = `Seulement ${trimestresValides} trimestre(s) valide(s). Insuffisant pour une bonne retraite.`;
-    }
+    let trimestresTotal = 0;
+    let pointsAgircTotal = 0;
+    let pointsSSIBaseTotal = 0;
+    let pointsRCITotal = 0;
 
-    // AGE DE DEPART
+    periodes.forEach(periode => {
+      const nbAnnees = periode.fin - periode.debut + 1;
+      const config = STATUTS[periode.statut];
+      
+      for (let annee = 0; annee < nbAnnees; annee++) {
+        const revenu = periode.revenuBrutAnnuel;
+        
+        // === VALIDATION TRIMESTRES ===
+        const seuilTrimestre = SMIC_ANNUEL_2026 * 0.25; // 5 300.75 EUR
+        const trimestresAnnee = Math.min(4, Math.floor(revenu / seuilTrimestre));
+        trimestresTotal += trimestresAnnee;
+        
+        // === CALCUL POINTS RETRAITE ===
+        if (config.type === 'salarie') {
+          // ============ AGIRC-ARRCO (Assimile salarie + Salarie) ============
+          
+          // Tranche 1 : 0 a 1 PASS (48 060 EUR)
+          const assiette_T1 = Math.min(revenu, PASS_2026);
+          const cotis_T1 = assiette_T1 * TAUX_COTIS_AGIRC_T1;
+          
+          // Tranche 2 : 1 PASS a 8 PASS (48 060 a 384 480 EUR)
+          const assiette_T2 = Math.max(0, Math.min(revenu, PASS_2026 * 8) - PASS_2026);
+          const cotis_T2 = assiette_T2 * TAUX_COTIS_AGIRC_T2;
+          
+          // Total cotisations retraite complementaire
+          const cotisationsTotal = cotis_T1 + cotis_T2;
+          
+          // Acquisition points : cotisations / prix achat
+          const pointsAnnee = cotisationsTotal / PRIX_ACHAT_POINT_AGIRC;
+          pointsAgircTotal += pointsAnnee;
+          
+        } else {
+          // ============ SSI (TNS : Gerant, EI, Micro) ============
+          
+          // --- RETRAITE DE BASE SSI ---
+          // Tranche 1 : 17.75% jusqu'a 1 PASS
+          const assiette_base_T1 = Math.min(revenu, PASS_2026);
+          const cotis_base_T1 = assiette_base_T1 * TAUX_COTIS_SSI_BASE_T1;
+          
+          // Tranche 2 : 0.60% entre 1 et 5 PASS
+          const assiette_base_T2 = Math.max(0, Math.min(revenu, PASS_2026 * 5) - PASS_2026);
+          const cotis_base_T2 = assiette_base_T2 * TAUX_COTIS_SSI_BASE_T2;
+          
+          // Points SSI Base : formule simplifiee
+          // En realite : 1 trimestre valide = 1 point si revenu >= SMIC
+          // Approximation : points proportionnels au revenu plafonne
+          const pointsBaseAnnee = (assiette_base_T1 / PASS_2026) * 550; // ~550 points max/an
+          pointsSSIBaseTotal += pointsBaseAnnee;
+          
+          // --- RETRAITE COMPLEMENTAIRE RCI (SSI) ---
+          // 7% jusqu'a 4 PASS (192 240 EUR)
+          const assiette_rci = Math.min(revenu, PASS_2026 * 4);
+          const cotis_rci = assiette_rci * TAUX_COTIS_RCI;
+          
+          // Points RCI : environ 1 point pour 69 EUR cotises
+          const pointsRCIAnnee = cotis_rci / 69;
+          pointsRCITotal += pointsRCIAnnee;
+        }
+      }
+    });
+
+    // === CALCUL PENSION ANNUELLE ===
+    const pensionAgircAnnuelle = pointsAgircTotal * VALEUR_POINT_AGIRC;
+    const pensionSSIBaseAnnuelle = pointsSSIBaseTotal * VALEUR_POINT_SSI_BASE;
+    const pensionRCIAnnuelle = pointsRCITotal * VALEUR_POINT_RCI;
+    
+    const pensionTotaleAnnuelle = pensionAgircAnnuelle + pensionSSIBaseAnnuelle + pensionRCIAnnuelle;
+    const pensionMensuelle = pensionTotaleAnnuelle / 12;
+
+    // === AGE DE DEPART ===
     const AGE_LEGAL_2026 = 64;
-    const TRIMESTRES_REQUIS_2026 = 172;
-    const trimestresTotal = trimestresValides * inputs.nbAnneesActivite;
-    const anneesManquantes = Math.max(0, Math.ceil((TRIMESTRES_REQUIS_2026 - trimestresTotal) / 4));
-    const ageDepartEffectif = inputs.anneeNaissance + AGE_LEGAL_2026;
-    const ageDepartTauxPlein = ageDepartEffectif + anneesManquantes;
+    const TRIMESTRES_REQUIS_2026 = 172; // 43 ans
+    const trimestresManquants = Math.max(0, TRIMESTRES_REQUIS_2026 - trimestresTotal);
+    const anneesManquantes = Math.ceil(trimestresManquants / 4);
+    const ageDepartTauxPlein = AGE_LEGAL_2026 + anneesManquantes;
+    const anneeDepartTauxPlein = anneeNaissance + ageDepartTauxPlein;
+    
+    const anneeActuelle = 2026;
+    const ageActuel = anneeActuelle - anneeNaissance;
+    const anneesRestantes = ageDepartTauxPlein - ageActuel;
 
-    let commentaireAge = '';
-    if (trimestresTotal >= TRIMESTRES_REQUIS_2026) {
-      commentaireAge = `Avec ${inputs.nbAnneesActivite} ans de carriere, vous aurez ${trimestresTotal} trimestres. Retraite a taux plein a ${AGE_LEGAL_2026} ans !`;
-    } else {
-      commentaireAge = `Il vous manque ${TRIMESTRES_REQUIS_2026 - trimestresTotal} trimestres (${anneesManquantes} ans) pour le taux plein.`;
-    }
-
-    // POINTS RETRAITE selon statut
-    let pointsAnnuels = 0;
-    let pensionEstimee = 0;
-    const cotisationsAnnuelles = inputs.revenuAnnuel * statutConfig.tauxCotisations;
-
-    if (inputs.statut === 'president_sas' || inputs.statut === 'salarie') {
-      // Régime général AGIRC-ARRCO
-      const tauxAcquisition = 0.2743;
-      const prixAchat = 18.7726;
-      pointsAnnuels = (inputs.revenuAnnuel * tauxAcquisition) / prixAchat;
-      const pointsTotal = pointsAnnuels * inputs.nbAnneesActivite;
-      const valeurPoint2026 = 1.4159;
-      pensionEstimee = pointsTotal * valeurPoint2026 * 12;
-    } else {
-      // TNS / SSI
-      const cotisBase = inputs.revenuAnnuel * 0.176;
-      const pointsBase = cotisBase * 0.55;
-      const cotisCompl = inputs.revenuAnnuel * 0.07;
-      const pointsCompl = cotisCompl * 1;
-      pointsAnnuels = pointsBase + pointsCompl;
-      const pointsTotal = pointsAnnuels * inputs.nbAnneesActivite;
-      const valeurPointBase = 0.6155;
-      const valeurPointRCI = 1.2588;
-      pensionEstimee = ((pointsBase * inputs.nbAnneesActivite * valeurPointBase) + (pointsCompl * inputs.nbAnneesActivite * valeurPointRCI)) * 12;
-    }
-
-    const tauxRemplacement = (pensionEstimee / inputs.revenuAnnuel) * 100;
-
-    let commentairePension = '';
-    if (tauxRemplacement >= 70) {
-      commentairePension = `Excellent taux de remplacement (${tauxRemplacement.toFixed(0)}%). Votre retraite sera confortable.`;
-    } else if (tauxRemplacement >= 50) {
-      commentairePension = `Taux de remplacement correct (${tauxRemplacement.toFixed(0)}%). Pensez a completer avec epargne privee.`;
-    } else {
-      commentairePension = `Taux de remplacement faible (${tauxRemplacement.toFixed(0)}%). Prevoyez imperativement une epargne retraite complementaire.`;
-    }
+    // === TAUX DE REMPLACEMENT ===
+    const revenuMoyenCarriere = periodes.reduce((sum, p) => {
+      const nbAnnees = p.fin - p.debut + 1;
+      return sum + (p.revenuBrutAnnuel * nbAnnees);
+    }, 0) / periodes.reduce((sum, p) => sum + (p.fin - p.debut + 1), 0);
+    
+    const tauxRemplacement = revenuMoyenCarriere > 0 ? (pensionTotaleAnnuelle / revenuMoyenCarriere) * 100 : 0;
 
     return {
-      statutConfig,
       trimestres: {
-        seuilTrimestre,
-        valides: trimestresValides,
         total: trimestresTotal,
         requis: TRIMESTRES_REQUIS_2026,
-        manquants: Math.max(0, TRIMESTRES_REQUIS_2026 - trimestresTotal),
-        commentaire: commentaireTrimestres
+        manquants: trimestresManquants
+      },
+      points: {
+        agirc: pointsAgircTotal,
+        ssiBase: pointsSSIBaseTotal,
+        rci: pointsRCITotal
+      },
+      pension: {
+        agirc: pensionAgircAnnuelle,
+        ssiBase: pensionSSIBaseAnnuelle,
+        rci: pensionRCIAnnuelle,
+        totaleAnnuelle: pensionTotaleAnnuelle,
+        mensuelle: pensionMensuelle,
+        tauxRemplacement
       },
       age: {
         legal: AGE_LEGAL_2026,
-        departEffectif: ageDepartEffectif,
+        actuel: ageActuel,
         tauxPlein: ageDepartTauxPlein,
-        anneesManquantes,
-        commentaire: commentaireAge
-      },
-      cotisations: {
-        annuelles: cotisationsAnnuelles,
-        mensuelles: cotisationsAnnuelles / 12,
-        tauxPourcent: statutConfig.tauxCotisations * 100
-      },
-      points: {
-        annuels: pointsAnnuels,
-        total: pointsAnnuels * inputs.nbAnneesActivite,
-        regime: statutConfig.regime
-      },
-      pension: {
-        mensuelle: pensionEstimee / 12,
-        annuelle: pensionEstimee,
-        tauxRemplacement,
-        commentaire: commentairePension
+        anneeDepartTauxPlein,
+        anneesRestantes,
+        anneesManquantes
       }
     };
-  }, [inputs]);
+  }, [anneeNaissance, periodes]);
+
+  function ajouterPeriode() {
+    const derniere = periodes[periodes.length - 1];
+    setPeriodes([...periodes, {
+      id: Date.now().toString(),
+      debut: derniere.fin + 1,
+      fin: derniere.fin + 10,
+      statut: 'president_sas',
+      revenuBrutAnnuel: 30000
+    }]);
+  }
+
+  function supprimerPeriode(id: string) {
+    if (periodes.length > 1) {
+      setPeriodes(periodes.filter(p => p.id !== id));
+    }
+  }
+
+  function updatePeriode(id: string, field: keyof Periode, value: any) {
+    setPeriodes(periodes.map(p => p.id === id ? { ...p, [field]: value } : p));
+  }
 
   async function exportToPDF() {
-    setExportingPDF(true);
-    try {
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      
-      pdf.setFillColor(99, 102, 241);
-      pdf.rect(0, 0, pageWidth, 50, 'F');
-      
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(24);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('SIMULATION RETRAITE 2026', pageWidth / 2, 20, { align: 'center' });
-      
-      pdf.setFontSize(10);
-      pdf.text('Validation trimestres - Age depart - Pension estimee', pageWidth / 2, 30, { align: 'center' });
-      pdf.text(new Date().toLocaleDateString('fr-FR'), pageWidth / 2, 40, { align: 'center' });
-
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('VOS DONNEES', 20, 65);
-      
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'normal');
-      let y = 75;
-      const donnees = [
-        `Revenu annuel : ${currency(inputs.revenuAnnuel)}`,
-        `Annee naissance : ${inputs.anneeNaissance}`,
-        `Statut : ${results.statutConfig.nom}`,
-        `Annees activite : ${inputs.nbAnneesActivite}`,
-      ];
-      donnees.forEach(d => { pdf.text(d, 25, y); y += 7; });
-
-      y += 10;
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('RESULTATS', 20, y);
-      
-      y += 10;
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Trimestres valides/an : ${results.trimestres.valides}`, 25, y);
-      y += 7;
-      pdf.text(`Age depart taux plein : ${results.age.tauxPlein} ans`, 25, y);
-      y += 7;
-      pdf.text(`Pension mensuelle estimee : ${currency(results.pension.mensuelle)}`, 25, y);
-      y += 7;
-      pdf.text(`Cotisations annuelles : ${currency(results.cotisations.annuelles)}`, 25, y);
-
-      pdf.save(`retraite-${Date.now()}.pdf`);
-    } finally {
-      setExportingPDF(false);
-    }
+    const pdf = new jsPDF();
+    pdf.setFontSize(18);
+    pdf.text('SIMULATION RETRAITE 2026', 20, 20);
+    pdf.setFontSize(11);
+    let y = 40;
+    pdf.text(`Annee naissance: ${anneeNaissance}`, 20, y);
+    y += 10;
+    pdf.text(`Age actuel: ${results.age.actuel} ans`, 20, y);
+    y += 10;
+    pdf.text(`Trimestres valides: ${results.trimestres.total}/${results.trimestres.requis}`, 20, y);
+    y += 10;
+    pdf.text(`Age depart taux plein: ${results.age.tauxPlein} ans (${results.age.anneeDepartTauxPlein})`, 20, y);
+    y += 10;
+    pdf.text(`Temps restant: ${results.age.anneesRestantes} ans`, 20, y);
+    y += 15;
+    pdf.text(`Pension mensuelle brute estimee: ${currency(results.pension.mensuelle)}`, 20, y);
+    y += 10;
+    pdf.text(`Pension annuelle brute estimee: ${currency(results.pension.totaleAnnuelle)}`, 20, y);
+    y += 10;
+    pdf.text(`Taux remplacement: ${results.pension.tauxRemplacement.toFixed(1)}%`, 20, y);
+    pdf.save(`retraite-${Date.now()}.pdf`);
   }
 
   function exportToExcel() {
-    setExportingExcel(true);
-    try {
-      const wb = XLSX.utils.book_new();
-      const data = [
-        ['SIMULATION RETRAITE 2026', ''],
-        ['', ''],
-        ['Revenu annuel', inputs.revenuAnnuel],
-        ['Annee naissance', inputs.anneeNaissance],
-        ['Statut', results.statutConfig.nom],
-        ['Annees activite', inputs.nbAnneesActivite],
-        ['', ''],
-        ['TRIMESTRES', ''],
-        ['Valides/an', results.trimestres.valides],
-        ['Total carriere', results.trimestres.total],
-        ['Requis taux plein', results.trimestres.requis],
-        ['', ''],
-        ['AGE DEPART', ''],
-        ['Age legal', results.age.legal],
-        ['Depart taux plein', results.age.tauxPlein],
-        ['', ''],
-        ['COTISATIONS', ''],
-        ['Taux', results.cotisations.tauxPourcent + '%'],
-        ['Annuelles', results.cotisations.annuelles],
-        ['Mensuelles', results.cotisations.mensuelles],
-        ['', ''],
-        ['PENSION', ''],
-        ['Mensuelle', results.pension.mensuelle],
-        ['Annuelle', results.pension.annuelle],
-        ['Taux remplacement', results.pension.tauxRemplacement.toFixed(1) + '%'],
-      ];
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Retraite');
-      XLSX.writeFile(wb, `retraite-${Date.now()}.xlsx`);
-    } finally {
-      setExportingExcel(false);
-    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['SIMULATION RETRAITE 2026'],
+      [''],
+      ['Annee naissance', anneeNaissance],
+      ['Age actuel', results.age.actuel],
+      [''],
+      ['TRIMESTRES'],
+      ['Valides', results.trimestres.total],
+      ['Requis', results.trimestres.requis],
+      ['Manquants', results.trimestres.manquants],
+      [''],
+      ['PENSION'],
+      ['Mensuelle brute', results.pension.mensuelle],
+      ['Annuelle brute', results.pension.totaleAnnuelle],
+      ['Taux remplacement', results.pension.tauxRemplacement.toFixed(1) + '%'],
+      [''],
+      ['AGE DEPART'],
+      ['Legal', results.age.legal],
+      ['Taux plein', results.age.tauxPlein],
+      ['Annee depart', results.age.anneeDepartTauxPlein],
+      ['Temps restant', results.age.anneesRestantes + ' ans'],
+    ]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Retraite');
+    XLSX.writeFile(wb, `retraite-${Date.now()}.xlsx`);
   }
+
+  const hasAgirc = results.points.agirc > 0;
+  const hasSSI = results.points.ssiBase > 0 || results.points.rci > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 p-8">
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&display=swap');
-        * { font-family: 'Archivo', sans-serif; }
-      `}</style>
-
       <div className="max-w-7xl mx-auto">
-        <Link href="/client/simulateur" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
+        <Link href="/client/simulateur" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6">
           <ArrowLeft size={20} />Retour
         </Link>
 
-        <div className="mb-12">
-          <h1 className="text-5xl font-black text-slate-900 mb-3">Simulateur Retraite Complet</h1>
-          <p className="text-xl text-slate-600">Tous statuts • Validation trimestres • Pension estimée</p>
-        </div>
+        <h1 className="text-5xl font-black text-slate-900 mb-3">Simulateur Retraite 2026</h1>
+        <p className="text-xl text-slate-600 mb-12">Calculs officiels 2026 - Multi-periodes - Projection precise</p>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          <Card className="p-6 bg-white shadow-xl sticky top-8">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Clock className="text-indigo-600" size={24} />Config
-            </h3>
-            <div className="space-y-5">
-              <div>
-                <Label className="mb-2 block">Statut professionnel</Label>
-                <select 
-                  value={inputs.statut} 
-                  onChange={(e) => setInputs({...inputs, statut: e.target.value as StatutType})} 
-                  className="w-full h-12 px-3 rounded-md border font-semibold"
-                >
-                  <option value="micro_bnc">Micro BNC (22%)</option>
-                  <option value="micro_bic">Micro BIC (12.8%)</option>
-                  <option value="micro_mixte">Micro Mixte (17.5%)</option>
-                  <option value="president_sas">Président SAS/SASU (80%)</option>
-                  <option value="gerant_tns">Gérant TNS EURL/SARL (45%)</option>
-                  <option value="ei_reel_tns">EI Réel TNS (45%)</option>
-                  <option value="salarie">Salarié (22%)</option>
-                </select>
-                <p className="text-xs text-slate-500 mt-1">{results.statutConfig.description}</p>
-              </div>
+          <div className="space-y-6">
+            <Card className="p-6 bg-white shadow-xl">
+              <h3 className="text-lg font-bold mb-4">Annee naissance</h3>
+              <Input 
+                type="number" 
+                value={anneeNaissance as any} 
+                onChange={(e) => setAnneeNaissance(Number(e.target.value))} 
+                className="h-12 text-lg font-bold"
+              />
+              <p className="text-sm text-slate-500 mt-2">Age actuel : {results.age.actuel} ans</p>
+            </Card>
 
-              <div>
-                <Label className="mb-2 block">Revenu annuel brut (€)</Label>
-                <Input type="number" value={inputs.revenuAnnuel as any} onChange={(e) => setInputs({...inputs, revenuAnnuel: Number(e.target.value) || 0})} className="h-12 text-lg font-bold" />
-                <p className="text-xs text-slate-500 mt-1">
-                  Seuil validation : {currency(results.trimestres.seuilTrimestre)}/trimestre
-                </p>
+            <Card className="p-6 bg-white shadow-xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Periodes carriere</h3>
+                <Button onClick={ajouterPeriode} size="sm">
+                  <Plus size={16} className="mr-1" />Ajouter
+                </Button>
               </div>
-
-              <Card className="p-4 bg-indigo-50 border-indigo-200">
-                <p className="text-xs text-indigo-700 mb-1">Cotisations retraite</p>
-                <p className="text-2xl font-black text-indigo-900">{results.cotisations.tauxPourcent.toFixed(1)}%</p>
-                <p className="text-sm font-bold text-indigo-700 mt-2">{currency(results.cotisations.mensuelles)}/mois</p>
-              </Card>
-
-              <div>
-                <Label className="mb-2 block">Année de naissance</Label>
-                <Input type="number" value={inputs.anneeNaissance as any} onChange={(e) => setInputs({...inputs, anneeNaissance: Number(e.target.value) || 1990})} className="h-12" />
+              
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                {periodes.map((p, i) => (
+                  <Card key={p.id} className="p-4 bg-slate-50 border-2 border-slate-200">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="font-bold">Periode {i + 1}</p>
+                      {periodes.length > 1 && (
+                        <Button onClick={() => supprimerPeriode(p.id)} size="sm" variant="ghost">
+                          <Trash2 size={14} />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Debut</Label>
+                          <Input 
+                            type="number" 
+                            value={p.debut as any} 
+                            onChange={(e) => updatePeriode(p.id, 'debut', Number(e.target.value))}
+                            className="h-9"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Fin</Label>
+                          <Input 
+                            type="number" 
+                            value={p.fin as any} 
+                            onChange={(e) => updatePeriode(p.id, 'fin', Number(e.target.value))}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Statut</Label>
+                        <select 
+                          value={p.statut} 
+                          onChange={(e) => updatePeriode(p.id, 'statut', e.target.value as StatutType)}
+                          className="w-full h-9 px-2 rounded border text-sm"
+                        >
+                          <option value="micro_bnc">Micro BNC</option>
+                          <option value="micro_bic">Micro BIC</option>
+                          <option value="president_sas">President SAS</option>
+                          <option value="gerant_tns">Gerant TNS</option>
+                          <option value="ei_tns">EI TNS</option>
+                          <option value="salarie">Salarie</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Revenu brut annuel</Label>
+                        <Input 
+                          type="number" 
+                          value={p.revenuBrutAnnuel as any} 
+                          onChange={(e) => updatePeriode(p.id, 'revenuBrutAnnuel', Number(e.target.value))}
+                          className="h-9"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">{p.fin - p.debut + 1} ans ({STATUTS[p.statut].nom})</p>
+                    </div>
+                  </Card>
+                ))}
               </div>
-              <div>
-                <Label className="mb-2 block">Années d'activité prévues</Label>
-                <Input type="number" value={inputs.nbAnneesActivite as any} onChange={(e) => setInputs({...inputs, nbAnneesActivite: Number(e.target.value) || 0})} className="h-12" />
-              </div>
-            </div>
+            </Card>
 
-            <div className="mt-8 space-y-3">
-              <Button onClick={exportToPDF} disabled={exportingPDF} className="w-full bg-red-600 hover:bg-red-700 h-12 font-bold">
-                {exportingPDF ? 'PDF...' : <><FileText size={18} className="mr-2" />Export PDF</>}
+            <div className="space-y-3">
+              <Button onClick={exportToPDF} className="w-full bg-red-600 h-12">
+                <FileText size={18} className="mr-2" />Export PDF
               </Button>
-              <Button onClick={exportToExcel} disabled={exportingExcel} className="w-full bg-green-600 hover:bg-green-700 h-12 font-bold">
-                {exportingExcel ? 'Excel...' : <><FileSpreadsheet size={18} className="mr-2" />Export Excel</>}
+              <Button onClick={exportToExcel} className="w-full bg-green-600 h-12">
+                <FileSpreadsheet size={18} className="mr-2" />Export Excel
               </Button>
             </div>
-          </Card>
+          </div>
 
           <div className="lg:col-span-2 space-y-6">
-            <div className="grid md:grid-cols-3 gap-4">
-              <Card className="p-6 bg-gradient-to-br from-indigo-600 to-blue-600 text-white">
-                <p className="text-indigo-100 text-sm mb-2">Trimestres/an</p>
-                <p className="text-6xl font-black">{results.trimestres.valides}</p>
-                <p className="text-indigo-100 mt-2">sur 4 maximum</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="p-4 bg-gradient-to-br from-indigo-600 to-blue-600 text-white">
+                <p className="text-xs text-indigo-100 mb-1">Trimestres</p>
+                <p className="text-3xl font-black">{results.trimestres.total}</p>
+                <p className="text-xs text-indigo-100 mt-1">sur {results.trimestres.requis}</p>
               </Card>
-              <Card className="p-6 bg-gradient-to-br from-purple-600 to-pink-600 text-white">
-                <p className="text-purple-100 text-sm mb-2">Départ taux plein</p>
-                <p className="text-6xl font-black">{results.age.tauxPlein}</p>
-                <p className="text-purple-100 mt-2">ans</p>
+              <Card className="p-4 bg-gradient-to-br from-purple-600 to-pink-600 text-white">
+                <p className="text-xs text-purple-100 mb-1">Depart</p>
+                <p className="text-3xl font-black">{results.age.tauxPlein}</p>
+                <p className="text-xs text-purple-100 mt-1">ans</p>
               </Card>
-              <Card className="p-6 bg-gradient-to-br from-cyan-600 to-blue-600 text-white">
-                <p className="text-cyan-100 text-sm mb-2">Pension/mois</p>
-                <p className="text-3xl font-black">{currency(results.pension.mensuelle)}</p>
-                <p className="text-cyan-100 mt-2">{results.pension.tauxRemplacement.toFixed(0)}% remplacement</p>
+              <Card className="p-4 bg-gradient-to-br from-amber-600 to-orange-600 text-white">
+                <p className="text-xs text-amber-100 mb-1">Restant</p>
+                <p className="text-3xl font-black">{results.age.anneesRestantes}</p>
+                <p className="text-xs text-amber-100 mt-1">ans</p>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-cyan-600 to-teal-600 text-white">
+                <p className="text-xs text-cyan-100 mb-1">Taux</p>
+                <p className="text-3xl font-black">{results.pension.tauxRemplacement.toFixed(0)}%</p>
+                <p className="text-xs text-cyan-100 mt-1">remplacement</p>
               </Card>
             </div>
 
-            <Card className="p-6 bg-blue-50 border-blue-200">
-              <div className="flex items-start gap-3">
-                <Info className="text-blue-600 flex-shrink-0" size={24} />
-                <div>
-                  <h3 className="font-bold text-blue-900 mb-2">Votre statut : {results.statutConfig.nom}</h3>
-                  <p className="text-blue-800 text-sm mb-2">{results.statutConfig.description}</p>
-                  <p className="text-blue-800 text-sm">Régime : {results.statutConfig.regime}</p>
-                </div>
-              </div>
+            <Card className="p-8 bg-gradient-to-r from-emerald-600 to-green-600 text-white">
+              <p className="text-emerald-100 mb-2">PENSION MENSUELLE BRUTE ESTIMEE</p>
+              <p className="text-6xl font-black mb-2">{currency(results.pension.mensuelle)}</p>
+              <p className="text-emerald-100">soit {currency(results.pension.totaleAnnuelle)} par an</p>
             </Card>
 
-            <Card className="p-6 bg-amber-50 border-amber-200">
-              <div className="flex items-start gap-3">
-                <Info className="text-amber-600 flex-shrink-0" size={24} />
-                <div>
-                  <h3 className="font-bold text-amber-900 mb-2">Analyse trimestres</h3>
-                  <p className="text-amber-800 text-sm">{results.trimestres.commentaire}</p>
+            {results.trimestres.manquants > 0 && (
+              <Card className="p-6 bg-amber-50 border-amber-200">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="text-amber-600 flex-shrink-0" size={24} />
+                  <div>
+                    <p className="font-bold text-amber-900 mb-2">Attention : Trimestres manquants</p>
+                    <p className="text-amber-800 text-sm">
+                      Il vous manque {results.trimestres.manquants} trimestres ({results.age.anneesManquantes} ans) pour partir a taux plein.
+                      Depart possible a {results.age.legal} ans avec decote, ou attendre {results.age.tauxPlein} ans pour taux plein.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            )}
 
             <Card className="p-6 bg-white">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Calendar className="text-indigo-600" size={24} />
-                Validation des trimestres
-              </h3>
-              <div className="space-y-4">
-                <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="font-semibold text-indigo-900">Trimestres validés cette année</p>
-                    <p className="text-3xl font-black text-indigo-600">{results.trimestres.valides}/4</p>
+              <h3 className="text-xl font-bold mb-4">Detail pension annuelle</h3>
+              <div className="space-y-3">
+                {hasAgirc && (
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <p className="font-bold text-blue-900">AGIRC-ARRCO</p>
+                        <p className="text-xs text-blue-700">{fmt(results.points.agirc)} points x {VALEUR_POINT_AGIRC} EUR</p>
+                      </div>
+                      <p className="text-3xl font-black text-blue-600">{currency(results.pension.agirc)}</p>
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-3">
-                    <div 
-                      className="bg-indigo-600 h-3 rounded-full transition-all" 
-                      style={{ width: `${(results.trimestres.valides / 4) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold">Total carrière projetée</p>
-                    <p className="text-2xl font-black text-slate-900">{results.trimestres.total}/{results.trimestres.requis}</p>
-                  </div>
-                </div>
+                )}
+                {hasSSI && (
+                  <>
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <p className="font-bold text-green-900">SSI Base</p>
+                          <p className="text-xs text-green-700">{fmt(results.points.ssiBase)} points x {VALEUR_POINT_SSI_BASE} EUR</p>
+                        </div>
+                        <p className="text-3xl font-black text-green-600">{currency(results.pension.ssiBase)}</p>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <p className="font-bold text-purple-900">SSI Complementaire (RCI)</p>
+                          <p className="text-xs text-purple-700">{fmt(results.points.rci)} points x {VALEUR_POINT_RCI} EUR</p>
+                        </div>
+                        <p className="text-3xl font-black text-purple-600">{currency(results.pension.rci)}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
 
-            <Card className="p-6 bg-purple-50 border-purple-200">
+            <Card className="p-6 bg-slate-50">
               <div className="flex items-start gap-3">
-                <Info className="text-purple-600 flex-shrink-0" size={24} />
-                <div>
-                  <h3 className="font-bold text-purple-900 mb-2">Âge de départ</h3>
-                  <p className="text-purple-800 text-sm">{results.age.commentaire}</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-white">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Award className="text-indigo-600" size={24} />
-                Estimation pension
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
-                  <p className="text-sm text-cyan-700 mb-2">Pension mensuelle brute</p>
-                  <p className="text-4xl font-black text-cyan-900">{currency(results.pension.mensuelle)}</p>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700 mb-2">Pension annuelle brute</p>
-                  <p className="text-4xl font-black text-blue-900">{currency(results.pension.annuelle)}</p>
-                </div>
-              </div>
-              <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="flex items-start gap-2">
-                  <Info className="text-amber-600 flex-shrink-0 mt-0.5" size={16} />
-                  <p className="text-xs text-amber-800">{results.pension.commentaire}</p>
-                </div>
-              </div>
-              <p className="text-xs text-slate-500 mt-4">
-                Régime : {results.points.regime} • Points annuels : {results.points.annuels.toFixed(2)}
-              </p>
-            </Card>
-
-            <Card className="p-6 bg-slate-100">
-              <div className="flex items-start gap-3">
-                <Info className="text-slate-500 flex-shrink-0" size={20} />
-                <div className="text-xs text-slate-600">
-                  <p className="font-bold mb-2">Taux cotisations retraite par statut 2026 :</p>
+                <Info className="text-slate-600 flex-shrink-0" size={20} />
+                <div className="text-xs text-slate-700">
+                  <p className="font-bold mb-2">Parametres officiels 2026 :</p>
                   <ul className="space-y-1">
-                    <li>- Micro BNC : 22% (SSI)</li>
-                    <li>- Micro BIC : 12.8% (SSI)</li>
-                    <li>- Micro Mixte : 17.5% (SSI)</li>
-                    <li>- President SAS : 80% du brut (Regime general)</li>
-                    <li>- Gerant TNS : 45% (SSI)</li>
-                    <li>- EI Reel TNS : 45% (SSI)</li>
-                    <li>- Salarie : 22% environ (Regime general)</li>
+                    <li>- Age legal depart : {results.age.legal} ans (generation 1968+)</li>
+                    <li>- Trimestres requis taux plein : {results.trimestres.requis} (43 ans)</li>
+                    <li>- Validation trimestre : {currency(SMIC_ANNUEL_2026 * 0.25)} de revenu minimum</li>
+                    <li>- PASS 2026 : {currency(PASS_2026)}</li>
+                    <li>- AGIRC-ARRCO : T1 7.87% (0-1 PASS) + T2 21.59% (1-8 PASS)</li>
+                    <li>- SSI Base : 17.75% (0-1 PASS) + 0.60% (1-5 PASS)</li>
+                    <li>- RCI : 7% (0-4 PASS)</li>
                   </ul>
                 </div>
               </div>

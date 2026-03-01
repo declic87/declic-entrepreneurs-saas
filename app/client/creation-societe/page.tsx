@@ -48,6 +48,7 @@ const STEPS = [
     label: "RDV avec votre expert",
     description: "Choisir votre statut juridique",
     icon: Calendar,
+    onlyFirstCompany: true, // ⭐ Afficher seulement pour la 1ère société
   },
   {
     id: "info_collection",
@@ -96,6 +97,7 @@ export default function CreationSocietePage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [totalCompanies, setTotalCompanies] = useState(0);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -134,6 +136,13 @@ export default function CreationSocietePage() {
   }
 
   async function loadData() {
+    // Compter le nombre total de sociétés
+    const { data: allCompanies } = await supabase
+      .from("user_companies")
+      .select("id");
+    
+    setTotalCompanies(allCompanies?.length || 0);
+
     // Charger la société active
     const { data: companies } = await supabase
       .from("user_companies")
@@ -144,21 +153,19 @@ export default function CreationSocietePage() {
     if (companies) {
       setActiveCompany(companies);
 
-      // Charger les données de workflow pour CETTE société
       let { data: company } = await supabase
         .from("company_creation_data")
         .select("*")
         .eq("company_id", companies.id)
         .single();
 
-      // Si pas de workflow, le créer
       if (!company) {
         const { data: newCompany } = await supabase
           .from("company_creation_data")
           .insert({ 
             user_id: userId, 
             company_id: companies.id,
-            step: "info_collection" // Démarre à l'étape 2
+            step: "info_collection"
           })
           .select()
           .single();
@@ -167,7 +174,6 @@ export default function CreationSocietePage() {
 
       setCompanyData(company);
 
-      // Charger les documents de CETTE société
       const { data: docs } = await supabase
         .from("company_documents")
         .select("*")
@@ -180,7 +186,6 @@ export default function CreationSocietePage() {
   async function createNewCompany() {
     setCreating(true);
     try {
-      // Charger le nombre de sociétés existantes
       const { data: existingCompanies, error: countError } = await supabase
         .from('user_companies')
         .select('id');
@@ -199,23 +204,19 @@ export default function CreationSocietePage() {
       if (error) throw error;
 
       if (newCompanyId) {
-        // Désactiver toutes les autres sociétés
         await supabase
           .from('user_companies')
           .update({ is_active: false })
           .neq('id', newCompanyId);
         
-        // Activer la nouvelle
         await supabase
           .from('user_companies')
           .update({ is_active: true })
           .eq('id', newCompanyId);
 
-        // Le workflow sera créé automatiquement par le trigger SQL
-        // Rafraîchir
         router.refresh();
         
-        alert(`✅ Nouvelle société créée : ${uniqueName}\nLe workflow démarre à l'étape 2`);
+        alert(`✅ Nouvelle société créée : ${uniqueName}\nLe workflow démarre directement à l'étape Informations société`);
       }
     } catch (error: any) {
       console.error('Erreur création société:', error);
@@ -289,6 +290,15 @@ export default function CreationSocietePage() {
   }
 
   const nextAction = getNextStepAction();
+  const isFirstCompany = totalCompanies <= 1;
+
+  // Filtrer les étapes selon si c'est la 1ère société ou non
+  const visibleSteps = STEPS.filter(step => {
+    if (step.onlyFirstCompany) {
+      return isFirstCompany; // Afficher RDV seulement pour société 1
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -302,7 +312,6 @@ export default function CreationSocietePage() {
     <div className="max-w-5xl mx-auto p-8 space-y-8">
       <OnboardingVideo pageSlug="creation-societe" />
 
-      {/* Header avec nom société active + bouton création */}
       <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold text-[#123055] mb-2">
@@ -312,6 +321,11 @@ export default function CreationSocietePage() {
             {activeCompany?.legal_form && (
               <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-sm font-semibold mr-2">
                 {activeCompany.legal_form}
+              </span>
+            )}
+            {!isFirstCompany && (
+              <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-sm font-semibold mr-2">
+                Société n°{totalCompanies}
               </span>
             )}
             Suivez les étapes pour créer votre entreprise
@@ -337,7 +351,6 @@ export default function CreationSocietePage() {
         </Button>
       </div>
 
-      {/* Statut choisi */}
       {companyData?.company_type && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">
@@ -356,9 +369,9 @@ export default function CreationSocietePage() {
         </Card>
       )}
 
-      {/* Timeline des étapes */}
+      {/* Timeline avec étapes filtrées */}
       <div className="space-y-4">
-        {STEPS.map((step, index) => {
+        {visibleSteps.map((step, index) => {
           const status = getStepStatus(step.id);
           const Icon = step.icon;
 
@@ -449,7 +462,6 @@ export default function CreationSocietePage() {
         })}
       </div>
 
-      {/* Action suivante */}
       {nextAction && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="p-6">
@@ -477,7 +489,6 @@ export default function CreationSocietePage() {
         </Card>
       )}
 
-      {/* Documents générés */}
       {companyData?.step &&
         ["documents_generation", "signature", "completed"].includes(
           companyData.step

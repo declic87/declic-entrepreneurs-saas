@@ -19,6 +19,7 @@ import {
   Loader2,
   Plus,
   Building2,
+  Banknote,
 } from "lucide-react";
 
 interface CompanyData {
@@ -46,6 +47,12 @@ const STEPS = [
     label: "Informations société",
     description: "Remplir vos informations",
     icon: FileText,
+  },
+  {
+    id: "capital_deposit",
+    label: "Dépôt de capital",
+    description: "Attestation bancaire",
+    icon: Banknote,
   },
   {
     id: "documents_upload",
@@ -147,8 +154,19 @@ export default function CreationSocietePage() {
   async function createNewCompany() {
     setCreating(true);
     try {
+      // Charger le nombre de sociétés existantes pour générer un nom unique
+      const { data: existingCompanies, error: countError } = await supabase
+        .from('user_companies')
+        .select('id');
+
+      if (countError) throw countError;
+
+      const companyNumber = (existingCompanies?.length || 0) + 1;
+      const timestamp = Date.now();
+      const uniqueName = `Société ${companyNumber} - ${timestamp}`;
+
       const { data: newCompanyId, error } = await supabase.rpc('create_user_company', {
-        p_company_name: `Nouvelle Société`,
+        p_company_name: uniqueName,
         p_legal_form: 'SASU'
       });
 
@@ -169,10 +187,13 @@ export default function CreationSocietePage() {
 
         // Rafraîchir
         router.refresh();
+        
+        // Message de succès
+        alert(`✅ Nouvelle société créée : ${uniqueName}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur création société:', error);
-      alert('Erreur lors de la création de la société');
+      alert(`❌ Erreur : ${error.message || 'Impossible de créer la société'}`);
     } finally {
       setCreating(false);
     }
@@ -203,11 +224,13 @@ export default function CreationSocietePage() {
           companyData.company_type
         );
 
+      case "capital_deposit":
+        return documents.some((d) => d.document_type === "attestation_depot_capital");
+
       case "documents_upload":
         const requiredDocs = [
           "piece_identite",
           "justificatif_domicile",
-          "attestation_depot_capital",
         ];
         return requiredDocs.every((type) =>
           documents.some((d) => d.document_type === type)
@@ -233,6 +256,13 @@ export default function CreationSocietePage() {
         return {
           label: "Remplir les informations",
           href: "/client/creation-societe/infos",
+          disabled: false,
+        };
+
+      case "capital_deposit":
+        return {
+          label: "Déposer le capital",
+          href: "/client/creation-societe/depot-capital",
           disabled: false,
         };
 

@@ -9,7 +9,6 @@ import { OnboardingVideo } from "@/components/OnboardingVideo";
 import {
   CheckCircle2,
   Circle,
-  Clock,
   ArrowRight,
   Calendar,
   FileText,
@@ -18,7 +17,6 @@ import {
   Send,
   Loader2,
   Plus,
-  Building2,
   Banknote,
 } from "lucide-react";
 
@@ -27,12 +25,21 @@ interface CompanyData {
   step: string;
   company_type: string | null;
   company_name: string | null;
+  company_id: string | null;
 }
 
 interface Document {
   id: string;
   document_type: string;
   status: string;
+  company_id: string | null;
+}
+
+interface UserCompany {
+  id: string;
+  company_name: string;
+  legal_form: string;
+  is_active: boolean;
 }
 
 const STEPS = [
@@ -84,6 +91,7 @@ const STEPS = [
 export default function CreationSocietePage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [activeCompany, setActiveCompany] = useState<UserCompany | null>(null);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,35 +134,53 @@ export default function CreationSocietePage() {
   }
 
   async function loadData() {
-    let { data: company } = await supabase
-      .from("company_creation_data")
+    // Charger la société active
+    const { data: companies } = await supabase
+      .from("user_companies")
       .select("*")
-      .eq("user_id", userId)
+      .eq("is_active", true)
       .single();
 
-    if (!company) {
-      const { data: newCompany } = await supabase
+    if (companies) {
+      setActiveCompany(companies);
+
+      // Charger les données de workflow pour CETTE société
+      let { data: company } = await supabase
         .from("company_creation_data")
-        .insert({ user_id: userId, step: "rdv_expert" })
-        .select()
+        .select("*")
+        .eq("company_id", companies.id)
         .single();
-      company = newCompany;
+
+      // Si pas de workflow, le créer
+      if (!company) {
+        const { data: newCompany } = await supabase
+          .from("company_creation_data")
+          .insert({ 
+            user_id: userId, 
+            company_id: companies.id,
+            step: "info_collection" // Démarre à l'étape 2
+          })
+          .select()
+          .single();
+        company = newCompany;
+      }
+
+      setCompanyData(company);
+
+      // Charger les documents de CETTE société
+      const { data: docs } = await supabase
+        .from("company_documents")
+        .select("*")
+        .eq("company_id", companies.id);
+
+      setDocuments(docs || []);
     }
-
-    setCompanyData(company);
-
-    const { data: docs } = await supabase
-      .from("company_documents")
-      .select("*")
-      .eq("user_id", userId);
-
-    setDocuments(docs || []);
   }
 
   async function createNewCompany() {
     setCreating(true);
     try {
-      // Charger le nombre de sociétés existantes pour générer un nom unique
+      // Charger le nombre de sociétés existantes
       const { data: existingCompanies, error: countError } = await supabase
         .from('user_companies')
         .select('id');
@@ -185,11 +211,11 @@ export default function CreationSocietePage() {
           .update({ is_active: true })
           .eq('id', newCompanyId);
 
+        // Le workflow sera créé automatiquement par le trigger SQL
         // Rafraîchir
         router.refresh();
         
-        // Message de succès
-        alert(`✅ Nouvelle société créée : ${uniqueName}`);
+        alert(`✅ Nouvelle société créée : ${uniqueName}\nLe workflow démarre à l'étape 2`);
       }
     } catch (error: any) {
       console.error('Erreur création société:', error);
@@ -209,36 +235,6 @@ export default function CreationSocietePage() {
     if (stepIndex < currentIndex) return "completed";
     if (stepIndex === currentIndex) return "current";
     return "upcoming";
-  }
-
-  function canProceedToNextStep(): boolean {
-    if (!companyData) return false;
-
-    switch (companyData.step) {
-      case "rdv_expert":
-        return !!companyData.company_type;
-
-      case "info_collection":
-        return !!(
-          companyData.company_name &&
-          companyData.company_type
-        );
-
-      case "capital_deposit":
-        return documents.some((d) => d.document_type === "attestation_depot_capital");
-
-      case "documents_upload":
-        const requiredDocs = [
-          "piece_identite",
-          "justificatif_domicile",
-        ];
-        return requiredDocs.every((type) =>
-          documents.some((d) => d.document_type === type)
-        );
-
-      default:
-        return false;
-    }
   }
 
   function getNextStepAction() {
@@ -304,21 +300,24 @@ export default function CreationSocietePage() {
 
   return (
     <div className="max-w-5xl mx-auto p-8 space-y-8">
-      {/* VIDÉO ONBOARDING */}
       <OnboardingVideo pageSlug="creation-societe" />
 
-      {/* Header avec bouton création */}
+      {/* Header avec nom société active + bouton création */}
       <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold text-[#123055] mb-2">
-            🏢 Création de votre société
+            🏢 {activeCompany?.company_name || "Création de votre société"}
           </h1>
           <p className="text-slate-600">
-            Suivez les étapes pour créer votre entreprise en toute simplicité
+            {activeCompany?.legal_form && (
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-sm font-semibold mr-2">
+                {activeCompany.legal_form}
+              </span>
+            )}
+            Suivez les étapes pour créer votre entreprise
           </p>
         </div>
 
-        {/* ⭐ BOUTON CRÉER NOUVELLE SOCIÉTÉ */}
         <Button
           onClick={createNewCompany}
           disabled={creating}

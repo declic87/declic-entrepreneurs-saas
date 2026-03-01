@@ -8,6 +8,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { NotificationBell } from "@/components/ui/notification-bell";
+import CompanySelector from "@/components/creation/CompanySelector"; // ⭐ AJOUTÉ
 import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
@@ -51,12 +52,10 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },
-    // ⭐ NOUVEAU : Section Contenus
     { label: "📚 Formations", href: "/commercial/formations", icon: GraduationCap },
     { label: "📖 Tutos", href: "/commercial/tutos", icon: BookOpen },
     { label: "🎥 Coachings", href: "/commercial/coachings", icon: Video },
     { label: "🎓 Ateliers", href: "/commercial/ateliers", icon: Users },
-    // Fin section contenus
     { label: "Mon Contrat", href: "/commercial/contrat", icon: FileText },
     { label: "Mes Commissions", href: "/commercial/commissions", icon: DollarSign },
     { label: "Statistiques", href: "/commercial/stats", icon: BarChart3 },
@@ -94,12 +93,10 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Dashboard", href: "/expert", icon: LayoutDashboard },
     { label: "Mes Clients", href: "/expert/clients", icon: Users },
     { label: "Agenda", href: "/expert/agenda", icon: Calendar },
-    // ⭐ NOUVEAU : Section Contenus Expert
     { label: "📚 Formations", href: "/expert/formations", icon: GraduationCap },
     { label: "📖 Tutos", href: "/expert/tutos", icon: BookOpen },
     { label: "🎥 Coachings", href: "/expert/coachings", icon: Video },
     { label: "🎓 Ateliers", href: "/expert/ateliers", icon: Users },
-    // Fin section contenus
     { label: "Formation", href: "/expert/onboarding", icon: Video },
     { label: "Tâches", href: "/expert/taches", icon: CheckCircle },
     { label: "Documents", href: "/expert/documents", icon: FileText },
@@ -141,7 +138,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const currentRole = role?.toLowerCase() || "client";
   const items = navItemsByRole[currentRole] || [];
 
-  // Récupérer l'ID utilisateur ET le pack type
   useEffect(() => {
     async function fetchUserId() {
       console.log("🔍 Sidebar - Fetching userId...");
@@ -161,7 +157,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
           setUserId(userData.id);
           console.log("✅ Sidebar - UserId set:", userData.id);
           
-          // Charger le pack type pour les clients
           if (currentRole === 'client') {
             const { data: accessData } = await supabase
               .from("client_access")
@@ -180,10 +175,8 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
     fetchUserId();
   }, [supabase, currentRole]);
 
-  // Hook pour les messages non lus
   const { unreadCount } = useUnreadMessages(userId);
   
-  // ⭐ LOGS DE DEBUG
   console.log("🔍 Sidebar - Current userId:", userId);
   console.log("🔍 Sidebar - Current unreadCount:", unreadCount);
 
@@ -202,14 +195,12 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
     client: "Espace Client",
   };
 
-  // Filtrer les items selon le pack pour les clients
   const filteredItems = currentRole === 'client' 
     ? items.filter(item => {
-        // Packs basiques : bloquer Création Société et Documents
         if (['plateforme', 'createur', 'agent_immo'].includes(packType || '')) {
           return !item.href.includes('/creation-societe') && !item.href.includes('/documents');
         }
-        return true; // Starter, Pro, Expert : tout accessible
+        return true;
       })
     : items;
 
@@ -228,13 +219,18 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
         </div>
       </div>
 
+      {/* ⭐ NOUVEAU : Sélecteur de société (uniquement pour clients) */}
+      {currentRole === 'client' && (
+        <div className="px-4 pt-4 pb-2 border-b border-white/5">
+          <CompanySelector />
+        </div>
+      )}
+
       {/* Navigation optimisée */}
       <nav className="flex-1 overflow-y-auto py-6 space-y-1 custom-scrollbar">
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== `/${currentRole}` && pathname.startsWith(item.href));
-          
-          // Vérifier si c'est l'item Messages
           const isMessagesItem = item.label.includes("Messages");
           
           return (
@@ -248,19 +244,16 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
                   : "text-slate-400 hover:text-white hover:bg-white/5"
               )}
             >
-              {/* Barre d'activation verticale */}
               {isActive && (
                 <div className="absolute left-0 top-0 h-full w-1 bg-orange-500 rounded-r-full shadow-[0_0_10px_rgba(230,126,34,0.5)]" />
               )}
               
-              {/* Icône avec badge notification */}
               <div className="relative">
                 <Icon size={18} className={cn(
                   "transition-transform duration-200 group-hover:scale-110",
                   isActive ? "text-orange-500" : "text-slate-500 group-hover:text-slate-300"
                 )} />
                 
-                {/* Badge de notification pour Messages */}
                 {isMessagesItem && unreadCount > 0 && (
                   <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 animate-pulse shadow-lg">
                     {unreadCount > 9 ? "9+" : unreadCount}

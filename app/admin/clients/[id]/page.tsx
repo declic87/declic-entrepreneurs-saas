@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, Mail, Phone, Calendar, Package, Building, 
-  FileText, MessageSquare, User, MapPin 
+  FileText, MessageSquare, User, MapPin, Video 
 } from 'lucide-react';
 
 interface Client {
@@ -19,9 +19,20 @@ interface Client {
   created_at: string;
   pack: string;
   pack_expires_at: string | null;
+  rdv_total: number;
+  rdv_consumed: number;
+  rdv_remaining: number;
   address?: string;
   city?: string;
   postal_code?: string;
+}
+
+interface RDV {
+  id: string;
+  scheduled_at: string;
+  status: string;
+  expert_name: string;
+  recording_url?: string;
 }
 
 export default function AdminClientDetailPage() {
@@ -30,6 +41,7 @@ export default function AdminClientDetailPage() {
   const clientId = params.id as string;
   
   const [client, setClient] = useState<Client | null>(null);
+  const [rdvs, setRdvs] = useState<RDV[]>([]);
   const [loading, setLoading] = useState(true);
 
   const supabase = createBrowserClient(
@@ -40,40 +52,72 @@ export default function AdminClientDetailPage() {
   useEffect(() => {
     if (clientId) {
       loadClientData();
+      loadRDVs();
     }
   }, [clientId]);
 
   async function loadClientData() {
     try {
-      // Charger les infos client
-      const { data: userData, error: userError } = await supabase
+      const { data: userData } = await supabase
         .from('users')
         .select('*')
         .eq('id', clientId)
         .single();
 
-      if (userError) throw userError;
+      if (userData) {
+        const { data: accessData } = await supabase
+          .from('client_access')
+          .select('pack_type, access_expires_at, rdv_total, rdv_consumed, rdv_remaining')
+          .eq('user_id', clientId)
+          .single();
 
-      // Charger le pack
-      const { data: accessData } = await supabase
-        .from('client_access')
-        .select('pack_type, access_expires_at')
-        .eq('user_id', clientId)
-        .single();
-
-      if (accessData && userData) {
-        setClient({
-          ...userData,
-          pack: accessData.pack_type,
-          pack_expires_at: accessData.access_expires_at,
-        });
-      } else {
-        setClient(userData);
+        if (accessData) {
+          setClient({
+            ...userData,
+            pack: accessData.pack_type,
+            pack_expires_at: accessData.access_expires_at,
+            rdv_total: accessData.rdv_total || 0,
+            rdv_consumed: accessData.rdv_consumed || 0,
+            rdv_remaining: accessData.rdv_remaining || 0,
+          });
+        } else {
+          setClient(userData);
+        }
       }
     } catch (error) {
-      console.error('Erreur chargement client:', error);
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadRDVs() {
+    try {
+      const { data } = await supabase
+        .from('rdvs')
+        .select(`
+          id,
+          scheduled_at,
+          status,
+          expert:expert_id (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('client_id', clientId)
+        .order('scheduled_at', { ascending: false })
+        .limit(5);
+
+      if (data) {
+        setRdvs(data.map((rdv: any) => ({
+          id: rdv.id,
+          scheduled_at: rdv.scheduled_at,
+          status: rdv.status,
+          expert_name: rdv.expert ? `${rdv.expert.first_name} ${rdv.expert.last_name}` : 'Non assigné',
+        })));
+      }
+    } catch (error) {
+      console.error('Erreur RDV:', error);
     }
   }
 
@@ -100,10 +144,7 @@ export default function AdminClientDetailPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <p className="text-slate-500">Client introuvable</p>
-            <Button
-              onClick={() => router.push('/admin/clients')}
-              className="mt-4"
-            >
+            <Button onClick={() => router.push('/admin/clients')} className="mt-4">
               Retour
             </Button>
           </CardContent>
@@ -114,12 +155,7 @@ export default function AdminClientDetailPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-6">
-      {/* Header avec retour */}
-      <Button
-        variant="ghost"
-        onClick={() => router.push('/admin/clients')}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={() => router.push('/admin/clients')}>
         <ArrowLeft size={18} className="mr-2" />
         Retour à la liste
       </Button>
@@ -152,9 +188,7 @@ export default function AdminClientDetailPage() {
           {/* Informations de contact */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
-              <h2 className="font-bold text-lg text-[#123055] mb-3">
-                📧 Contact
-              </h2>
+              <h2 className="font-bold text-lg text-[#123055] mb-3">📧 Contact</h2>
               
               <div className="flex items-center gap-3">
                 <Mail size={20} className="text-slate-400" />
@@ -185,27 +219,28 @@ export default function AdminClientDetailPage() {
               </div>
             </div>
 
-            {/* Adresse */}
-            {(client.address || client.city) && (
-              <div className="space-y-4">
-                <h2 className="font-bold text-lg text-[#123055] mb-3">
-                  📍 Adresse
-                </h2>
-                
-                <div className="flex items-start gap-3">
-                  <MapPin size={20} className="text-slate-400 mt-1" />
-                  <div>
-                    {client.address && <p>{client.address}</p>}
-                    {client.postal_code && client.city && (
-                      <p>{client.postal_code} {client.city}</p>
-                    )}
-                  </div>
+            {/* RDV Stats */}
+            <div className="space-y-4">
+              <h2 className="font-bold text-lg text-[#123055] mb-3">📞 Rendez-vous</h2>
+              
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-blue-50 p-3 rounded-lg text-center">
+                  <p className="text-2xl font-bold text-blue-600">{client.rdv_total || 0}</p>
+                  <p className="text-xs text-blue-700">Total</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg text-center">
+                  <p className="text-2xl font-bold text-green-600">{client.rdv_consumed || 0}</p>
+                  <p className="text-xs text-green-700">Effectués</p>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg text-center">
+                  <p className="text-2xl font-bold text-orange-600">{client.rdv_remaining || 0}</p>
+                  <p className="text-xs text-orange-700">Restants</p>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Pack et expiration */}
+          {/* Pack expiration */}
           {client.pack_expires_at && (
             <Card className="bg-amber-50 border-amber-200">
               <CardContent className="p-4">
@@ -257,6 +292,46 @@ export default function AdminClientDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Derniers RDV */}
+      {rdvs.length > 0 && (
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold mb-4">📅 Derniers rendez-vous</h2>
+            <div className="space-y-3">
+              {rdvs.map(rdv => (
+                <div key={rdv.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-bold text-gray-900">
+                      {new Date(rdv.scheduled_at).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-600">👤 {rdv.expert_name}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    rdv.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    rdv.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                    'bg-orange-100 text-orange-700'
+                  }`}>
+                    {rdv.status === 'completed' ? 'Effectué' :
+                     rdv.status === 'cancelled' ? 'Annulé' : 'Prévu'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Button
+              onClick={() => router.push(`/admin/clients/${clientId}/rdv`)}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              Voir tous les RDV
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

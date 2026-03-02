@@ -99,21 +99,42 @@ function FormationsTab({ supabase }: any) {
   }, [categoryFilter]);
 
   async function fetchVideos() {
-    let query = supabase.from("videos").select("*").order("created_at", { ascending: false });
+    // ⭐ FIX : Lire depuis onboarding_videos_client au lieu de videos
+    let query = supabase
+      .from("onboarding_videos_client")
+      .select("*")
+      .eq("section", "formations")
+      .order("created_at", { ascending: false });
     
     if (categoryFilter !== "all") {
       query = query.eq("category", categoryFilter);
     }
     
     const { data } = await query;
+    console.log("✅ Données reçues:", data?.length || 0);
     setVideos(data || []);
   }
 
   async function saveVideo() {
+    // ⭐ FIX : Publier dans onboarding_videos_client
+    const videoData = {
+      title: formData.title,
+      category: formData.category,
+      description: formData.description,
+      duration: formData.duration,
+      loom_id: formData.loom_id,
+      is_new: formData.is_new,
+      section: 'formations',
+      page_slug: 'formations',
+      video_type: 'loom',
+      video_url: formData.loom_id ? `https://www.loom.com/share/${formData.loom_id}` : null,
+      is_active: true
+    };
+
     if (editingId) {
-      await supabase.from("videos").update(formData).eq("id", editingId);
+      await supabase.from("onboarding_videos_client").update(videoData).eq("id", editingId);
     } else {
-      await supabase.from("videos").insert([formData]);
+      await supabase.from("onboarding_videos_client").insert([videoData]);
     }
     resetForm();
     fetchVideos();
@@ -125,7 +146,7 @@ function FormationsTab({ supabase }: any) {
   }
 
   async function deleteVideo(id: string) {
-    await supabase.from("videos").delete().eq("id", id);
+    await supabase.from("onboarding_videos_client").delete().eq("id", id);
     fetchVideos();
   }
 

@@ -268,7 +268,7 @@ export default function CreationSocietePage() {
       case "rdv_expert":
         return {
           label: "Prendre RDV avec un expert",
-          href: "https://calendly.com/contact-jj-conseil/rdv-expert",
+          href: "https://calendly.com/d/cvdb-dxd-3np/diagnostic",
           disabled: false,
         };
 

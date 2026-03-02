@@ -166,7 +166,7 @@ export default function ChargesPage() {
             </Link>
 
             <Link
-              href="https://calendly.com/declic-entrepreneurs/diagnostic"
+              href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -220,7 +220,7 @@ export default function ChargesPage() {
                 </Link>
 
                 <Link
-                  href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                  href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -406,7 +406,7 @@ export default function ChargesPage() {
                 Un expert peut vous aider à réduire légalement vos charges selon votre situation.
               </p>
               <Link
-                href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                 target="_blank"
                 rel="noopener noreferrer"
               >

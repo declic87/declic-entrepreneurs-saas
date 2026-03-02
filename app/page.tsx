@@ -59,8 +59,8 @@ const FORMATIONS = [
 ];
 
 const RDV = [
-  { name: "Appel Expert", duration: "45 minutes", price: "250€", bullets: ["Analyse de votre situation","Recommandations personnalisées","Plan d’action concret","Réponses à toutes vos questions"], cta: "https://calendly.com/declic-entrepreneurs/diagnostic" },
-  { name: "Appel avec Jérôme", duration: "60 minutes", price: "800€", premium: true, bullets: ["Expertise de 10+ ans","Stratégies avancées","Cas complexes et holdings","Suivi post‑appel inclus"], cta: "https://calendly.com/declic-entrepreneurs/diagnostic" },
+  { name: "Appel Expert", duration: "45 minutes", price: "250€", bullets: ["Analyse de votre situation","Recommandations personnalisées","Plan d’action concret","Réponses à toutes vos questions"], cta: "https://calendly.com/d/cvdb-dxd-3np/diagnostic" },
+  { name: "Appel avec Jérôme", duration: "60 minutes", price: "800€", premium: true, bullets: ["Expertise de 10+ ans","Stratégies avancées","Cas complexes et holdings","Suivi post‑appel inclus"], cta: "https://calendly.com/d/cvdb-dxd-3np/diagnostic" },
 ];
 
 const OFFRES = [
@@ -172,7 +172,7 @@ export default function HomePage() {
 
       {/* Diagnostic — ORANGE plein */}
       <a
-        href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+        href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Prendre un diagnostic gratuit"
@@ -218,7 +218,7 @@ export default function HomePage() {
           </Link>
 
           <a
-            href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+            href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setMobileMenuOpen(false)}
@@ -249,7 +249,7 @@ export default function HomePage() {
     {/* CTA buttons */}
     <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
       <a
-        href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+        href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -664,7 +664,7 @@ export default function HomePage() {
       Réservez un diagnostic gratuit de 45 minutes avec un expert. Sans engagement, 100% personnalisé.
     </p>
     <a
-      href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+      href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
       target="_blank"
       rel="noopener noreferrer"
     >

@@ -144,7 +144,7 @@ export default function EconomiesPage() {
             <Link href="/app">
               <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">Mon Espace</Button>
             </Link>
-            <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
+            <Link href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank" rel="noopener noreferrer">
               <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
                 Diagnostic gratuit
               </Button>
@@ -188,7 +188,7 @@ export default function EconomiesPage() {
                     Mon Espace
                   </Button>
                 </Link>
-                <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
+                <Link href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank" rel="noopener noreferrer">
                   <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">
                     Diagnostic gratuit
                   </Button>
@@ -421,7 +421,7 @@ export default function EconomiesPage() {
                   </p>
                 </div>
                 <Link
-                  href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                  href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

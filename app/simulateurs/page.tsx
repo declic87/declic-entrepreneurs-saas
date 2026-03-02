@@ -98,7 +98,7 @@ export default function SimulateursPage() {
             <Link href="/app">
               <Button className="bg-white text-[#123055] hover:bg-slate-100 px-4">Mon Espace</Button>
             </Link>
-            <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
+            <Link href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank" rel="noopener noreferrer">
               <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 shadow-lg shadow-amber-500/20">
                 Diagnostic gratuit
               </Button>
@@ -140,7 +140,7 @@ export default function SimulateursPage() {
                 <Link href="/app">
                   <Button className="w-full bg-white text-[#123055] hover:bg-slate-100">Mon Espace</Button>
                 </Link>
-                <Link href="https://calendly.com/declic-entrepreneurs/diagnostic" target="_blank" rel="noopener noreferrer">
+                <Link href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank" rel="noopener noreferrer">
                   <Button className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white">Diagnostic gratuit</Button>
                 </Link>
               </div>
@@ -217,7 +217,7 @@ export default function SimulateursPage() {
             45 minutes avec un expert pour obtenir un plan d'action personnalisé.
           </p>
           <Link
-            href="https://calendly.com/declic-entrepreneurs/diagnostic"
+            href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
             target="_blank"
             rel="noopener noreferrer"
           >

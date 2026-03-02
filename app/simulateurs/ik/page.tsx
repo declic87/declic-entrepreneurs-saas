@@ -118,7 +118,7 @@ export default function SimulateurIK() {
               </Button>
             </Link>
             <Link
-              href="https://calendly.com/declic-entrepreneurs/diagnostic"
+              href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -169,7 +169,7 @@ export default function SimulateurIK() {
                   </Button>
                 </Link>
                 <Link
-                  href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                  href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -276,7 +276,7 @@ export default function SimulateurIK() {
 
             <div className="text-center">
               <Link
-                href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                 target="_blank"
                 rel="noopener noreferrer"
               >

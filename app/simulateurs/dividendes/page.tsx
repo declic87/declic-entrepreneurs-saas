@@ -120,7 +120,7 @@ export default function SimulateurDividendes() {
               </Button>
             </Link>
             <Link
-              href="https://calendly.com/declic-entrepreneurs/diagnostic"
+              href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -171,7 +171,7 @@ export default function SimulateurDividendes() {
                   </Button>
                 </Link>
                 <Link
-                  href="https://calendly.com/declic-entrepreneurs/diagnostic"
+                  href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -378,7 +378,7 @@ export default function SimulateurDividendes() {
             Simulation pédagogique basée sur hypothèses 2026. Document non contractuel.
           </p>
           <Link
-            href="https://calendly.com/declic-entrepreneurs/diagnostic"
+            href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
             target="_blank"
             rel="noopener noreferrer"
           >

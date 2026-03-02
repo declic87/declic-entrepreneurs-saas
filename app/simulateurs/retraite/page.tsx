@@ -372,7 +372,7 @@ export default function SimulateurRetraitePage() {
               prenez un rendez‑vous gratuit.
             </p>
             <a
-              href="https://calendly.com/declic-entrepreneurs/diagnostic"
+              href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block"

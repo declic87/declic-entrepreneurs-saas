@@ -651,7 +651,7 @@ export default function MemberDashboard({
               )}
             </div>
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold" asChild>
-              <a href="https://calendly.com/contact-jj-conseil/rdv-analyste" target="_blank">Réserver maintenant</a>
+              <a href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank">Réserver maintenant</a>
             </Button>
           </CardContent>
         </Card>
@@ -660,26 +660,28 @@ export default function MemberDashboard({
       {/* RDV PAYANTS */}
       {activeTab === "rdv-payants" && (
         <div className="grid md:grid-cols-2 gap-8">
+          {/* RDV Expert 250€ */}
           <Card className="border-2 border-transparent hover:border-amber-500 transition-all">
             <CardContent className="p-8">
               <Star className="text-amber-500 mb-4" fill="currentColor" size={28} />
-              <h3 className="text-2xl font-bold mb-2">Expertise Fiscale Immobilière</h3>
-              <p className="text-gray-500 mb-6 text-sm">Analyse complète de votre patrimoine.</p>
-              <div className="text-3xl font-black text-gray-900 mb-8">149€</div>
+              <h3 className="text-2xl font-bold mb-2">RDV Expert</h3>
+              <p className="text-gray-500 mb-6 text-sm">Session stratégique avec un expert fiscal.</p>
+              <div className="text-3xl font-black text-gray-900 mb-8">250€</div>
               <Button className="w-full bg-amber-500 hover:bg-amber-600 text-white" asChild>
-                <a href="https://calendly.com/contact-jj-conseil/expertise-immo" target="_blank">Réserver</a>
+                <a href="https://calendly.com/d/cx96-kkb-4qf/appel-expert-express" target="_blank">Réserver</a>
               </Button>
             </CardContent>
           </Card>
 
+          {/* RDV Jérôme 800€ */}
           <Card className="border-2 border-transparent hover:border-blue-500 transition-all">
             <CardContent className="p-8">
               <BookOpen className="text-blue-500 mb-4" size={28} />
-              <h3 className="text-2xl font-bold mb-2">Audit Holding & SCI</h3>
-              <p className="text-gray-500 mb-6 text-sm">Optimisation de la transmission.</p>
-              <div className="text-3xl font-black text-gray-900 mb-8">290€</div>
+              <h3 className="text-2xl font-bold mb-2">RDV Jérôme</h3>
+              <p className="text-gray-500 mb-6 text-sm">Session privée avec le fondateur.</p>
+              <div className="text-3xl font-black text-gray-900 mb-8">800€</div>
               <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" asChild>
-                <a href="https://calendly.com/contact-jj-conseil/audit-holding" target="_blank">Commander</a>
+                <a href="https://calendly.com/contact-declic-entrepreneurs/30min" target="_blank">Réserver</a>
               </Button>
             </CardContent>
           </Card>

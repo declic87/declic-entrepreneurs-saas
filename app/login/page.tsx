@@ -143,7 +143,7 @@ export default function LoginPage() {
 
           <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col gap-4">
             <a 
-              href="https://calendly.com/contact-jj-conseil/rdv-analyste" 
+              href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" 
               target="_blank"
               className="text-[10px] font-black text-orange-500 hover:text-black uppercase text-center tracking-tighter transition-colors"
             >

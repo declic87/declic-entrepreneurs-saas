@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-const CALENDLY_URL = "https://calendly.com/contact-jj-conseil/rdv-analyste";
+const CALENDLY_URL = "https://calendly.com/d/cvdb-dxd-3np/diagnostic";
 
 export default function RDVPage() {
   useEffect(() => {

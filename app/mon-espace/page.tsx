@@ -66,7 +66,7 @@ export default function MonEspacePage() {
             desc="Réservez votre prochain créneau stratégique avec votre conseiller dédié."
             icon={<Calendar size={28} />}
             iconBg="bg-emerald-500"
-            link="https://calendly.com/contact-jj-conseil"
+            link="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
             btnText="Ouvrir l'agenda"
             btnColor="bg-emerald-500 hover:bg-emerald-600"
           />

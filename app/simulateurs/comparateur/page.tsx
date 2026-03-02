@@ -229,7 +229,7 @@ export default function ComparateurPage() {
               </Button>
             </Link>
             <Link
-              href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+              href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -278,7 +278,7 @@ export default function ComparateurPage() {
                   </Button>
                 </Link>
                 <Link
-                  href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+                  href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -442,7 +442,7 @@ export default function ComparateurPage() {
                 <p>
                   Hypothèses pédagogiques. Pour un chiffrage exact (barème IR, options IS/IR, plafonds micro),{" "}
                   <Link
-                    href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+                    href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
@@ -566,7 +566,7 @@ export default function ComparateurPage() {
             {/* CTA */}
             <div className="pt-2 text-center">
               <Link
-                href="https://calendly.com/pole-closers-declic-entrepreneurs/30min"
+                href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
                 target="_blank"
                 rel="noopener noreferrer"
               >

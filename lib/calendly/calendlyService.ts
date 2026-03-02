@@ -1,7 +1,7 @@
 // lib/calendly/calendlyService.ts
 
 export const CALENDLY_LINKS = {
-    CLOSER_TEAM: 'https://calendly.com/pole-closers-declic-entrepreneurs/30min',
+    CLOSER_TEAM: 'https://calendly.com/d/cvdb-dxd-3np/diagnostic',
     EXPERT_TEAM: 'https://calendly.com/pole-experts-declic-entrepreneurs/30min',
     JEROME: 'https://calendly.com/contact-declic-entrepreneurs/30min',
     EXPERT_SUPPLEMENTAIRE: 'https://calendly.com/contact-declic-entrepreneurs/rdv-suppl-experts',

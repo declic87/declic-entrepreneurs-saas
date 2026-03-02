@@ -426,7 +426,7 @@ export default function ImmobilierSimulatorPage() {
             micro‑BIC, meublé pro/non pro, option IS/IR, TVA…).
           </p>
           <a
-            href="https://calendly.com/declic-entrepreneurs/diagnostic"
+            href="https://calendly.com/d/cvdb-dxd-3np/diagnostic"
             target="_blank"
             rel="noopener noreferrer"
           >

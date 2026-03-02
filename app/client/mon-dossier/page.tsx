@@ -221,7 +221,7 @@ export default function MonDossierPage() {
                           size="sm" 
                           variant="outline"
                           className="mt-2"
-                          onClick={() => window.open('https://calendly.com/contact-jj-conseil/rdv-analyste', '_blank')}
+                          onClick={() => window.open('https://calendly.com/d/cvdb-dxd-3np/diagnostic', '_blank')}
                         >
                           📅 Prendre RDV
                         </Button>

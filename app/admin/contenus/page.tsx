@@ -5,7 +5,6 @@ import { createBrowserClient } from "@supabase/ssr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { publishAndNotify } from "@/lib/notifications";
 import { UploadPDFTuto } from "@/components/admin/UploadPDFTuto";
 import { 
   Video, Plus, Trash2, Save, X, FileText, Calendar, 
@@ -131,12 +130,7 @@ function FormationsTab({ supabase }: any) {
   }
 
   async function handlePublish(video: any) {
-    const result = await publishAndNotify("formation", video.title, "/client");
-    if (result.success) {
-      alert("✅ Notification envoyée aux clients concernés !");
-    } else {
-      alert("❌ Erreur lors de l'envoi");
-    }
+    alert(`✅ Vidéo "${video.title}" publiée ! Les clients la verront dans Formations.`);
   }
 
   const categories = [
@@ -374,12 +368,7 @@ function TutosPratiquesTab({ supabase }: any) {
   }
 
   async function handlePublish(tuto: any) {
-    const result = await publishAndNotify("tuto", tuto.title, "/client");
-    if (result.success) {
-      alert("✅ Notification envoyée à tous les clients !");
-    } else {
-      alert("❌ Erreur lors de l'envoi");
-    }
+    alert(`✅ Tuto "${tuto.title}" publié !`);
   }
 
   return (
@@ -538,12 +527,7 @@ function CoachingsTab({ supabase }: any) {
   }
 
   async function handlePublish(coaching: any) {
-    const result = await publishAndNotify("coaching", coaching.title, "/client");
-    if (result.success) {
-      alert("✅ Notification envoyée à tous les clients !");
-    } else {
-      alert("❌ Erreur lors de l'envoi");
-    }
+    alert(`✅ Coaching "${coaching.title}" publié !`);
   }
 
   const currentData = subTab === "lives" ? lives : archives;
@@ -697,12 +681,7 @@ function AteliersTab({ supabase }: any) {
   }
 
   async function handlePublish(atelier: any) {
-    const result = await publishAndNotify("atelier", atelier.title, "/client");
-    if (result.success) {
-      alert("✅ Notification envoyée à tous les clients !");
-    } else {
-      alert("❌ Erreur lors de l'envoi");
-    }
+    alert(`✅ Atelier "${atelier.title}" publié !`);
   }
 
   const currentData = subTab === "lives" ? lives : archives;

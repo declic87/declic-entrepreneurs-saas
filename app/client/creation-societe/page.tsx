@@ -18,6 +18,7 @@ import {
   Loader2,
   Plus,
   Banknote,
+  AlertCircle,
 } from "lucide-react";
 
 interface CompanyData {
@@ -49,7 +50,7 @@ const STEPS = [
     label: "RDV avec votre expert",
     description: "Choisir votre statut juridique",
     icon: Calendar,
-    onlyFirstCompany: true, // ⭐ Afficher seulement pour la 1ère société
+    onlyFirstCompany: true,
   },
   {
     id: "info_collection",
@@ -99,6 +100,7 @@ export default function CreationSocietePage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [isFirstCompanyEver, setIsFirstCompanyEver] = useState(false);
+  const [rdvCompleted, setRdvCompleted] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -137,13 +139,11 @@ export default function CreationSocietePage() {
   }
 
   async function loadData() {
-    // ⭐ IMPORTANT : Charger TOUTES les sociétés pour trouver la première
     const { data: allCompanies } = await supabase
       .from("user_companies")
       .select("*")
-      .order('created_at', { ascending: true }); // Trier par date de création
+      .order('created_at', { ascending: true });
 
-    // Charger la société active
     const { data: companies } = await supabase
       .from("user_companies")
       .select("*")
@@ -153,10 +153,22 @@ export default function CreationSocietePage() {
     if (companies && allCompanies) {
       setActiveCompany(companies);
 
-      // ⭐ Vérifier si la société active EST la toute première créée
       const firstCompanyId = allCompanies[0]?.id;
       const isFirst = companies.id === firstCompanyId;
       setIsFirstCompanyEver(isFirst);
+
+      // ⭐ Vérifier si le RDV de la PREMIÈRE société est terminé
+      if (firstCompanyId) {
+        const { data: firstCompanyWorkflow } = await supabase
+          .from("company_creation_data")
+          .select("step")
+          .eq("company_id", firstCompanyId)
+          .single();
+
+        // RDV complété si l'étape actuelle n'est plus "rdv_expert"
+        const rdvDone = firstCompanyWorkflow && firstCompanyWorkflow.step !== "rdv_expert";
+        setRdvCompleted(rdvDone || false);
+      }
 
       let { data: company } = await supabase
         .from("company_creation_data")
@@ -170,7 +182,7 @@ export default function CreationSocietePage() {
           .insert({ 
             user_id: userId, 
             company_id: companies.id,
-            step: isFirst ? "rdv_expert" : "info_collection" // ⭐ Si première = RDV, sinon = infos
+            step: isFirst ? "rdv_expert" : "info_collection"
           })
           .select()
           .single();
@@ -189,6 +201,12 @@ export default function CreationSocietePage() {
   }
 
   async function createNewCompany() {
+    // ⭐ Vérifier que le RDV est fait avant de créer une nouvelle société
+    if (!rdvCompleted) {
+      alert("⚠️ Vous devez d'abord terminer l'étape RDV Expert de votre première société avant de créer une nouvelle société.");
+      return;
+    }
+
     setCreating(true);
     try {
       const { data: existingCompanies, error: countError } = await supabase
@@ -221,7 +239,7 @@ export default function CreationSocietePage() {
 
         router.refresh();
         
-        alert(`✅ Nouvelle société créée : ${uniqueName}\nLe workflow démarre directement à l'étape Informations société`);
+        alert(`✅ Nouvelle société créée : ${uniqueName}\n\nVous pouvez maintenant avancer sur plusieurs sociétés en parallèle !`);
       }
     } catch (error: any) {
       console.error('Erreur création société:', error);
@@ -296,10 +314,9 @@ export default function CreationSocietePage() {
 
   const nextAction = getNextStepAction();
 
-  // ⭐ Filtrer les étapes : afficher RDV SEULEMENT si c'est LA première société jamais créée
   const visibleSteps = STEPS.filter(step => {
     if (step.onlyFirstCompany) {
-      return isFirstCompanyEver; // Afficher RDV seulement pour LA première société
+      return isFirstCompanyEver;
     }
     return true;
   });
@@ -343,8 +360,9 @@ export default function CreationSocietePage() {
 
         <Button
           onClick={createNewCompany}
-          disabled={creating}
-          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-6 h-12 shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
+          disabled={creating || !rdvCompleted}
+          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-6 h-12 shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          title={!rdvCompleted ? "Terminez l'étape RDV Expert de votre première société pour débloquer" : ""}
         >
           {creating ? (
             <>
@@ -359,6 +377,44 @@ export default function CreationSocietePage() {
           )}
         </Button>
       </div>
+
+      {/* Message si RDV pas fait */}
+      {!rdvCompleted && !isFirstCompanyEver && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
+              <div>
+                <p className="font-bold text-amber-900 mb-1">
+                  ⏳ En attente de validation
+                </p>
+                <p className="text-sm text-amber-700">
+                  Le RDV Expert de votre première société doit être terminé avant de pouvoir créer d'autres sociétés.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Info parallèle si RDV fait */}
+      {rdvCompleted && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="text-green-600 flex-shrink-0" size={20} />
+              <div>
+                <p className="font-bold text-green-900 mb-1">
+                  ✅ Mode multi-société activé !
+                </p>
+                <p className="text-sm text-green-700">
+                  Vous pouvez maintenant créer et gérer plusieurs sociétés en parallèle.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {companyData?.company_type && (
         <Card className="border-green-200 bg-green-50">
@@ -378,7 +434,6 @@ export default function CreationSocietePage() {
         </Card>
       )}
 
-      {/* Timeline avec étapes filtrées */}
       <div className="space-y-4">
         {visibleSteps.map((step, index) => {
           const status = getStepStatus(step.id);

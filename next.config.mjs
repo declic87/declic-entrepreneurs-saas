@@ -13,7 +13,20 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    optimizePackageImports: ['lucide-react', 'recharts', '@supabase/ssr'],
   },
+  transpilePackages: ['jspdf', 'xlsx'],
+  
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'deterministic',
+      };
+    }
+    return config;
+  },
+  
   async headers() {
     return [
       {

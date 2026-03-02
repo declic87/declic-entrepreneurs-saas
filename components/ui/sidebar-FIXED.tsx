@@ -8,7 +8,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { NotificationBell } from "@/components/ui/notification-bell";
-import CompanySelector from "@/components/creation/CompanySelector"; // ⭐ AJOUTÉ
+import CompanySelector from "@/components/creation/CompanySelector";
 import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
   CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
@@ -140,9 +140,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   useEffect(() => {
     async function fetchUserId() {
-      console.log("🔍 Sidebar - Fetching userId...");
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("🔍 Sidebar - Auth user:", user?.id);
       
       if (user) {
         const { data: userData } = await supabase
@@ -151,11 +149,8 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
           .eq("auth_id", user.id)
           .single();
         
-        console.log("🔍 Sidebar - User data:", userData);
-        
         if (userData) {
           setUserId(userData.id);
-          console.log("✅ Sidebar - UserId set:", userData.id);
           
           if (currentRole === 'client') {
             const { data: accessData } = await supabase
@@ -166,7 +161,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
             
             if (accessData) {
               setPackType(accessData.pack_type);
-              console.log("✅ Sidebar - Pack type:", accessData.pack_type);
             }
           }
         }
@@ -176,9 +170,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   }, [supabase, currentRole]);
 
   const { unreadCount } = useUnreadMessages(userId);
-  
-  console.log("🔍 Sidebar - Current userId:", userId);
-  console.log("🔍 Sidebar - Current unreadCount:", unreadCount);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -206,7 +197,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0F172A] text-white flex flex-col z-50 shadow-2xl border-r border-white/5">
-      {/* Header avec Logo et Notifications */}
       <div className="p-6 border-b border-white/5 bg-slate-900/50">
         <div className="flex items-center justify-between mb-2">
           <Logo variant="light" size="sm" />
@@ -219,14 +209,12 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
         </div>
       </div>
 
-      {/* ⭐ NOUVEAU : Sélecteur de société (uniquement pour clients) */}
       {currentRole === 'client' && (
         <div className="px-4 pt-4 pb-2 border-b border-white/5">
           <CompanySelector />
         </div>
       )}
 
-      {/* Navigation optimisée */}
       <nav className="flex-1 overflow-y-auto py-6 space-y-1 custom-scrollbar">
         {filteredItems.map((item) => {
           const Icon = item.icon;
@@ -269,7 +257,6 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer Utilisateur */}
       <div className="p-4 bg-slate-900/80 border-t border-white/5">
         <div className="flex items-center gap-3 mb-4 px-2">
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-sm font-bold shadow-lg">

@@ -352,9 +352,20 @@ export default function AdminClientsPage() {
                       {new Date(client.created_at).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-6 py-4">
-                      <a href="/admin/gestion-acces" className="text-orange-600 hover:text-orange-700 font-medium text-sm">
-                        Gérer →
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <a 
+                          href={`/admin/clients/${client.id}`}
+                          className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                        >
+                          👤 Fiche
+                        </a>
+                        <a 
+                          href="/admin/gestion-acces" 
+                          className="text-orange-600 hover:text-orange-700 font-medium text-sm"
+                        >
+                          Gérer →
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))

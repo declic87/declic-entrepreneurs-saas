@@ -53,22 +53,22 @@ export async function GET(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 2. Récupérer le profil utilisateur pour obtenir son pack
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('subscription_pack')
-      .eq('user_id', user.id)
+    // 2. Récupérer le pack de l'utilisateur depuis la table users
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('pack')
+      .eq('auth_id', user.id)
       .single();
 
-    if (profileError) {
-      console.error('Erreur profil:', profileError);
+    if (userError) {
+      console.error('Erreur récupération user:', userError);
       return NextResponse.json(
-        { error: 'Erreur récupération profil' },
+        { error: 'Erreur récupération utilisateur' },
         { status: 500 }
       );
     }
 
-    const userPack = profile?.subscription_pack?.toLowerCase() || 'starter';
+    const userPack = userData?.pack?.toLowerCase() || 'starter';
 
     // 3. Récupérer TOUS les documents actifs (plus de filtrage par pack)
     const { data: allDocuments, error: docsError } = await supabaseAdmin

@@ -290,7 +290,7 @@ export default function HomePage() {
           </p>
 
           <div className="mt-2 text-4xl md:text-6xl font-extrabold tracking-tight">
-            30 750 000 €
+            30   750  000 €
           </div>
 
           <div className="mt-4 flex flex-col md:flex-row gap-3 md:items-center">

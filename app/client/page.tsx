@@ -98,6 +98,10 @@ export default function MemberDashboard({
   const [access, setAccess] = useState<ClientAccess | null>(null);
   const [accessLoading, setAccessLoading] = useState(true);
 
+  // Expert assigné (pour RDV)
+  const [assignedExpert, setAssignedExpert] = useState<any>(null);
+  const [isFirstRdv, setIsFirstRdv] = useState(false);
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -107,30 +111,27 @@ export default function MemberDashboard({
     setMounted(true);
     
     async function loadUserAccess() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', user.id)
-          .single();
+      try {
+        const response = await fetch('/api/client/access');
+        const data = await response.json();
         
-        if (userData) {
-          setUserId(userData.id);
+        if (data.success) {
+          setUserId(data.user_id);
+          setAccess(data.access as ClientAccess);
           
-          // Charger les accès
-          const { data: accessData } = await supabase
-            .from('client_access')
-            .select('*')
-            .eq('user_id', userData.id)
-            .single();
-          
-          if (accessData) {
-            setAccess(accessData as ClientAccess);
+          // Si expert assigné
+          if (data.assigned_expert) {
+            setAssignedExpert(data.assigned_expert);
+            setIsFirstRdv(false);
+          } else {
+            setIsFirstRdv(true);
           }
         }
+      } catch (error) {
+        console.error('Erreur chargement accès:', error);
+      } finally {
+        setAccessLoading(false);
       }
-      setAccessLoading(false);
     }
     
     loadUserAccess();
@@ -631,31 +632,66 @@ export default function MemberDashboard({
         </div>
       )}
 
-      {/* RDV INCLUS */}
-      {activeTab === "rdv-inclus" && access.rdv_remaining > 0 && (
-        <Card className="border-none shadow-2xl bg-gradient-to-br from-white to-emerald-50">
-          <CardContent className="p-10 text-center">
-            <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-8">
-              <Phone size={32} />
-            </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-4">Votre Session Stratégique</h2>
-            <p className="text-gray-600 text-lg max-w-lg mx-auto mb-6">
-              Un point privé de 30 minutes avec un expert pour valider votre structure et optimiser votre fiscalité.
+{/* RDV INCLUS */}
+{activeTab === "rdv-inclus" && access.rdv_remaining > 0 && (
+  <Card className="border-none shadow-2xl bg-gradient-to-br from-white to-emerald-50">
+    <CardContent className="p-10 text-center">
+      <div className="w-20 h-20 bg-emerald-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-8">
+        <Phone size={32} />
+      </div>
+      
+      {/* PACK EXPERT : R1 avec Jérôme */}
+      {access.pack_type === 'expert' && access.rdv_consumed === 0 ? (
+        <>
+          <h2 className="text-3xl font-black text-gray-900 mb-4">
+            🌟 Votre RDV VIP avec Jérôme
+          </h2>
+          <p className="text-gray-600 text-lg max-w-lg mx-auto mb-6">
+            Premier rendez-vous stratégique de 30 minutes avec le fondateur pour définir votre stratégie globale.
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 inline-block">
+            <p className="text-sm text-amber-800">
+              <strong>RDV #1 avec Jérôme</strong> (inclus dans votre pack Expert)
             </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 inline-block">
-              <p className="text-sm text-amber-800">
-                <strong>{access.rdv_remaining}</strong> RDV expert(s) restant(s)
+          </div>
+          <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-12 h-14 rounded-2xl text-lg font-bold" asChild>
+            <a href="https://calendly.com/contact-declic-entrepreneurs/30min" target="_blank">
+              Réserver avec Jérôme
+            </a>
+          </Button>
+        </>
+      ) : (
+        <>
+          {/* TOUS LES AUTRES CAS */}
+          <h2 className="text-3xl font-black text-gray-900 mb-4">
+            {isFirstRdv ? "Votre Session Stratégique" : `RDV avec ${assignedExpert?.first_name || 'votre expert'}`}
+          </h2>
+          <p className="text-gray-600 text-lg max-w-lg mx-auto mb-6">
+            {isFirstRdv 
+              ? "Un point privé de 30 minutes avec un expert pour valider votre structure et optimiser votre fiscalité."
+              : `Continuez votre accompagnement avec ${assignedExpert?.first_name} ${assignedExpert?.last_name}.`
+            }
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 inline-block">
+            <p className="text-sm text-amber-800">
+              <strong>{access.rdv_remaining}</strong> RDV expert(s) restant(s)
+            </p>
+            {access.has_rdv_vip && access.pack_type === 'expert' && (
+              <p className="text-xs text-yellow-600 font-bold mt-2">
+                ⭐ Après le RDV avec Jérôme
               </p>
-              {access.has_rdv_vip && (
-                <p className="text-xs text-yellow-600 font-bold mt-2">⭐ +1 RDV VIP avec le fondateur</p>
-              )}
-            </div>
-            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold" asChild>
-              <a href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank">Réserver maintenant</a>
-            </Button>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+          <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-14 rounded-2xl text-lg font-bold" asChild>
+            <a href="https://calendly.com/d/cvdb-dxd-3np/diagnostic" target="_blank">
+              Réserver maintenant
+            </a>
+          </Button>
+        </>
       )}
+    </CardContent>
+  </Card>
+)}
 
       {/* RDV PAYANTS */}
       {activeTab === "rdv-payants" && (

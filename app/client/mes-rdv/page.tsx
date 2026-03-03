@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Calendar, Video, FileText, Download, Play } from 'lucide-react';
+import { Calendar, Video, FileText, Download, Play, Loader2 } from 'lucide-react';
 
 interface RDVRecording {
   id: string;
@@ -36,34 +36,41 @@ export default function ClientMesRDVPage() {
   }, []);
 
   async function loadRecordings() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from('rdv_recordings')
-      .select(`
-        *,
-        rdv:rdv_id (
-          scheduled_at,
-          expert:expert_id (
-            first_name,
-            last_name
-          )
-        )
-      `)
-      .eq('client_id', user.id)
-      .order('recorded_at', { ascending: false });
-
-    if (data) {
-      setRecordings(data as any);
+      // Appeler l'API RDV
+      const response = await fetch('/api/client/rdvs', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.rdvs) {
+        // Filtrer uniquement les RDV avec enregistrements
+        const rdvsWithRecordings = data.rdvs.filter((rdv: any) => 
+          rdv.video_url || rdv.pdf_report_url
+        );
+        setRecordings(rdvsWithRecordings);
+      }
+    } catch (error) {
+      console.error('Erreur chargement RDV:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="animate-spin text-amber-500" size={48} />
       </div>
     );
   }
@@ -82,6 +89,9 @@ export default function ClientMesRDVPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Calendar className="mx-auto text-gray-300 mb-4" size={64} />
             <p className="text-gray-500 font-medium">Aucun rendez-vous enregistré pour le moment</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Les enregistrements apparaîtront ici après vos rendez-vous
+            </p>
           </div>
         ) : (
           <div className="grid gap-6">
@@ -89,14 +99,18 @@ export default function ClientMesRDVPage() {
               <div key={recording.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-start gap-6">
                   {/* Thumbnail vidéo */}
-                  <div className="relative w-64 h-36 bg-gray-900 rounded-lg flex-shrink-0 overflow-hidden group cursor-pointer">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Play className="text-white opacity-80 group-hover:opacity-100 transition-opacity" size={48} />
+                  {recording.video_url && (
+                    <div className="relative w-64 h-36 bg-gray-900 rounded-lg flex-shrink-0 overflow-hidden group cursor-pointer">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Play className="text-white opacity-80 group-hover:opacity-100 transition-opacity" size={48} />
+                      </div>
+                      {recording.duration && (
+                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                          {Math.floor(recording.duration / 60)}:{String(recording.duration % 60).padStart(2, '0')}
+                        </div>
+                      )}
                     </div>
-                    <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                      {Math.floor(recording.duration / 60)}:{String(recording.duration % 60).padStart(2, '0')}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Infos */}
                   <div className="flex-1">
@@ -115,10 +129,12 @@ export default function ClientMesRDVPage() {
                     </div>
 
                     {/* Résumé */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <h4 className="font-bold text-blue-900 mb-2">📝 Résumé</h4>
-                      <p className="text-blue-800 text-sm">{recording.summary}</p>
-                    </div>
+                    {recording.summary && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-bold text-blue-900 mb-2">📝 Résumé</h4>
+                        <p className="text-blue-800 text-sm">{recording.summary}</p>
+                      </div>
+                    )}
 
                     {/* Actions à faire */}
                     {recording.action_items && recording.action_items.length > 0 && (
@@ -137,15 +153,17 @@ export default function ClientMesRDVPage() {
 
                     {/* Boutons */}
                     <div className="flex gap-3">
-                      <a
-                        href={recording.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        <Video size={18} />
-                        Voir la vidéo
-                      </a>
+                      {recording.video_url && (
+                        <a
+                          href={recording.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                        >
+                          <Video size={18} />
+                          Voir la vidéo
+                        </a>
+                      )}
                       {recording.pdf_report_url && (
                         <a
                           href={recording.pdf_report_url}
@@ -157,10 +175,6 @@ export default function ClientMesRDVPage() {
                           Compte-rendu PDF
                         </a>
                       )}
-                      <button className="flex items-center gap-2 border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
-                        <Download size={18} />
-                        Télécharger
-                      </button>
                     </div>
                   </div>
                 </div>

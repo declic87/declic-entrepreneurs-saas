@@ -248,6 +248,12 @@ export default function MemberDashboard({
       access: access.has_ateliers 
     },
     { 
+      id: "mes-rdv", 
+      label: "Mes RDV", 
+      icon: <Video size={16} />, 
+      access: access.rdv_total > 0 
+    },
+    { 
       id: "rdv-inclus", 
       label: "Mon RDV", 
       icon: <Phone size={16} />, 

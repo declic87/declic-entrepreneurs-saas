@@ -41,43 +41,34 @@ export default function MonDossierPage() {
 
   async function loadData() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!user) {
+      if (!session) {
         setLoading(false);
         return;
       }
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
-        .single();
-
-      if (!userData) {
-        setLoading(false);
-        return;
-      }
-
-      setUserId(userData.id);
-
-      // Charger les accès client
-      const { data: accessData } = await supabase
-        .from('client_access')
-        .select('*')
-        .eq('user_id', userData.id)
-        .single();
-
-      if (accessData && accessData.is_active) {
+      // Appeler l'API avec le token
+      const response = await fetch('/api/client/access', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setUserId(data.user_id);
+        
         // Vérifier que c'est un pack avec accompagnement
-        if (['starter', 'pro', 'expert'].includes(accessData.pack_type)) {
-          setAccess(accessData);
+        if (['starter', 'pro', 'expert'].includes(data.access.pack_type)) {
+          setAccess(data.access);
           
-          // Charger les RDV Calendly
+          // Charger les RDV
           const { data: rdvData } = await supabase
-            .from('calendly_events')
+            .from('rdvs')
             .select('*')
-            .eq('user_id', userData.id)
+            .eq('client_id', data.user_id)
             .order('scheduled_at', { ascending: true });
           
           setRdvs(rdvData || []);
@@ -125,15 +116,6 @@ export default function MonDossierPage() {
     );
   }
 
-  // ✅ ACCÈS AUTORISÉ
-  const rdvLabels = [
-    'RDV 1 - Diagnostic initial',
-    'RDV 2 - Choix du statut',
-    'RDV 3 - Validation stratégie',
-    'RDV 4 - Suivi avancé',
-    'RDV 5 - Optimisation finale',
-  ];
-
   const progressPercentage = Math.round((access.rdv_consumed / access.rdv_total) * 100);
 
   return (
@@ -163,14 +145,24 @@ export default function MonDossierPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold text-[#123055] mb-4 flex items-center gap-2">
                 <Calendar size={20} />
-                Mes rendez-vous expert ({access.rdv_consumed}/{access.rdv_total})
+                Mes rendez-vous ({access.rdv_consumed}/{access.rdv_total})
               </h2>
 
               <div className="space-y-3">
                 {Array.from({ length: access.rdv_total }).map((_, index) => {
                   const rdv = rdvs[index];
-                  const isCompleted = rdv && rdv.status === 'active';
-                  const isScheduled = rdv && !isCompleted;
+                  const isCompleted = rdv && rdv.status === 'completed';
+                  const isScheduled = rdv && rdv.status === 'scheduled';
+                  
+                  // Logique du lien Calendly
+                  let calendlyLink = 'https://calendly.com/d/cx96-kkb-4qf/appel-expert-express'; // Par défaut : Expert
+                  let rdvTitle = `RDV ${index + 1} - Avec expert`;
+                  
+                  // Pack Expert + Premier RDV = Jérôme
+                  if (access.pack_type === 'expert' && index === 0) {
+                    calendlyLink = 'https://calendly.com/contact-declic-entrepreneurs/30min';
+                    rdvTitle = 'RDV 1 - Session VIP avec Jérôme';
+                  }
                   
                   return (
                     <div 
@@ -187,7 +179,7 @@ export default function MonDossierPage() {
                         <span className={`font-semibold ${
                           isCompleted ? 'text-green-800' : isScheduled ? 'text-amber-800' : 'text-slate-600'
                         }`}>
-                          {rdvLabels[index]}
+                          {rdvTitle}
                         </span>
                         {isCompleted && <CheckCircle2 className="text-green-600" size={20} />}
                         {isScheduled && <Clock className="text-amber-600" size={20} />}
@@ -204,15 +196,6 @@ export default function MonDossierPage() {
                           <p className="text-sm text-amber-700 mb-3">
                             📅 Prévu le {new Date(rdv.scheduled_at).toLocaleDateString('fr-FR')} à {new Date(rdv.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                           </p>
-                          {rdv.meeting_url && (
-                            <Button 
-                              size="sm" 
-                              className="bg-amber-600 hover:bg-amber-700 text-white"
-                              onClick={() => window.open(rdv.meeting_url!, '_blank')}
-                            >
-                              Rejoindre le RDV
-                            </Button>
-                          )}
                         </>
                       )}
 
@@ -220,10 +203,10 @@ export default function MonDossierPage() {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          className="mt-2"
-                          onClick={() => window.open('https://calendly.com/d/cvdb-dxd-3np/diagnostic', '_blank')}
+                          className={`mt-2 ${access.pack_type === 'expert' && index === 0 ? 'border-blue-500 text-blue-600 hover:bg-blue-50' : ''}`}
+                          onClick={() => window.open(calendlyLink, '_blank')}
                         >
-                          📅 Prendre RDV
+                          📅 {access.pack_type === 'expert' && index === 0 ? 'Prendre RDV avec Jérôme' : 'Prendre RDV avec un expert'}
                         </Button>
                       )}
                     </div>
@@ -245,7 +228,7 @@ export default function MonDossierPage() {
                       <Button 
                         size="sm" 
                         className="w-full bg-blue-600 hover:bg-blue-700"
-                        onClick={() => window.open('https://buy.stripe.com/test_rdv_expert_250', '_blank')}
+                        onClick={() => window.open('https://calendly.com/d/cx96-kkb-4qf/appel-expert-express', '_blank')}
                       >
                         Réserver
                       </Button>
@@ -259,7 +242,7 @@ export default function MonDossierPage() {
                       <Button 
                         size="sm" 
                         className="w-full bg-purple-600 hover:bg-purple-700"
-                        onClick={() => window.open('https://buy.stripe.com/test_rdv_jerome_800', '_blank')}
+                        onClick={() => window.open('https://calendly.com/contact-declic-entrepreneurs/30min', '_blank')}
                       >
                         Réserver
                       </Button>
@@ -383,7 +366,7 @@ export default function MonDossierPage() {
                     ) : (
                       <Clock className="text-amber-500 flex-shrink-0" size={18} />
                     )}
-                    <span className="text-sm text-slate-700">Diagnostic réalisé</span>
+                    <span className="text-sm text-slate-700">Premier RDV réalisé</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -392,7 +375,7 @@ export default function MonDossierPage() {
                     ) : (
                       <div className="w-[18px] h-[18px] rounded-full border-2 border-slate-300 flex-shrink-0" />
                     )}
-                    <span className="text-sm text-slate-400">Choix du statut</span>
+                    <span className="text-sm text-slate-400">Suivi en cours</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -401,7 +384,7 @@ export default function MonDossierPage() {
                     ) : (
                       <div className="w-[18px] h-[18px] rounded-full border-2 border-slate-300 flex-shrink-0" />
                     )}
-                    <span className="text-sm text-slate-400">Création société</span>
+                    <span className="text-sm text-slate-400">Optimisation avancée</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -410,7 +393,7 @@ export default function MonDossierPage() {
                     ) : (
                       <div className="w-[18px] h-[18px] rounded-full border-2 border-slate-300 flex-shrink-0" />
                     )}
-                    <span className="text-sm text-slate-400">Validation finale</span>
+                    <span className="text-sm text-slate-400">Accompagnement terminé</span>
                   </div>
                 </div>
               </div>
@@ -425,7 +408,7 @@ export default function MonDossierPage() {
                 {access.pack_type.toUpperCase()}
               </p>
               <p className="text-sm text-amber-700">
-                {access.rdv_total} rendez-vous expert inclus
+                {access.rdv_total} rendez-vous inclus
               </p>
             </CardContent>
           </Card>

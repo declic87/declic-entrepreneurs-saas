@@ -3,9 +3,18 @@
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Card, CardContent } from '@/components/ui/card';
-import { BookOpen, Play, Clock, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Play, Clock, Lock, Download, ArrowRight, Search, Loader2, Video } from 'lucide-react';
+import { OnboardingVideo } from '@/components/OnboardingVideo';
 
-interface Video {
+interface Template {
+  id: string;
+  name: string;
+  file_url: string;
+  file_type: string;
+}
+
+interface FormationVideo {
   id: string;
   title: string;
   category: string;
@@ -14,12 +23,15 @@ interface Video {
   loom_id: string;
   is_new: boolean;
   created_at: string;
+  templates?: Template[];
 }
 
 export default function ClientFormationsPage() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [userPack, setUserPack] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [videos, setVideos] = useState<FormationVideo[]>([]);
+  const [category, setCategory] = useState<string | null>(null);
+  const [packType, setPackType] = useState<string | null>(null);
+  const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   const supabase = createBrowserClient(
@@ -28,203 +40,260 @@ export default function ClientFormationsPage() {
   );
 
   useEffect(() => {
-    loadUserData();
+    loadFormations();
   }, []);
 
-  async function loadUserData() {
+  async function loadFormations() {
     try {
-      // ⭐ FIX : Récupérer le pack depuis client_access, PAS depuis users
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', user.id)
-          .single();
-
-        if (userData) {
-          // ⭐ Charger le pack_type depuis client_access
-          const { data: accessData } = await supabase
-            .from('client_access')
-            .select('pack_type')
-            .eq('user_id', userData.id)
-            .single();
-
-          if (accessData) {
-            setUserPack(accessData.pack_type);
-            console.log('✅ Pack utilisateur:', accessData.pack_type);
-          }
-        }
+      if (!session) {
+        setLoading(false);
+        return;
       }
 
-      // Charger toutes les vidéos de formation
-      const { data, error } = await supabase
-        .from('onboarding_videos_client')
-        .select('*')
-        .eq('section', 'formations')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setVideos(data || []);
+      // Appeler l'API
+      const response = await fetch('/api/client/formations', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setVideos(data.formations);
+        setCategory(data.category);
+        setPackType(data.pack_type);
+      }
     } catch (error) {
-      console.error('Erreur chargement:', error);
+      console.error('Erreur chargement formations:', error);
     } finally {
       setLoading(false);
     }
   }
 
-  function hasAccess(video: Video): boolean {
-    if (!video.category) return true;
-    
-    // Formation Créateur accessible si pack = "createur"
-    if (video.category === 'Créateur') {
-      return userPack === 'createur';
-    }
-    
-    // Formation Agent Immo accessible si pack = "agent_immo"
-    if (video.category === 'Agent Immo') {
-      return userPack === 'agent_immo';
-    }
-    
-    // ⭐ FIX : Formation Accompagnement accessible pour starter/pro/expert
-    if (video.category === 'Accompagnement') {
-      const accompagnementPacks = ['starter', 'pro', 'expert'];
-      const hasAccess = accompagnementPacks.includes(userPack || '');
-      console.log(`🔍 Vérification accès Accompagnement pour pack "${userPack}":`, hasAccess);
-      return hasAccess;
-    }
-    
-    return false;
-  }
+  const filteredVideos = videos.filter((video) => 
+    video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    video.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const categories = ['all', ...new Set(videos.map(v => v.category).filter(Boolean))];
-  
-  const filteredVideos = selectedCategory === 'all' 
-    ? videos 
-    : videos.filter(v => v.category === selectedCategory);
+  const categoryLabels: Record<string, { title: string; subtitle: string; color: string }> = {
+    'Créateur': {
+      title: '🎓 Formation Créateur',
+      subtitle: 'Choix du statut, fiscalité appliquée, méthode VASE, création pas-à-pas',
+      color: 'blue'
+    },
+    'Agent Immo': {
+      title: '🏠 Formation Agent Immobilier',
+      subtitle: 'Optimisation mandataires : IK maximisées, frais réels, cas pratiques',
+      color: 'green'
+    },
+    'Accompagnement': {
+      title: '💼 Formation Accompagnement',
+      subtitle: 'Formations exclusives pour votre pack d\'accompagnement personnalisé',
+      color: 'purple'
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
+        <Loader2 className="animate-spin text-amber-500" size={48} />
       </div>
     );
   }
 
-  return (
-    <div className="max-w-7xl mx-auto p-8 space-y-6">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-[#123055] mb-3">
-          📹 Mes Formations
-        </h1>
-        <p className="text-lg text-gray-600">
-          Modules vidéo pour maîtriser l'optimisation fiscale
-        </p>
-        {userPack && (
-          <p className="text-sm text-orange-600 font-semibold mt-2">
-            Votre pack : {userPack}
-          </p>
-        )}
-      </div>
-
-      {/* Filtres catégories */}
-      {categories.length > 1 && (
-        <div className="flex flex-wrap gap-2 justify-center mb-8">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full font-medium transition-all ${
-                selectedCategory === cat
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+  // Aucune formation accessible
+  if (!category || videos.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
+          <CardContent className="p-12 text-center">
+            <Lock className="mx-auto text-amber-500 mb-6" size={64} />
+            <h2 className="text-3xl font-black text-gray-900 mb-4">Aucune Formation Accessible</h2>
+            <p className="text-gray-600 mb-8">
+              Vous n'avez actuellement accès à aucune formation.
+            </p>
+            <Button 
+              className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12"
+              onClick={() => window.location.href = '/formations'}
             >
-              {cat === 'all' ? 'Tous' : cat}
-            </button>
-          ))}
-        </div>
-      )}
+              Découvrir nos formations
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      {/* Liste des vidéos */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVideos.map(video => {
-          const access = hasAccess(video);
-          
-          return (
-            <Card key={video.id} className={`hover:shadow-xl transition-shadow ${!access ? 'opacity-60' : ''}`}>
-              <CardContent className="p-6">
-                {/* Badge Nouveau */}
-                {video.is_new && (
-                  <span className="inline-block px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full mb-3">
-                    ✨ NOUVEAU
-                  </span>
-                )}
+  const categoryInfo = categoryLabels[category] || {
+    title: 'Formations',
+    subtitle: '',
+    color: 'blue'
+  };
 
-                {/* Catégorie */}
-                {video.category && (
-                  <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full mb-3 ${
-                    video.category === 'Créateur' ? 'bg-blue-100 text-blue-700' :
-                    video.category === 'Agent Immo' ? 'bg-green-100 text-green-700' :
-                    'bg-purple-100 text-purple-700'
-                  }`}>
-                    {video.category}
-                  </span>
-                )}
+  return (
+    <div className="max-w-6xl mx-auto p-4 space-y-8 animate-in fade-in duration-500">
+      
+      {/* VIDÉO ONBOARDING */}
+      <OnboardingVideo pageSlug="formations" role="CLIENT" />
 
-                {/* Titre */}
-                <h3 className="text-xl font-bold text-[#123055] mb-3">
-                  {video.title}
-                </h3>
-
-                {/* Description */}
-                {video.description && (
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {video.description}
-                  </p>
-                )}
-
-                {/* Durée */}
-                {video.duration && (
-                  <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                    <Clock size={16} />
-                    <span>{video.duration}</span>
-                  </div>
-                )}
-
-                {/* Action */}
-                {access ? (
-                  video.loom_id && (
-                    <a
-                      href={`https://www.loom.com/share/${video.loom_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold transition-all"
-                    >
-                      <Play size={18} />
-                      Regarder
-                    </a>
-                  )
-                ) : (
-                  <div className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-200 text-gray-500 rounded-lg font-semibold cursor-not-allowed">
-                    <Lock size={18} />
-                    Accès restreint
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto mb-8">
+        <h2 className="text-3xl font-black text-gray-900 mb-4">{categoryInfo.title}</h2>
+        <p className="text-gray-600 leading-relaxed">{categoryInfo.subtitle}</p>
       </div>
 
-      {filteredVideos.length === 0 && (
+      {/* Badge accès débloqué */}
+      <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center mb-8">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+            <BookOpen className="text-white" size={24} />
+          </div>
+          <div className="text-left">
+            <p className="font-bold text-green-800 text-lg">Formation débloquée ✓</p>
+            <p className="text-sm text-green-700">Accès complet à tous les modules</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Barre de recherche */}
+      <div className="relative group">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-amber-500 transition-colors" size={18} />
+        <input 
+          type="text" 
+          placeholder="Rechercher un module..." 
+          className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 ring-amber-500/20 border-gray-200 outline-none transition-all"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Liste des vidéos (style Tutos Pratiques) */}
+      <div className="grid gap-4">
+        {filteredVideos.map((video) => (
+          <Card 
+            key={video.id} 
+            className={`overflow-hidden transition-all duration-300 ${
+              expandedVideo === video.id 
+                ? "ring-2 ring-amber-500 shadow-lg" 
+                : "hover:border-amber-200 shadow-sm"
+            }`}
+          >
+            <CardContent className="p-0">
+              {expandedVideo === video.id ? (
+                /* Vue déployée */
+                <div className="animate-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-amber-600 tracking-wider">
+                        {video.category}
+                      </span>
+                      <h3 className="font-bold text-gray-900">{video.title}</h3>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setExpandedVideo(null)}
+                    >
+                      Fermer
+                    </Button>
+                  </div>
+                  
+                  <div className="aspect-video w-full bg-black">
+                    {video.loom_id ? (
+                      <iframe 
+                        src={`https://www.loom.com/embed/${video.loom_id}`}
+                        frameBorder="0" 
+                        allowFullScreen 
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                        <Video size={48} className="mb-2 opacity-20" />
+                        <p>Contenu en cours de téléchargement...</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    <p className="text-gray-600 mb-6 leading-relaxed">{video.description}</p>
+                    
+                    {video.templates && video.templates.length > 0 && (
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
+                          <Download size={14} /> Documents & Templates
+                        </h4>
+                        <div className="space-y-2">
+                          {video.templates.map((template) => (
+                            <a 
+                              key={template.id}
+                              href={template.file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-white border-gray-200 hover:border-amber-500 hover:text-amber-600 shadow-sm text-sm transition-all"
+                            >
+                              <span className="w-2 h-2 rounded-full bg-amber-500" />
+                              {template.name}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Vue compacte */
+                <div 
+                  onClick={() => setExpandedVideo(video.id)} 
+                  className="p-4 cursor-pointer flex items-center gap-4 group"
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                    video.loom_id 
+                      ? "bg-amber-100 text-amber-600 group-hover:bg-amber-500 group-hover:text-white" 
+                      : "bg-gray-100 text-gray-400"
+                  }`}>
+                    <Play size={24} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tighter">
+                        {video.category}
+                      </span>
+                      {video.is_new && (
+                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded uppercase font-black">
+                          New
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-gray-900 truncate group-hover:text-amber-600 transition-colors">
+                      {video.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                      <Clock size={12} /> {video.duration}
+                      {video.templates && video.templates.length > 0 && (
+                        <> • {video.templates.length} document{video.templates.length > 1 ? 's' : ''} inclus</>
+                      )}
+                    </p>
+                  </div>
+                  <ArrowRight 
+                    size={18} 
+                    className="text-gray-300 group-hover:text-amber-500 transition-all group-hover:translate-x-1" 
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredVideos.length === 0 && searchQuery && (
         <Card>
           <CardContent className="p-12 text-center">
             <BookOpen size={64} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 text-lg">
-              Aucune formation disponible dans cette catégorie
+              Aucune formation ne correspond à "{searchQuery}"
             </p>
           </CardContent>
         </Card>

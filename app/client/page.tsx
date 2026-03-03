@@ -224,16 +224,10 @@ export default function MemberDashboard({
       access: access.has_tutos 
     },
     { 
-      id: "formation-createur", 
-      label: "Formation Créateur", 
+      id: "formations", 
+      label: "Formations", 
       icon: <GraduationCap size={16} />, 
-      access: access.has_formation_createur 
-    },
-    { 
-      id: "formation-agent-immo", 
-      label: "Formation Agent Immo", 
-      icon: <GraduationCap size={16} />, 
-      access: access.has_formation_agent_immo 
+      access: access.has_formation_createur || access.has_formation_agent_immo || ['starter', 'pro', 'expert'].includes(access.pack_type)
     },
     { 
       id: "coaching", 
@@ -413,71 +407,14 @@ export default function MemberDashboard({
         </div>
       )}
 
-      {/* FORMATION CRÉATEUR */}
-      {activeTab === "formation-createur" && access.has_formation_createur && (
-        <div className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">Formation Créateur</h2>
-            <p className="text-gray-600 leading-relaxed">
-              Choix du statut (SASU/EURL), fiscalité appliquée, méthode VASE, création de société pas-à-pas.
-            </p>
-          </div>
-
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center mb-8">
-            <CheckCircle2 className="mx-auto text-green-600 mb-3" size={32} />
-            <p className="font-bold text-green-800 text-lg">Formation débloquée ✓</p>
-            <p className="text-sm text-green-700 mt-2">Accès complet à tous les modules</p>
-          </div>
-
-          <div className="grid gap-4">
-            {videos.filter((v: VideoData) => v.category === "Créateur").map((video: VideoData) => (
-              <Card key={video.id} className="hover:border-amber-200 transition-all">
-                <CardContent className="p-4">
-                  <h4 className="font-bold text-[#123055] mb-2">{video.title}</h4>
-                  <p className="text-sm text-slate-600 mb-3">{video.description}</p>
-                  <Button className="bg-amber-500 hover:bg-amber-600 text-white" size="sm">
-                    <Video size={16} className="mr-2" />
-                    Voir le module
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* FORMATION AGENT IMMO */}
-      {activeTab === "formation-agent-immo" && access.has_formation_agent_immo && (
-        <div className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">Formation Agent Immobilier</h2>
-            <p className="text-gray-600 leading-relaxed">
-              Optimisation spécifique mandataires : IK maximisées, frais réels, cas pratiques.
-            </p>
-          </div>
-
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center mb-8">
-            <CheckCircle2 className="mx-auto text-green-600 mb-3" size={32} />
-            <p className="font-bold text-green-800 text-lg">Formation débloquée ✓</p>
-            <p className="text-sm text-green-700 mt-2">Accès complet à tous les modules</p>
-          </div>
-
-          <div className="grid gap-4">
-            {videos.filter((v: VideoData) => v.category === "Agent Immo").map((video: VideoData) => (
-              <Card key={video.id} className="hover:border-amber-200 transition-all">
-                <CardContent className="p-4">
-                  <h4 className="font-bold text-[#123055] mb-2">{video.title}</h4>
-                  <p className="text-sm text-slate-600 mb-3">{video.description}</p>
-                  <Button className="bg-amber-500 hover:bg-amber-600 text-white" size="sm">
-                    <Video size={16} className="mr-2" />
-                    Voir le module
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+ {/* FORMATIONS - Redirection vers page dédiée */}
+{activeTab === "formations" && (
+  <div className="text-center py-12">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+    <p className="text-gray-600">Chargement des formations...</p>
+    {typeof window !== 'undefined' && (window.location.href = '/client/formations')}
+  </div>
+)}
 
       {/* COACHING */}
       {activeTab === "coaching" && (

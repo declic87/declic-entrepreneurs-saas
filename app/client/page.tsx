@@ -112,7 +112,21 @@ export default function MemberDashboard({
     
     async function loadUserAccess() {
       try {
-        const response = await fetch('/api/client/access');
+        // Récupérer la session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setAccessLoading(false);
+          return;
+        }
+    
+        // Appeler l'API avec le token
+        const response = await fetch('/api/client/access', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        
         const data = await response.json();
         
         if (data.success) {

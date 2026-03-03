@@ -66,10 +66,10 @@ export async function GET(request: Request) {
       });
     }
 
-    // Récupérer TOUTES les vidéos de formations
+    // Récupérer TOUTES les vidéos de formations (SANS jointure templates)
     const { data: allVideos, error: videoError } = await supabaseAdmin
       .from('onboarding_videos_client')
-      .select('*, templates:video_templates(id, name, file_url, file_type)')
+      .select('*')
       .eq('section', 'formations')
       .eq('is_active', true)
       .order('created_at', { ascending: false });

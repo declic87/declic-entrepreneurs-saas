@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ⭐ 1. UTILISER inviteUserByEmail DIRECTEMENT (crée le user ET envoie l'email)
+    // 1. UTILISER inviteUserByEmail DIRECTEMENT (crée le user ET envoie l'email)
     const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
       email,
       {
@@ -90,19 +90,50 @@ export async function POST(request: NextRequest) {
 
     // 4. Ajouter à la messagerie #general
     const { data: generalConv } = await supabase
-      .from('conversations')
+      .from('staff_conversations')
       .select('id')
-      .eq('channel_name', '#general')
+      .eq('name', '#general')
       .single();
 
     if (generalConv) {
-      await supabase.from('conversation_members').insert({
+      await supabase.from('staff_conversation_members').insert({
         conversation_id: generalConv.id,
         user_id: userData.id,
       });
     }
 
-    // 5. Créer une notification admin
+    // 5. GÉNÉRER ET ENVOYER LE CONTRAT AUTOMATIQUEMENT
+    if (role === 'CLOSER' || role === 'SETTER' || role === 'EXPERT' || role === 'HOS') {
+      try {
+        const generateResponse = await fetch(`${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL}/api/contracts/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userData.id,
+            contractType: 'team_onboarding',
+            teamRole: role.toLowerCase(),
+            contractData: {
+              email,
+              first_name,
+              last_name,
+              role,
+            },
+          }),
+        });
+
+        const generateData = await generateResponse.json();
+
+        if (generateData.success && generateData.contract) {
+          console.log('✅ Contrat généré et envoyé pour signature:', generateData.contract.id);
+        } else {
+          console.error('⚠️ Erreur génération contrat:', generateData.error);
+        }
+      } catch (err) {
+        console.error('⚠️ Erreur génération contrat:', err);
+      }
+    }
+
+    // 6. Créer une notification admin
     const { data: { user: adminUser } } = await supabase.auth.getUser(
       request.headers.get('Authorization')?.replace('Bearer ', '') || ''
     );

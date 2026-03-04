@@ -1,23 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { FileText, Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 interface Contract {
   id: string;
+  contract_type: string;
   status: string;
   amount: number;
-  signed_at: string | null;
+  signed_at: string;
   created_at: string;
-  yousign_signature_request_id: string | null;
-  subscription_pack: string;
+  file_url: string;
+  is_manual_upload: boolean;
 }
 
-export default function ClientContratPage() {
-  const [contract, setContract] = useState<Contract | null>(null);
+export default function ClientContratsPage() {
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,168 +25,150 @@ export default function ClientContratPage() {
   );
 
   useEffect(() => {
-    loadUser();
+    loadContracts();
   }, []);
 
-  useEffect(() => {
-    if (userId) {
-      loadContract();
-    }
-  }, [userId]);
-
-  async function loadUser() {
+  async function loadContracts() {
     const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
-        .single();
+    if (!user) return;
 
-      if (profile) {
-        setUserId(profile.id);
-      }
-    }
-  }
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', user.id)
+      .single();
 
-  async function loadContract() {
+    if (!userData) return;
+
     const { data } = await supabase
       .from('contracts')
       .select('*')
-      .eq('user_id', userId)
-      .eq('contract_type', 'client')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .eq('user_id', userData.id)
+      .order('created_at', { ascending: false });
 
-    setContract(data);
+    setContracts(data || []);
     setLoading(false);
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
     );
   }
 
+  const getContractTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      client_subscription: 'Contrat d\'abonnement',
+      team_onboarding: 'Contrat de collaboration',
+      client: 'Contrat client',
+      closer: 'Contrat Closer',
+      setter: 'Contrat Setter',
+      expert: 'Contrat Expert',
+    };
+    return labels[type] || 'Contrat';
+  };
+
+  const getStatusInfo = (status: string) => {
+    const statusMap: Record<string, { icon: any; color: string; label: string }> = {
+      signed: { icon: CheckCircle, color: 'text-green-600', label: 'Signé' },
+      pending_signature: { icon: Clock, color: 'text-orange-600', label: 'À signer' },
+      sent: { icon: AlertCircle, color: 'text-blue-600', label: 'Envoyé' },
+      pending: { icon: Clock, color: 'text-gray-600', label: 'En attente' },
+    };
+    return statusMap[status] || statusMap.pending;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Mon Contrat</h1>
-          <p className="text-gray-600 mt-2">Contrat d'abonnement Déclic Entrepreneurs</p>
-        </div>
+    <div className="max-w-5xl mx-auto p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Mes Contrats</h1>
+        <p className="text-gray-600 mt-2">Consultez et téléchargez vos contrats</p>
+      </div>
 
-        {contract ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Status Header */}
-            <div className={`p-6 ${
-              contract.status === 'signed' ? 'bg-green-50 border-b border-green-200' :
-              contract.status === 'sent' ? 'bg-blue-50 border-b border-blue-200' :
-              'bg-gray-50 border-b border-gray-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {contract.status === 'signed' ? (
-                    <CheckCircle className="text-green-600" size={32} />
-                  ) : contract.status === 'sent' ? (
-                    <Clock className="text-blue-600" size={32} />
-                  ) : (
-                    <AlertCircle className="text-gray-600" size={32} />
+      <div className="space-y-4">
+        {contracts.map((contract) => {
+          const statusInfo = getStatusInfo(contract.status);
+          const StatusIcon = statusInfo.icon;
+
+          return (
+            <div 
+              key={contract.id} 
+              className="bg-white rounded-lg border-2 border-gray-200 p-6 hover:shadow-md transition-all"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="p-3 rounded-lg bg-blue-50">
+                    <FileText className="text-blue-600" size={24} />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg text-gray-900">
+                      {getContractTypeLabel(contract.contract_type)}
+                    </h3>
+                    
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Créé le :</span>{' '}
+                        {new Date(contract.created_at).toLocaleDateString('fr-FR')}
+                      </p>
+                      
+                      {contract.signed_at && (
+                        <p className="text-sm text-green-600">
+                          <span className="font-medium">Signé le :</span>{' '}
+                          {new Date(contract.signed_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
+
+                      {contract.amount && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Montant :</span> {contract.amount.toFixed(2)} €
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <StatusIcon className={statusInfo.color} size={18} />
+                      <span className={`font-medium text-sm ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {contract.file_url && (
+                    
+                    <a href={contract.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                    >
+                      <Download size={16} />
+                      Télécharger
+                    </a>
                   )}
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {contract.status === 'signed' ? 'Contrat Signé' :
-                       contract.status === 'sent' ? 'En attente de signature' :
-                       'Contrat en préparation'}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      {contract.signed_at 
-                        ? `Signé le ${new Date(contract.signed_at).toLocaleDateString('fr-FR')}`
-                        : `Créé le ${new Date(contract.created_at).toLocaleDateString('fr-FR')}`
-                      }
-                    </p>
-                  </div>
+                  
+                  {contract.is_manual_upload && (
+                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium text-center">
+                      Upload manuel
+                    </span>
+                  )}
                 </div>
-
-                {contract.status === 'signed' && (
-                  <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                    <Download size={20} />
-                    Télécharger
-                  </button>
-                )}
               </div>
             </div>
+          );
+        })}
 
-            {/* Contract Details */}
-            <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Détails du contrat</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Type</span>
-                    <span className="font-semibold text-gray-900">Abonnement Client</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Pack</span>
-                    <span className="font-semibold text-gray-900">
-                      {contract.subscription_pack || 'Pack Standard'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Montant</span>
-                    <span className="text-2xl font-bold text-orange-600">{contract.amount}€</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Statut</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      contract.status === 'signed' ? 'bg-green-100 text-green-700' :
-                      contract.status === 'sent' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {contract.status === 'signed' ? 'Signé' :
-                       contract.status === 'sent' ? 'En attente' :
-                       'En préparation'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {contract.status === 'sent' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-900 font-medium mb-2">
-                    📧 Un email de signature vous a été envoyé
-                  </p>
-                  <p className="text-blue-700 text-sm">
-                    Vérifiez votre boîte mail pour signer électroniquement votre contrat via YouSign.
-                  </p>
-                </div>
-              )}
-
-              {contract.status === 'signed' && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-green-900 font-medium">
-                    ✅ Votre contrat est signé et actif
-                  </p>
-                  <p className="text-green-700 text-sm mt-1">
-                    Vous avez maintenant accès à tous les services inclus dans votre pack.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <FileText className="mx-auto text-gray-300 mb-4" size={64} />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Aucun contrat trouvé
+        {contracts.length === 0 && (
+          <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <FileText className="mx-auto mb-4 text-gray-300" size={64} />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Aucun contrat pour le moment
             </h3>
             <p className="text-gray-600">
-              Votre contrat d'abonnement sera disponible ici après votre souscription.
+              Vos contrats apparaîtront ici une fois qu'ils seront générés
             </p>
           </div>
         )}

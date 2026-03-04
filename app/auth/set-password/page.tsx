@@ -2,19 +2,56 @@
 
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  useEffect(() => {
+    checkSession();
+  }, []);
+
+  async function checkSession() {
+    try {
+      // Vérifier s'il y a un token dans l'URL (recovery link)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      
+      if (accessToken) {
+        // On a un token de récupération, on l'utilise
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: hashParams.get('refresh_token') || '',
+        });
+
+        if (sessionError) {
+          setError('Lien invalide ou expiré. Demandez un nouveau lien.');
+        }
+      } else {
+        // Vérifier s'il y a déjà une session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setError('Session expirée. Veuillez demander un nouveau lien d\'invitation.');
+        }
+      }
+    } catch (err: any) {
+      setError('Erreur de connexion: ' + err.message);
+    } finally {
+      setCheckingSession(false);
+    }
+  }
 
   async function handleSetPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +112,17 @@ export default function SetPasswordPage() {
     }
   }
 
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-orange-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Vérification...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-orange-50">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
@@ -91,6 +139,16 @@ export default function SetPasswordPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
+              {error.includes('Session expirée') && (
+                <div className="mt-2">
+                  <a 
+                    href="/contact" 
+                    className="text-red-800 underline font-medium"
+                  >
+                    Contactez l'administrateur
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
@@ -105,6 +163,7 @@ export default function SetPasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
               placeholder="Minimum 8 caractères"
+              disabled={!!error}
             />
           </div>
 
@@ -119,12 +178,13 @@ export default function SetPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
               placeholder="Retapez votre mot de passe"
+              disabled={!!error}
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !!error}
             className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Création...' : 'Créer mon mot de passe'}

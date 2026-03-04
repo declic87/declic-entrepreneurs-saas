@@ -65,6 +65,7 @@ export default function EquipePage() {
       .from("users")
       .select("*, status")
       .in("role", ["ADMIN", "HOS", "CLOSER", "SETTER", "EXPERT"])
+      .neq("is_active", false)
       .order("first_name");
     
     if (!users) { 
@@ -88,7 +89,7 @@ export default function EquipePage() {
       const asSetter = (leads || []).filter((l) => l.setterId === u.id);
       return {
         id: u.id,
-        name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),  // ✅
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
         email: u.email || "",
         phone: u.phone || "",
         role: u.role,
@@ -117,11 +118,12 @@ export default function EquipePage() {
       .from("users")
       .insert({ 
         id: newId, 
-        first_name: formName.trim().split(' ')[0],  // ✅ Prénom
-        last_name: formName.trim().split(' ').slice(1).join(' ') || '',  // ✅ Nom 
+        first_name: formName.trim().split(' ')[0],
+        last_name: formName.trim().split(' ').slice(1).join(' ') || '',
         email: formEmail.trim(), 
         phone: formPhone.trim(), 
-        role: formRole 
+        role: formRole,
+        status: 'pending'
       });
     
     if (error) { 
@@ -142,14 +144,14 @@ export default function EquipePage() {
   async function removeMember(id: string) {
     const { error } = await supabase
       .from("users")
-      .delete()
+      .update({ is_active: false })
       .eq("id", id);
     
     if (error) { 
       setMessage("Erreur: " + error.message); 
     } else { 
       setMembers(members.filter((m) => m.id !== id)); 
-      setMessage("Membre supprimé"); 
+      setMessage("Membre désactivé"); 
     }
     setConfirmDelete(null);
     setTimeout(() => setMessage(""), 3000);

@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
   try {
     const { email, first_name, last_name, role } = await request.json();
 
-    // Validation
     if (!email || !first_name || !last_name || !role) {
       return NextResponse.json(
         { error: 'Tous les champs sont requis' },
@@ -26,7 +25,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier si l'email existe déjà
     const { data: existingUser } = await supabase
       .from('users')
       .select('id, email')
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Créer le compte Auth SANS mot de passe
+    // 1. Créer le compte Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       user_metadata: {
@@ -69,17 +67,48 @@ export async function POST(request: NextRequest) {
 
     if (userError) throw userError;
 
-    // 3. Envoyer l'email d'invitation
+    // ⭐ 3. Si EXPERT, créer l'entrée dans experts
+    if (role === 'EXPERT') {
+      const { error: expertError } = await supabase.from('experts').insert({
+        userId: userData.id,
+        specialty: 'À définir',
+        bio: '',
+        rating: 0,
+        totalReviews: 0,
+        totalClients: 0,
+        completedSessions: 0,
+        isAvailable: true,
+      });
+
+      if (expertError) {
+        console.error('⚠️ Erreur création expert:', expertError);
+      }
+    }
+
+    // ⭐ 4. Ajouter à la messagerie #general
+    const { data: generalConv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('channel_name', '#general')
+      .single();
+
+    if (generalConv) {
+      await supabase.from('conversation_members').insert({
+        conversation_id: generalConv.id,
+        user_id: userData.id,
+      });
+    }
+
+    // 5. Envoyer l'email d'invitation
     const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${role.toLowerCase()}`,
     });
 
     if (inviteError) {
       console.error('⚠️ Erreur envoi email:', inviteError);
-      // Pas critique, on continue
     }
 
-    // 4. Créer une notification admin
+    // 6. Créer une notification admin
     const { data: { user: adminUser } } = await supabase.auth.getUser(
       request.headers.get('Authorization')?.replace('Bearer ', '') || ''
     );

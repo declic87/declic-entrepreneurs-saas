@@ -1,5 +1,8 @@
 'use client';
 
+// ⭐ AJOUTE CETTE LIGNE EN HAUT
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
@@ -29,10 +32,11 @@ export default function AdminDashboard() {
           return;
         }
 
-        // Compter clients
+        // Compter clients (role = CLIENT)
         const { count: clientsCount } = await supabase
-          .from('clients')
-          .select('*', { count: 'exact', head: true });
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'CLIENT');
 
         // Compter leads
         const { count: leadsCount } = await supabase

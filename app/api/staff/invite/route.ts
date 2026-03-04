@@ -40,14 +40,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Créer un mot de passe temporaire aléatoire
-    const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
-
-    // 1. Créer le compte Auth
+    // 1. Créer le compte Auth SANS mot de passe
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
-      password: tempPassword,
-      email_confirm: false, // Email non confirmé, il devra créer son mot de passe
       user_metadata: {
         first_name,
         last_name,
@@ -67,16 +62,16 @@ export async function POST(request: NextRequest) {
         first_name,
         last_name,
         role,
-        status: 'pending', // En attente de confirmation
+        status: 'pending',
       })
       .select()
       .single();
 
     if (userError) throw userError;
 
-    // 3. Envoyer l'email d'invitation (réinitialisation de mot de passe)
-    const { error: inviteError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?role=${role}`,
+    // 3. Envoyer l'email d'invitation
+    const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${role.toLowerCase()}`,
     });
 
     if (inviteError) {

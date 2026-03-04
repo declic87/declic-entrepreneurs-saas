@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// ⭐ DÉSACTIVER LE CACHE VERCEL
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * API Route: /api/client/documents
  * Récupère les documents téléchargeables (tous accessibles aux 3 packs)

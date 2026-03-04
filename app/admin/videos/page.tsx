@@ -508,6 +508,36 @@ function PartenaireSection() {
         </AlertDescription>
       </Alert>
 
+      {/* ⭐ BOUTON AJOUTER PARTENAIRE */}
+      <div className="flex justify-end">
+        <Button
+          onClick={async () => {
+            const newTitle = prompt('Nom du nouveau partenaire ?');
+            if (!newTitle) return;
+            
+            const { error } = await supabase
+              .from('partner_content')
+              .insert({
+                title: newTitle,
+                category: selectedCategory === 'all' ? 'comptabilite' : selectedCategory,
+                is_active: false,
+                order_index: categories.length + 1,
+              });
+            
+            if (error) {
+              toast.error('Erreur: ' + error.message);
+            } else {
+              toast.success('Partenaire ajouté !');
+              loadCategories();
+            }
+          }}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Ajouter un partenaire
+        </Button>
+      </div>
+
       <div className="space-y-4">
         {categories.length === 0 ? (
           <Card>

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${userData.role.toLowerCase()}`,
+        redirectTo: `${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${userData.role.toLowerCase()}`,
       },
     });
 

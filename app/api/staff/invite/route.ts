@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
       email,
       {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${role.toLowerCase()}`,
+        redirectTo: `${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${role.toLowerCase()}`,
         data: {
           first_name,
           last_name,

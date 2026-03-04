@@ -65,7 +65,7 @@ export default function EquipePage() {
       .from("users")
       .select("*, status")
       .in("role", ["ADMIN", "HOS", "CLOSER", "SETTER", "EXPERT"])
-      .order("name");
+      .order("first_name");
     
     if (!users) { 
       setLoading(false); 
@@ -88,7 +88,7 @@ export default function EquipePage() {
       const asSetter = (leads || []).filter((l) => l.setterId === u.id);
       return {
         id: u.id,
-        name: u.name || "",
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),  // ✅
         email: u.email || "",
         phone: u.phone || "",
         role: u.role,
@@ -117,7 +117,8 @@ export default function EquipePage() {
       .from("users")
       .insert({ 
         id: newId, 
-        name: formName.trim(), 
+        first_name: formName.trim().split(' ')[0],  // ✅ Prénom
+        last_name: formName.trim().split(' ').slice(1).join(' ') || '',  // ✅ Nom 
         email: formEmail.trim(), 
         phone: formPhone.trim(), 
         role: formRole 

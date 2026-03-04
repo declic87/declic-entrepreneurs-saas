@@ -25,12 +25,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
 
-    // ⭐ GÉNÉRER UN NOUVEAU LIEN MAGIQUE
+    // ⭐ GÉNÉRER UN LIEN DE RÉCUPÉRATION (recovery = reset password)
     const { data, error } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${userData.role.toLowerCase()}`,
+        redirectTo: `${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL}/auth/set-password`,
       },
     });
 
@@ -51,20 +51,51 @@ export async function POST(request: NextRequest) {
         to: email,
         subject: 'Créez votre mot de passe - DÉCLIC Entrepreneurs',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1E40AF;">Bienvenue chez DÉCLIC Entrepreneurs !</h2>
-            <p>Vous avez été invité(e) à rejoindre la plateforme DÉCLIC Entrepreneurs.</p>
-            <p>Cliquez sur le bouton ci-dessous pour créer votre mot de passe et accéder à votre espace :</p>
-            <a href="${data.properties.action_link}" 
-               style="display: inline-block; background-color: #F59E0B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0;">
-              Créer mon mot de passe
-            </a>
-            <p style="color: #666; font-size: 14px; margin-top: 20px;">
-              Si vous n'avez pas demandé cet accès, ignorez cet email.
-            </p>
-            <p style="color: #999; font-size: 12px; margin-top: 30px;">
-              DÉCLIC Entrepreneurs - Optimisation fiscale et juridique
-            </p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #1E40AF; margin: 0;">DÉCLIC Entrepreneurs</h1>
+            </div>
+            
+            <div style="background-color: #F3F4F6; border-radius: 10px; padding: 30px; margin-bottom: 30px;">
+              <h2 style="color: #1F2937; margin-top: 0;">Bienvenue dans l'équipe !</h2>
+              <p style="color: #4B5563; font-size: 16px; line-height: 1.6;">
+                Vous avez été invité(e) à rejoindre la plateforme DÉCLIC Entrepreneurs en tant que <strong>${userData.role}</strong>.
+              </p>
+              <p style="color: #4B5563; font-size: 16px; line-height: 1.6;">
+                Pour commencer, créez votre mot de passe en cliquant sur le bouton ci-dessous :
+              </p>
+            </div>
+
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="${data.properties.action_link}" 
+                 style="display: inline-block; background-color: #F59E0B; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);">
+                ✨ Créer mon mot de passe
+              </a>
+            </div>
+
+            <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 30px 0; border-radius: 4px;">
+              <p style="color: #92400E; margin: 0; font-size: 14px;">
+                <strong>💡 Conseil :</strong> Choisissez un mot de passe sécurisé avec au moins 8 caractères.
+              </p>
+            </div>
+
+            <div style="border-top: 2px solid #E5E7EB; padding-top: 20px; margin-top: 40px;">
+              <p style="color: #6B7280; font-size: 14px; line-height: 1.5;">
+                Si vous n'avez pas demandé cet accès, vous pouvez ignorer cet email en toute sécurité.
+              </p>
+              <p style="color: #6B7280; font-size: 14px; margin-top: 15px;">
+                Ce lien est valable pendant <strong>24 heures</strong>.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+              <p style="color: #9CA3AF; font-size: 12px; margin: 5px 0;">
+                DÉCLIC Entrepreneurs
+              </p>
+              <p style="color: #9CA3AF; font-size: 12px; margin: 5px 0;">
+                Optimisation fiscale et juridique pour entrepreneurs
+              </p>
+            </div>
           </div>
         `,
       }),

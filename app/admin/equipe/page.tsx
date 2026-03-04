@@ -367,6 +367,7 @@ export default function EquipePage() {
                     </div>
                   </div>
 
+                  {/* ⭐ BOUTON RENVOYER INVITATION */}
                   {m.status === 'pending' && (
                     <button
                       onClick={() => resendInvitation(m.email, m.id)}

@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { createBrowserClient } from '@supabase/ssr';
 import { OnboardingVideo } from '@/components/OnboardingVideo';
+import { RatingsSection } from '@/components/RatingsSection';
 
 // --- Interfaces ---
 interface Template {
@@ -242,6 +243,12 @@ export default function MemberDashboard({
       access: access.has_ateliers 
     },
     { 
+      id: "mes-avis", 
+      label: "Mes Avis", 
+      icon: <Star size={16} />, 
+      access: true 
+    },
+    { 
       id: "mes-rdv", 
       label: "Mes RDV", 
       icon: <Video size={16} />, 
@@ -406,6 +413,9 @@ export default function MemberDashboard({
           </div>
         </div>
       )}
+
+{/* SECTION MES AVIS */}
+{activeTab === "mes-avis" && <RatingsSection />}
 
  {/* FORMATIONS - Redirection vers page dédiée */}
 {activeTab === "formations" && (

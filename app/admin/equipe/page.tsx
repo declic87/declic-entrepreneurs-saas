@@ -65,7 +65,6 @@ export default function EquipePage() {
       .from("users")
       .select("*, status")
       .in("role", ["ADMIN", "HOS", "CLOSER", "SETTER", "EXPERT"])
-      .neq("is_active", false)
       .order("first_name");
     
     if (!users) { 

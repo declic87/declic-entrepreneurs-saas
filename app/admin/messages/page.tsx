@@ -18,7 +18,6 @@ interface Conversation {
   name: string;
   type: string;
   members?: any[];
-  unread_count?: number;
 }
 
 interface Message {
@@ -26,7 +25,7 @@ interface Message {
   content: string;
   user_id: string;
   created_at: string;
-  user: {
+  users: {
     first_name: string;
     last_name: string;
     role: string;
@@ -88,39 +87,55 @@ export default function TeamMessagesPage() {
 
   async function loadConversations() {
     try {
-      const { data: memberData } = await supabase
+      console.log("🔍 Loading conversations for user:", currentUserId);
+
+      const { data: memberData, error: memberError } = await supabase
         .from("staff_conversation_members")
         .select("conversation_id")
         .eq("user_id", currentUserId);
 
+      if (memberError) {
+        console.error("❌ Error loading members:", memberError);
+        return;
+      }
+
+      console.log("📋 Member data:", memberData);
+
       if (!memberData || memberData.length === 0) {
+        console.log("⚠️ No conversations found");
         setConversations([]);
         return;
       }
 
       const conversationIds = memberData.map(m => m.conversation_id);
+      console.log("🆔 Conversation IDs:", conversationIds);
 
-      const { data: convData } = await supabase
+      const { data: convData, error: convError } = await supabase
         .from("staff_conversations")
         .select("*")
         .in("id", conversationIds)
         .order("updated_at", { ascending: false });
+
+      if (convError) {
+        console.error("❌ Error loading conversations:", convError);
+        return;
+      }
+
+      console.log("💬 Conversations:", convData);
 
       if (convData) {
         const enrichedConvs = await Promise.all(
           convData.map(async (conv) => {
             const { data: members } = await supabase
               .from("staff_conversation_members")
-              .select(`
-                user_id,
-                user:users(first_name, last_name, role)
-              `)
+              .select("user_id, users(first_name, last_name, role)")
               .eq("conversation_id", conv.id);
 
             return { ...conv, members };
           })
         );
 
+        console.log("✅ Enriched conversations:", enrichedConvs);
         setConversations(enrichedConvs);
 
         const general = enrichedConvs.find(c => c.name === '#general');
@@ -131,26 +146,31 @@ export default function TeamMessagesPage() {
         }
       }
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("❌ Error in loadConversations:", error);
     }
   }
 
   async function loadMessages(conversationId: string) {
     try {
-      const { data } = await supabase
+      console.log("📨 Loading messages for:", conversationId);
+
+      const { data, error } = await supabase
         .from("staff_messages")
-        .select(`
-          *,
-          user:users(first_name, last_name, role)
-        `)
+        .select("*, users(first_name, last_name, role)")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 
+      if (error) {
+        console.error("❌ Error loading messages:", error);
+        return;
+      }
+
+      console.log("✅ Messages loaded:", data?.length);
       if (data) {
         setMessages(data as any);
       }
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("❌ Error in loadMessages:", error);
     }
   }
 
@@ -204,7 +224,7 @@ export default function TeamMessagesPage() {
 
           const newMsg = {
             ...payload.new,
-            user: userData,
+            users: userData,
           };
 
           setMessages((prev) => [...prev, newMsg as any]);
@@ -228,7 +248,7 @@ export default function TeamMessagesPage() {
     const otherMembers = conv.members?.filter((m: any) => m.user_id !== currentUserId);
     if (otherMembers && otherMembers.length > 0) {
       return otherMembers.map((m: any) => 
-        `${m.user.first_name} ${m.user.last_name}`
+        `${m.users.first_name} ${m.users.last_name}`
       ).join(', ');
     }
     return conv.name;
@@ -281,6 +301,7 @@ export default function TeamMessagesPage() {
             <div className="p-8 text-center text-gray-400">
               <MessageSquare size={48} className="mx-auto mb-2 opacity-20" />
               <p className="text-sm">Aucune conversation</p>
+              <p className="text-xs mt-2">Ouvre la console (F12) pour voir les logs</p>
             </div>
           ) : (
             filteredConversations.map((conv) => (
@@ -346,53 +367,60 @@ export default function TeamMessagesPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((msg) => {
-                const isMe = msg.user_id === currentUserId;
-                
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${isMe ? "flex-row-reverse" : ""}`}
-                  >
-                    <Avatar className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-600">
-                      <AvatarFallback className="text-white font-bold">
-                        {msg.user.first_name.charAt(0)}
-                        {msg.user.last_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className={`flex-1 ${isMe ? "text-right" : ""}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        {!isMe && (
-                          <>
-                            <span className="font-semibold text-sm">
-                              {msg.user.first_name} {msg.user.last_name}
-                            </span>
-                            <Badge className={`${getRoleColor(msg.user.role)} text-xs`}>
-                              {msg.user.role}
-                            </Badge>
-                          </>
-                        )}
-                        <span className="text-xs text-gray-500">
-                          {new Date(msg.created_at).toLocaleTimeString("fr-FR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <div
-                        className={`inline-block px-4 py-2 rounded-lg ${
-                          isMe
-                            ? "bg-orange-500 text-white"
-                            : "bg-white border text-gray-900"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+              {messages.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  <p>Aucun message pour l'instant</p>
+                  <p className="text-sm mt-2">Soyez le premier à écrire !</p>
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isMe = msg.user_id === currentUserId;
+                  
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-3 ${isMe ? "flex-row-reverse" : ""}`}
+                    >
+                      <Avatar className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-600">
+                        <AvatarFallback className="text-white font-bold">
+                          {msg.users.first_name.charAt(0)}
+                          {msg.users.last_name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className={`flex-1 ${isMe ? "text-right" : ""}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          {!isMe && (
+                            <>
+                              <span className="font-semibold text-sm">
+                                {msg.users.first_name} {msg.users.last_name}
+                              </span>
+                              <Badge className={`${getRoleColor(msg.users.role)} text-xs`}>
+                                {msg.users.role}
+                              </Badge>
+                            </>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {new Date(msg.created_at).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <div
+                          className={`inline-block px-4 py-2 rounded-lg ${
+                            isMe
+                              ? "bg-orange-500 text-white"
+                              : "bg-white border text-gray-900"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
               <div ref={messagesEndRef} />
             </div>
 

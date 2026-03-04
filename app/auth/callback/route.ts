@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      console.error('Erreur callback:', error);
+      console.error('❌ Erreur callback:', error);
       return NextResponse.redirect(new URL('/login?error=auth_callback_failed', requestUrl.origin));
     }
 
@@ -29,16 +29,21 @@ export async function GET(request: NextRequest) {
         .eq('auth_id', user.id)
         .single();
 
-      // ⭐ VÉRIFIER SI LE USER A DÉJÀ UN MOT DE PASSE
-      // Un user invité n'a pas encore de "confirmed_at" jusqu'à ce qu'il crée son mdp
-      const needsPassword = userData?.status === 'pending' || !user.confirmed_at;
+      // ⭐ SI STATUS = PENDING → Jamais créé de mot de passe
+      const needsPassword = userData?.status === 'pending';
+
+      console.log('👤 User:', user.email);
+      console.log('📊 Status:', userData?.status);
+      console.log('🔑 Needs password:', needsPassword);
 
       if (needsPassword) {
-        console.log('🔑 User needs password, redirect to set-password');
+        console.log('➡️ Redirect to set-password');
         return NextResponse.redirect(new URL('/auth/set-password', requestUrl.origin));
       }
 
       const role = userData?.role || type;
+
+      console.log('✅ User has password, redirect to dashboard. Role:', role);
 
       // Rediriger selon le rôle
       if (role === 'EXPERT') {
@@ -53,5 +58,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  console.log('⚠️ No code or user, redirect to login');
   return NextResponse.redirect(new URL('/login', requestUrl.origin));
 }

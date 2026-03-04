@@ -25,9 +25,14 @@ export async function GET(request: NextRequest) {
     if (user) {
       const { data: userData } = await supabase
         .from('users')
-        .select('role')
+        .select('role, status')
         .eq('auth_id', user.id)
         .single();
+
+      // ⭐ Si status = pending, rediriger vers création mot de passe
+      if (userData?.status === 'pending') {
+        return NextResponse.redirect(new URL('/auth/set-password', requestUrl.origin));
+      }
 
       const role = userData?.role || type;
 

@@ -29,13 +29,18 @@ export async function GET(request: NextRequest) {
         .eq('auth_id', user.id)
         .single();
 
-      // ⭐ Si status = pending, rediriger vers création mot de passe
-      if (userData?.status === 'pending') {
+      // ⭐ VÉRIFIER SI LE USER A DÉJÀ UN MOT DE PASSE
+      // Un user invité n'a pas encore de "confirmed_at" jusqu'à ce qu'il crée son mdp
+      const needsPassword = userData?.status === 'pending' || !user.confirmed_at;
+
+      if (needsPassword) {
+        console.log('🔑 User needs password, redirect to set-password');
         return NextResponse.redirect(new URL('/auth/set-password', requestUrl.origin));
       }
 
       const role = userData?.role || type;
 
+      // Rediriger selon le rôle
       if (role === 'EXPERT') {
         return NextResponse.redirect(new URL('/expert', requestUrl.origin));
       } else if (role === 'HOS' || role === 'CLOSER' || role === 'SETTER') {

@@ -38,24 +38,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Créer le compte Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // ⭐ 1. UTILISER inviteUserByEmail DIRECTEMENT (crée le user ET envoie l'email)
+    const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
       email,
-      user_metadata: {
-        first_name,
-        last_name,
-        role,
-      },
-    });
+      {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${role.toLowerCase()}`,
+        data: {
+          first_name,
+          last_name,
+          role,
+        },
+      }
+    );
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Création Auth échouée');
+    if (inviteError) throw inviteError;
+    if (!inviteData.user) throw new Error('Invitation échouée');
 
     // 2. Créer l'utilisateur dans users
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
-        auth_id: authData.user.id,
+        auth_id: inviteData.user.id,
         email,
         first_name,
         last_name,
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     if (userError) throw userError;
 
-    // ⭐ 3. Si EXPERT, créer l'entrée dans experts
+    // 3. Si EXPERT, créer l'entrée dans experts
     if (role === 'EXPERT') {
       const { error: expertError } = await supabase.from('experts').insert({
         userId: userData.id,
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ⭐ 4. Ajouter à la messagerie #general
+    // 4. Ajouter à la messagerie #general
     const { data: generalConv } = await supabase
       .from('conversations')
       .select('id')
@@ -99,16 +102,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 5. Envoyer l'email d'invitation
-    const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=${role.toLowerCase()}`,
-    });
-
-    if (inviteError) {
-      console.error('⚠️ Erreur envoi email:', inviteError);
-    }
-
-    // 6. Créer une notification admin
+    // 5. Créer une notification admin
     const { data: { user: adminUser } } = await supabase.auth.getUser(
       request.headers.get('Authorization')?.replace('Bearer ', '') || ''
     );
@@ -134,6 +128,7 @@ export async function POST(request: NextRequest) {
       email,
       role,
       userId: userData.id,
+      invitedAt: inviteData.user.invited_at,
     });
 
     return NextResponse.json({

@@ -518,8 +518,17 @@ function PartenaireSection() {
             const { error } = await supabase
               .from('partner_content')
               .insert({
+                content_type: 'partner_info',  // ⬅️ AJOUTÉ (OBLIGATOIRE)
                 title: newTitle,
                 category: selectedCategory === 'all' ? 'comptabilite' : selectedCategory,
+                description: '',
+                video_url: null,
+                video_type: 'loom',
+                fathom_recording_url: null,
+                fathom_summary: null,
+                pdf_file_url: null,
+                pdf_file_name: null,
+                link_template: null,
                 is_active: false,
                 order_index: categories.length + 1,
               });

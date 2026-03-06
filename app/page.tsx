@@ -67,7 +67,7 @@ const OFFRES = [
   {
     name: "Starter",
     price: "3 600€",
-    bullets: ["Audit fiscal complet","Création de société","3 RDV de suivi","Support email 6 mois"],
+    bullets: ["Audit fiscal complet","Création de société","3 RDV de suivi","Support messagerie 6 mois","Accès partenaire"],
     // 👉 Remplace par ton Payment Link Stripe exact (copie l’URL “Pay link” depuis Stripe)
     payLink: "https://buy.stripe.com/00weVcdi72ou8D34eX9fW06", 
     cta: "/signup?plan=starter",
@@ -76,7 +76,7 @@ const OFFRES = [
     name: "Pro",
     tag: "POPULAIRE",
     price: "4 600€",
-    bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 12 mois","comptable partenaire"],
+    bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 12 mois","Accès partenaire"],
     // 👉 Remplace par ton Payment Link Stripe exact
     payLink: "https://buy.stripe.com/00w9AS7XNgfk5qR6n59fW05",
     cta: "/signup?plan=pro",

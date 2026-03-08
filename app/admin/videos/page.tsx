@@ -562,24 +562,56 @@ function PartenaireSection() {
             return (
               <Card key={item.id} className="border-2">
                 <CardHeader className="bg-slate-50">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="text-2xl">{categoryInfo?.icon || '📄'}</span>
-                      {item.title}
-                    </CardTitle>
-                    <button
-                      onClick={() => updateContent(item.id, 'is_active', !item.is_active)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        item.is_active ? 'bg-green-500' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          item.is_active ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3 flex-1">
+      <span className="text-2xl">{categoryInfo?.icon || '📄'}</span>
+      <Input
+        value={item.title}
+        onChange={(e) => updateContent(item.id, 'title', e.target.value)}
+        className="font-bold text-lg max-w-md"
+        placeholder="Nom du partenaire"
+      />
+    </div>
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={async () => {
+          if (!confirm(`Supprimer "${item.title}" ?`)) return;
+          
+          try {
+            const { error } = await supabase
+              .from('partner_content')
+              .delete()
+              .eq('id', item.id);
+            
+            if (error) throw error;
+            
+            toast.success('Partenaire supprimé !');
+            loadCategories();
+          } catch (err: any) {
+            toast.error('Erreur: ' + err.message);
+          }
+        }}
+        className="text-red-600 hover:bg-red-50"
+      >
+        <Trash2 size={16} />
+      </Button>
+      
+      <button
+        onClick={() => updateContent(item.id, 'is_active', !item.is_active)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          item.is_active ? 'bg-green-500' : 'bg-gray-200'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            item.is_active ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  </div>
                   {item.category && (
                     <Badge className="bg-blue-100 text-blue-700 w-fit">
                       {categoryInfo?.label || item.category}

@@ -53,6 +53,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },
+    { label: "Boîte à Outils", href: "/commercial/outils", icon: FileText },
     { label: "📚 Formations", href: "/commercial/formations", icon: GraduationCap },
     { label: "📖 Tutos", href: "/commercial/tutos", icon: BookOpen },
     { label: "🎥 Coachings", href: "/commercial/coachings", icon: Video },

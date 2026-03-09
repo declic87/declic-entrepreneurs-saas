@@ -273,7 +273,7 @@ export default function HomePage() {
     {/* Stats */}
     <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8">
       <Stat value="2014" label="Depuis" />
-      <Stat value="500+" label="Clients accompagnés" />
+      <Stat value="2000+" label="Clients accompagnés" />
       <Stat value="30,7M€" label="Économisés au total" />
       <Stat value="4.9/5" label="Satisfaction client" />
     </div>

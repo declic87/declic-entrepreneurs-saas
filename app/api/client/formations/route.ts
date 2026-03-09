@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // Récupérer TOUTES les vidéos de formations (SANS jointure templates)
+    // Récupérer TOUTES les vidéos de formations
     const { data: allVideos, error: videoError } = await supabaseAdmin
       .from('onboarding_videos_client')
       .select('*')
@@ -74,17 +74,25 @@ export async function GET(request: Request) {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    console.log('📊 Total vidéos trouvées:', allVideos?.length);
-    console.log('📊 Vidéos:', JSON.stringify(allVideos, null, 2));
-    console.log('❌ Erreur vidéos:', videoError);
+    console.log('📊 Total vidéos trouvées:', allVideos?.length || 0);
 
-    // Déterminer quelle catégorie afficher (1 seule)
+    if (videoError) {
+      console.log('❌ Erreur vidéos:', videoError);
+    }
+
+    // ⭐ FIX : Déterminer quelle catégorie afficher (1 seule)
     let category = null;
-    if (accessData.has_formation_createur) {
+
+    // 1. Formation Créateur (497€)
+    if (accessData.has_formation_createur || accessData.pack_type === 'createur') {
       category = 'Créateur';
-    } else if (accessData.has_formation_agent_immo) {
+    } 
+    // 2. Formation Agent Immo (897€)
+    else if (accessData.has_formation_agent_immo || accessData.pack_type === 'agent-immo') {
       category = 'Agent Immo';
-    } else if (['starter', 'pro', 'expert'].includes(accessData.pack_type)) {
+    } 
+    // 3. Packs Accompagnement (STARTER/PRO/EXPERT)
+    else if (['starter', 'pro', 'expert'].includes(accessData.pack_type?.toLowerCase() || '')) {
       category = 'Accompagnement';
     }
 
@@ -102,7 +110,16 @@ export async function GET(request: Request) {
       : [];
 
     console.log('✅ Vidéos filtrées:', filteredVideos.length);
-    console.log('✅ Vidéos filtrées détail:', JSON.stringify(filteredVideos, null, 2));
+    
+    if (filteredVideos.length > 0) {
+      console.log('✅ Exemples de vidéos filtrées:', 
+        filteredVideos.slice(0, 3).map((v: any) => ({
+          title: v.title,
+          category: v.category,
+          duration: v.duration
+        }))
+      );
+    }
 
     return NextResponse.json({ 
       success: true,

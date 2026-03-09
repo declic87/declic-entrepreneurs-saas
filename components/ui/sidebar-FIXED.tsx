@@ -94,6 +94,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Dashboard", href: "/expert", icon: LayoutDashboard },
     { label: "Mes Clients", href: "/expert/clients", icon: Users },
     { label: "Agenda", href: "/expert/agenda", icon: Calendar },
+    { label: "Companion RDV", href: "/expert/rdv-companion", icon: FileText },
     { label: "📚 Formations", href: "/expert/formations", icon: GraduationCap },
     { label: "📖 Tutos", href: "/expert/tutos", icon: BookOpen },
     { label: "🎥 Coachings", href: "/expert/coachings", icon: Video },

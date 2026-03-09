@@ -23,6 +23,16 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Nombre de RDV par pack
+const RDV_BY_PACK = {
+  starter: 3,
+  pro: 4,
+  expert: 6,
+  plateforme: 0,
+  createur: 0,
+  agent_immo: 0,
+};
+
 // Définition des RDV
 const RDV_DEFINITIONS = {
   1: {
@@ -175,6 +185,145 @@ const RDV_DEFINITIONS = {
         ]
       }
     ]
+  },
+  4: {
+    num: 4,
+    titre: 'Point trimestriel & ajustements',
+    emoji: '📈',
+    duree: '45 min',
+    sections: [
+      {
+        id: 'bilan-trimestre',
+        titre: 'Bilan du trimestre écoulé',
+        icon: '📊',
+        description: 'Analyser les résultats et ajuster',
+        checklist: [
+          'CA trimestriel analysé',
+          'Charges vs prévisionnel',
+          'Problèmes rencontrés identifiés',
+          'Solutions mises en place'
+        ]
+      },
+      {
+        id: 'optimisations',
+        titre: 'Optimisations en cours',
+        icon: '⚙️',
+        description: 'Vérifier que tout est en place',
+        checklist: [
+          'Frais réels bien déclarés',
+          'Rémunération optimale maintenue',
+          'Déclarations fiscales à jour',
+          'Nouveaux leviers identifiés'
+        ]
+      },
+      {
+        id: 'objectifs-prochain',
+        titre: 'Objectifs prochain trimestre',
+        icon: '🎯',
+        description: 'Planifier les 3 prochains mois',
+        checklist: [
+          'Objectif CA défini',
+          'Actions prioritaires listées',
+          'Points de vigilance notés',
+          'Prochain RDV programmé'
+        ]
+      }
+    ]
+  },
+  5: {
+    num: 5,
+    titre: 'Stratégie patrimoniale avancée',
+    emoji: '💎',
+    duree: '90 min',
+    sections: [
+      {
+        id: 'holding',
+        titre: 'Structure holding & optimisation groupe',
+        icon: '🏢',
+        description: 'Montage holding si pertinent',
+        checklist: [
+          'Intérêt holding analysé',
+          'Structure optimale définie',
+          'Régime mère-fille expliqué',
+          'Intégration fiscale évaluée',
+          'Coûts vs gains chiffrés'
+        ]
+      },
+      {
+        id: 'transmission',
+        titre: 'Transmission & succession',
+        icon: '🎁',
+        description: 'Préparer la transmission patrimoniale',
+        checklist: [
+          'Patrimoine personnel inventorié',
+          'Bilan patrimonial établi',
+          'Stratégie succession définie',
+          'Pacte Dutreil expliqué',
+          'Donation-partage évoquée'
+        ]
+      },
+      {
+        id: 'investissements',
+        titre: 'Diversification investissements',
+        icon: '💰',
+        description: 'Au-delà de l\'entreprise',
+        checklist: [
+          'Portefeuille financier analysé',
+          'Immobilier structuré (LMNP/SCI)',
+          'PER optimisé',
+          'Assurance-vie strategy',
+          'Allocation globale cohérente'
+        ]
+      }
+    ]
+  },
+  6: {
+    num: 6,
+    titre: 'Bilan annuel complet & vision long terme',
+    emoji: '🏆',
+    duree: '120 min',
+    sections: [
+      {
+        id: 'bilan-annee',
+        titre: 'Bilan de l\'année écoulée',
+        icon: '📅',
+        description: 'Analyse complète 360°',
+        checklist: [
+          'CA annuel vs objectif',
+          'Gains fiscaux réalisés chiffrés',
+          'Économies totales quantifiées',
+          'Points forts identifiés',
+          'Axes d\'amélioration notés'
+        ]
+      },
+      {
+        id: 'vision-3ans',
+        titre: 'Vision & stratégie 3-5 ans',
+        icon: '🔮',
+        description: 'Planification long terme',
+        checklist: [
+          'Objectifs 3 ans définis',
+          'Stratégie croissance établie',
+          'Investissements prévus',
+          'Exit strategy évoquée si pertinent',
+          'Transmission anticipée'
+        ]
+      },
+      {
+        id: 'masterplan',
+        titre: 'Master plan patrimonial',
+        icon: '🗺️',
+        description: 'Feuille de route complète',
+        checklist: [
+          'Plan fiscal pluriannuel',
+          'Stratégie retraite finalisée',
+          'Protection sociale optimale',
+          'Immobilier structuré',
+          'Transmission organisée',
+          'Assurances adaptées'
+        ]
+      }
+    ]
   }
 };
 
@@ -230,20 +379,45 @@ export default function ExpertRDVCompanionFullPage() {
       const clientName = sessionStorage.getItem('rdv_client_name');
       
       if (clientId && clientName) {
-        setSelectedClient({ id: clientId, name: clientName });
-        setClientData(prev => ({
-          ...prev,
-          firstName: clientName.split(' ')[0] || '',
-          lastName: clientName.split(' ').slice(1).join(' ') || ''
-        }));
-        
-        loadClientHistory(clientId);
-        
+        loadClientPack(clientId, clientName);
         sessionStorage.removeItem('rdv_client_id');
         sessionStorage.removeItem('rdv_client_name');
       }
     }
   }, []);
+
+  async function loadClientPack(clientId: string, clientName: string) {
+    try {
+      // Charger le pack du client
+      const { data: clientAccess } = await supabase
+        .from('client_access')
+        .select('pack_type')
+        .eq('user_id', clientId)
+        .single();
+
+      const pack = (clientAccess?.pack_type || 'starter') as 'starter' | 'pro' | 'expert';
+
+      setSelectedClient({ id: clientId, name: clientName });
+      setClientData(prev => ({
+        ...prev,
+        firstName: clientName.split(' ')[0] || '',
+        lastName: clientName.split(' ').slice(1).join(' ') || '',
+        pack: pack
+      }));
+      
+      loadClientHistory(clientId);
+    } catch (err) {
+      console.error('Erreur chargement pack:', err);
+      // Fallback starter si erreur
+      setSelectedClient({ id: clientId, name: clientName });
+      setClientData(prev => ({
+        ...prev,
+        firstName: clientName.split(' ')[0] || '',
+        lastName: clientName.split(' ').slice(1).join(' ') || ''
+      }));
+      loadClientHistory(clientId);
+    }
+  }
 
   async function loadExpertId() {
     try {
@@ -507,14 +681,16 @@ export default function ExpertRDVCompanionFullPage() {
           <Alert className="border-blue-200 bg-blue-50">
             <AlertCircle className="text-blue-600" />
             <AlertDescription className="text-blue-800">
-              Client : <strong>{selectedClient.name}</strong>
+              Client : <strong>{selectedClient.name}</strong> • Pack : <strong className="uppercase">{clientData.pack}</strong>
             </AlertDescription>
           </Alert>
 
           <div className="grid md:grid-cols-3 gap-4">
-            {[1, 2, 3].map(num => {
+            {Array.from({ length: RDV_BY_PACK[clientData.pack] || 3 }, (_, i) => i + 1).map(num => {
               const session = sessions.find(s => s.rdv_number === num);
               const def = RDV_DEFINITIONS[num as keyof typeof RDV_DEFINITIONS];
+              
+              if (!def) return null;
               
               return (
                 <button

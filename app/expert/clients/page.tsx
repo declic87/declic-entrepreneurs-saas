@@ -214,25 +214,38 @@ export default function ExpertClientsPage() {
                   </>
                 )}
 
-                <div className="space-y-2">
-                  {/* Bouton principal : Fiche client */}
-                  <Button
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
-                    onClick={() => router.push(`/expert/clients/${client.id}`)}
-                  >
-                    <Eye size={16} className="mr-2" />
-                    Voir la fiche client
-                  </Button>
+                
+<div className="space-y-2">
+  {/* Bouton principal : Fiche client */}
+  <Button
+    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+    onClick={() => router.push(`/expert/clients/${client.id}`)}
+  >
+    <Eye size={16} className="mr-2" />
+    Voir la fiche client
+  </Button>
 
-                  {/* Bouton RDV */}
-                  <Button
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-                    onClick={() => router.push(`/expert/clients/${client.id}/rdv`)}
-                  >
-                    <Calendar size={16} className="mr-2" />
-                    Démarrer un RDV
-                  </Button>
+  {/* Bouton RDV Companion - NOUVEAU */}
+  <Button
+    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+    onClick={() => {
+      sessionStorage.setItem('rdv_client_id', client.id);
+      sessionStorage.setItem('rdv_client_name', `${client.first_name} ${client.last_name}`);
+      router.push('/expert/rdv-companion?autoselect=true');
+    }}
+  >
+    <FileText size={16} className="mr-2" />
+    Companion RDV
+  </Button>
 
+  {/* Bouton RDV classique */}
+  <Button
+    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+    onClick={() => router.push(`/expert/clients/${client.id}/rdv`)}
+  >
+    <Calendar size={16} className="mr-2" />
+    RDV classique
+  </Button>
                   {/* Bouton validation statut */}
                   <Button
                     variant="outline"

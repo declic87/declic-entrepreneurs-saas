@@ -39,6 +39,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video },
     { label: "Paiements", href: "/admin/paiements", icon: CreditCard },
     { label: "Outils Experts", href: "/admin/outils-experts", icon: FileText },
+    { label: "🎯 Outils Closers", href: "/admin/outils-closers", icon: Target },
     { label: "Remboursements", href: "/admin/remboursements", icon: RefreshCw },
     { label: "Tâches", href: "/admin/taches", icon: CheckCircle },
     { label: "Agendas", href: "/admin/agendas", icon: Calendar },

@@ -157,7 +157,7 @@ export default function FormationCreateurPage() {
                 Ne laissez plus l'État choisir votre <span className="text-blue-500">niveau de vie.</span>
               </h1>
               <p className="text-xl text-slate-400 mb-10 leading-relaxed">
-                Maîtrisez la fiscalité, optimisez vos charges et créez votre société avec la méthode pas-à-pas utilisée par +500 indépendants.
+                Maîtrisez la fiscalité, optimisez vos charges et créez votre société avec la méthode pas-à-pas utilisée par + 2 000 indépendants.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <a href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03" target="_blank" rel="noopener noreferrer" className="flex-1">

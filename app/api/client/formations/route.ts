@@ -152,7 +152,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ 
       success: true,
-      formations: allVideos || [],
+      formations: filteredVideos,
       category: category,
       pack_type: accessData.pack_type
     });

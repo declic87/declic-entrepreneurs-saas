@@ -27,6 +27,8 @@ interface FormationVideo {
 }
 
 export default function ClientFormationsPage() {
+  console.log('🎬 COMPOSANT ClientFormationsPage MONTÉ');
+
   const [videos, setVideos] = useState<FormationVideo[]>([]);
   const [category, setCategory] = useState<string | null>(null);
   const [packType, setPackType] = useState<string | null>(null);
@@ -40,17 +42,28 @@ export default function ClientFormationsPage() {
   );
 
   useEffect(() => {
+    console.log('🔥 useEffect DÉCLENCHÉ - Appel loadFormations()');
     loadFormations();
   }, []);
 
   async function loadFormations() {
+    console.log('🚀 === DÉBUT loadFormations() ===');
+    
     try {
+      console.log('👤 Récupération session Supabase...');
       const { data: { session } } = await supabase.auth.getSession();
       
+      console.log('👤 Session:', session ? '✅ OUI' : '❌ NON');
+      
       if (!session) {
+        console.log('❌ Pas de session - Arrêt');
         setLoading(false);
         return;
       }
+
+      console.log('🔑 Token présent:', session.access_token.substring(0, 30) + '...');
+
+      console.log('🌐 === APPEL API /api/client/formations ===');
 
       // Appeler l'API
       const response = await fetch('/api/client/formations', {
@@ -59,24 +72,42 @@ export default function ClientFormationsPage() {
         }
       });
       
+      console.log('📡 Response Status:', response.status);
+      console.log('📡 Response OK:', response.ok);
+      
       const data = await response.json();
       
+      console.log('📦 === DATA REÇUE ===');
+      console.log('📦 data.success:', data.success);
+      console.log('📦 data.category:', data.category);
+      console.log('📦 data.pack_type:', data.pack_type);
+      console.log('📦 data.formations (nombre):', data.formations?.length || 0);
+      console.log('📦 data.formations (détail):', data.formations);
+      
       if (data.success) {
+        console.log('✅ Mise à jour du state avec', data.formations.length, 'vidéos');
         setVideos(data.formations);
         setCategory(data.category);
         setPackType(data.pack_type);
+      } else {
+        console.log('❌ data.success = false');
       }
     } catch (error) {
-      console.error('Erreur chargement formations:', error);
+      console.error('❌ === ERREUR loadFormations() ===', error);
     } finally {
+      console.log('🏁 loadFormations() terminé - setLoading(false)');
       setLoading(false);
     }
   }
+
+  console.log('🎨 RENDER - videos.length:', videos.length, '| category:', category, '| loading:', loading);
 
   const filteredVideos = videos.filter((video) => 
     video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     video.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  console.log('🔍 filteredVideos.length:', filteredVideos.length);
 
   const categoryLabels: Record<string, { title: string; subtitle: string; color: string }> = {
     'Créateur': {
@@ -97,6 +128,7 @@ export default function ClientFormationsPage() {
   };
 
   if (loading) {
+    console.log('⏳ AFFICHAGE: Loading...');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="animate-spin text-amber-500" size={48} />
@@ -106,6 +138,7 @@ export default function ClientFormationsPage() {
 
   // Aucune formation accessible
   if (!category || videos.length === 0) {
+    console.log('🔒 AFFICHAGE: Aucune formation accessible');
     return (
       <div className="max-w-4xl mx-auto p-8">
         <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50">
@@ -133,11 +166,13 @@ export default function ClientFormationsPage() {
     color: 'blue'
   };
 
+  console.log('✅ AFFICHAGE: Page formations avec', filteredVideos.length, 'vidéos');
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-8 animate-in fade-in duration-500">
       
-      {/* VIDÉO ONBOARDING */}
-      <OnboardingVideo pageSlug="formations" role="CLIENT" />
+      {/* VIDÉO ONBOARDING - DÉSACTIVÉ TEMPORAIREMENT */}
+      {/* <OnboardingVideo pageSlug="formations" role="CLIENT" /> */}
 
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-8">

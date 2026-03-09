@@ -59,6 +59,12 @@ const STEPS = [
     icon: FileText,
   },
   {
+    id: "inpi_form",
+    label: "Formulaire INPI",
+    description: "Informations légales obligatoires",
+    icon: FileText,
+  },
+  {
     id: "capital_deposit",
     label: "Dépôt de capital",
     description: "Attestation bancaire",
@@ -157,7 +163,6 @@ export default function CreationSocietePage() {
       const isFirst = companies.id === firstCompanyId;
       setIsFirstCompanyEver(isFirst);
 
-      // ⭐ Vérifier si le RDV de la PREMIÈRE société est terminé
       if (firstCompanyId) {
         const { data: firstCompanyWorkflow } = await supabase
           .from("company_creation_data")
@@ -165,7 +170,6 @@ export default function CreationSocietePage() {
           .eq("company_id", firstCompanyId)
           .single();
 
-        // RDV complété si l'étape actuelle n'est plus "rdv_expert"
         const rdvDone = firstCompanyWorkflow && firstCompanyWorkflow.step !== "rdv_expert";
         setRdvCompleted(rdvDone || false);
       }
@@ -201,7 +205,6 @@ export default function CreationSocietePage() {
   }
 
   async function createNewCompany() {
-    // ⭐ Vérifier que le RDV est fait avant de créer une nouvelle société
     if (!rdvCompleted) {
       alert("⚠️ Vous devez d'abord terminer l'étape RDV Expert de votre première société avant de créer une nouvelle société.");
       return;
@@ -276,6 +279,13 @@ export default function CreationSocietePage() {
         return {
           label: "Remplir les informations",
           href: "/client/creation-societe/infos",
+          disabled: false,
+        };
+
+      case "inpi_form":
+        return {
+          label: "Remplir le formulaire INPI",
+          href: "/client/creation-societe/inpi",
           disabled: false,
         };
 
@@ -378,7 +388,6 @@ export default function CreationSocietePage() {
         </Button>
       </div>
 
-      {/* Message si RDV pas fait */}
       {!rdvCompleted && !isFirstCompanyEver && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="p-4">
@@ -397,7 +406,6 @@ export default function CreationSocietePage() {
         </Card>
       )}
 
-      {/* Info parallèle si RDV fait */}
       {rdvCompleted && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">

@@ -77,6 +77,22 @@ export default function CloserOutilsPage() {
     if (type === 'pdf') {
       // Télécharger le PDF
       window.open(url, '_blank');
+    } else if (type === 'html') {
+      // Ouvrir HTML en iframe plein écran
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;z-index:9999;background:#fff';
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕ Fermer';
+      closeBtn.style.cssText = 'position:fixed;top:20px;right:20px;z-index:10000;padding:10px 20px;background:#F97316;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+      closeBtn.onclick = () => {
+        document.body.removeChild(iframe);
+        document.body.removeChild(closeBtn);
+      };
+      
+      document.body.appendChild(iframe);
+      document.body.appendChild(closeBtn);
     } else {
       // Ouvrir dans un nouvel onglet
       window.open(url, '_blank');

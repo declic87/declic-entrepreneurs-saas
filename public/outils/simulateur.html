@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Simulateur Statuts 2026 — Déclic Entrepreneurs</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --or:#F97316;--or2:#C2410C;--gold:#FBBF24;
+  --bg:#09090B;--d2:#111113;--d3:#18181B;--d4:#222228;--d5:#2E2E38;--d6:#3A3A46;
+  --txt:#F4F4F5;--t2:#A1A1AA;--t3:#71717A;--t4:#52525B;
+  --grn:#22C55E;--red:#EF4444;--blu:#60A5FA;--pur:#A78BFA;--amb:#F59E0B;--tea:#2DD4BF;
+  --bor:rgba(255,255,255,.07);--bor2:rgba(249,115,22,.22);
+  --r:12px;
+}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.nav{height:52px;background:rgba(9,9,11,.97);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bor);display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:200}
+.nav-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:900;
+  background:linear-gradient(90deg,var(--or),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-tag{font-size:11px;font-weight:600;background:rgba(249,115,22,.1);
+  border:1px solid var(--bor2);color:var(--or);padding:4px 12px;border-radius:20px}
+.hero{padding:32px 16px 20px;text-align:center;
+  background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(249,115,22,.1) 0%,transparent 65%)}
+.hero h1{font-family:'Syne',sans-serif;font-weight:900;font-size:clamp(20px,3.8vw,38px);
+  line-height:1.1;margin-bottom:8px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--or),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:13px;color:var(--t2);margin-bottom:14px}
+.hero-tags{display:flex;justify-content:center;flex-wrap:wrap;gap:5px}
+.htag{font-size:10px;color:var(--t3);border:1px solid var(--bor);padding:3px 10px;border-radius:20px}
+/* TABS */
+.tabs-wrap{max-width:860px;margin:14px auto 0;padding:0 16px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.tab{padding:10px 4px 8px;border:1.5px solid var(--d5);border-radius:10px;cursor:pointer;
+  text-align:center;background:var(--d3);transition:all .14s;user-select:none}
+.tab:hover{border-color:var(--or);background:rgba(249,115,22,.04)}
+.tab.on{border-color:var(--or);background:rgba(249,115,22,.09)}
+.tab-ico{font-size:16px;margin-bottom:2px}
+.tab-name{font-family:'Syne',sans-serif;font-size:11px;font-weight:800}
+.tab-sub{font-size:9px;color:var(--t3);margin-top:1px;line-height:1.3}
+/* LAYOUT */
+.wrap{max-width:860px;margin:0 auto;padding:14px 16px 70px;
+  display:grid;grid-template-columns:295px 1fr;gap:12px;align-items:start}
+@media(max-width:780px){.wrap{grid-template-columns:1fr}}
+/* PANNEAU SAISIE */
+.inp{background:var(--d3);border:1px solid var(--bor);border-radius:var(--r);
+  overflow:hidden;position:sticky;top:58px}
+.inp-hd{padding:12px 15px;border-bottom:1px solid var(--bor);
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3)}
+.inp-body{padding:15px}
+.field{margin-bottom:14px}
+.f-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.f-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3)}
+.f-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:900;color:var(--or)}
+.f-hint{font-size:10px;color:var(--t4);margin-top:4px;line-height:1.5}
+.f-hint.warn{color:var(--red)}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;
+  background:var(--d6);border-radius:2px;cursor:pointer;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;
+  border-radius:50%;background:var(--or);cursor:pointer;
+  box-shadow:0 0 0 4px rgba(249,115,22,.17),0 2px 5px rgba(249,115,22,.3)}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;
+  background:var(--or);border:none;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{padding:5px 9px;border:1.5px solid var(--d5);border-radius:6px;cursor:pointer;
+  font-size:10px;font-weight:600;color:var(--t3);background:var(--d4);
+  transition:all .12s;user-select:none}
+.chip:hover{border-color:var(--or);color:var(--or)}
+.chip.on{border-color:var(--or);background:rgba(249,115,22,.1);color:var(--or)}
+.optrow{display:flex;align-items:flex-start;gap:8px;padding:7px 0;
+  border-top:1px solid var(--bor);cursor:pointer;font-size:11px;color:var(--t2);line-height:1.5}
+.optrow input{accent-color:var(--or);width:13px;height:13px;flex-shrink:0;margin-top:2px}
+.optrow strong{color:var(--txt)}
+.div{height:1px;background:var(--bor);margin:12px 0}
+.adv-btn{display:flex;align-items:center;gap:7px;cursor:pointer;padding:5px 0;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--t4);user-select:none;transition:color .15s}
+.adv-btn:hover{color:var(--t2)}
+.adv-arr{transition:transform .2s;font-size:9px;margin-left:auto}
+.adv-open .adv-arr{transform:rotate(180deg)}
+.adv-box{display:none;padding-top:12px;border-top:1px solid var(--bor);margin-top:12px}
+.adv-box.open{display:block}
+.best-strip{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);
+  border-radius:9px;padding:10px 13px;display:flex;align-items:center;
+  justify-content:space-between;margin-top:13px}
+.bs-l{font-size:11px;color:var(--t2)}
+.bs-v{font-family:'Syne',sans-serif;font-size:18px;font-weight:900;color:var(--grn)}
+/* RÉSULTATS */
+.winner{background:linear-gradient(135deg,rgba(249,115,22,.11),rgba(251,191,36,.05));
+  border:1px solid rgba(249,115,22,.26);border-radius:var(--r);
+  padding:13px 16px;margin-bottom:10px;display:flex;align-items:center;gap:11px}
+.wi-ico{font-size:20px;flex-shrink:0}
+.wi-txt h3{font-family:'Syne',sans-serif;font-size:13px;font-weight:900;margin-bottom:1px}
+.wi-txt p{font-size:11px;color:var(--t2)}
+.wi-eco{margin-left:auto;text-align:right;flex-shrink:0}
+.eco-n{font-family:'Syne',sans-serif;font-size:17px;font-weight:900;color:var(--grn)}
+.eco-l{font-size:10px;color:var(--t3)}
+.legend{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t3)}
+.leg-dot{width:7px;height:7px;border-radius:2px}
+.cards{display:flex;flex-direction:column;gap:8px}
+.sc{background:var(--d3);border:1.5px solid var(--bor);border-radius:var(--r);overflow:hidden;transition:border-color .15s}
+.sc.best{border-color:rgba(249,115,22,.28)}
+.sc-hd{display:flex;align-items:center;gap:9px;padding:10px 13px;
+  cursor:pointer;transition:background .12s;user-select:none}
+.sc-hd:hover{background:rgba(255,255,255,.02)}
+.sh-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:.4px;flex-shrink:0;white-space:nowrap}
+.badge-best{background:rgba(249,115,22,.15);color:var(--or);border:1px solid var(--bor2)}
+.badge-ok{background:rgba(255,255,255,.04);color:var(--t3);border:1px solid var(--bor)}
+.badge-neg{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.sh-info{flex:1}
+.sh-info h3{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;margin-bottom:1px}
+.sh-info p{font-size:10px;color:var(--t3)}
+.sh-net{text-align:right}
+.net-n{font-family:'Syne',sans-serif;font-size:15px;font-weight:900}
+.net-n.cg{color:var(--grn)}
+.net-pct{font-size:10px;color:var(--t3);margin-top:1px}
+.sc-arr{color:var(--t4);font-size:10px;margin-left:5px;transition:transform .2s;flex-shrink:0}
+.sc-arr.open{transform:rotate(180deg)}
+.sc-body{display:none;border-top:1px solid var(--bor)}
+.sc-body.open{display:block}
+.sc-alert{margin:11px 13px 0;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);
+  border-radius:7px;padding:8px 11px;font-size:11px;color:#FCA5A5;line-height:1.5}
+/* Graphique style ma-sasu (barres verticales simples) */
+.bar-sec{padding:12px 13px 0}
+.bar-tit{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t4);margin-bottom:9px}
+.bars-chart{display:flex;align-items:flex-end;gap:6px;height:80px;
+  padding-bottom:8px;border-bottom:1px solid var(--bor)}
+.bc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.bc-bar{width:100%;border-radius:3px 3px 0 0;transition:height .4s cubic-bezier(.4,0,.2,1)}
+.bc-lbl{font-size:8.5px;color:var(--t4);text-align:center;line-height:1.2;margin-top:3px;word-break:break-word}
+.bc-amt{font-size:9px;font-weight:600;color:var(--t2);text-align:center}
+/* Lines */
+.lines-sec{padding:9px 13px 11px}
+.lines-tit{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t4);margin-bottom:7px;margin-top:3px}
+.dl{display:flex;justify-content:space-between;align-items:flex-start;
+  padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);gap:9px;font-size:11px}
+.dl:last-child{border:none}
+.dl-l{color:var(--t2);flex:1;line-height:1.4}
+.dl-note{font-size:9px;color:var(--t4);display:block;margin-top:1px}
+.dl-v{font-weight:600;white-space:nowrap;flex-shrink:0}
+.dl-v.pos{color:var(--grn)} .dl-v.neg{color:var(--red)} .dl-v.or{color:var(--or)}
+.dl-v.gold{color:var(--gold)} .dl-v.bl{color:var(--blu)}
+.dl.sep .dl-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t4);padding-top:3px}
+.dl.total{background:rgba(249,115,22,.07);margin:5px -13px -11px;padding:8px 13px;border-radius:0 0 10px 10px}
+.dl.total .dl-l{font-size:11px;font-weight:700;color:var(--txt)}
+.dl.total .dl-v{font-family:'Syne',sans-serif;font-size:13px;font-weight:900}
+.trezo-row{display:flex;justify-content:space-between;font-size:10px;padding:5px 0;border-top:1px solid var(--bor);margin-top:3px}
+.trezo-row .dl-l{color:var(--t3)} .trezo-row .dl-v{color:var(--tea)}
+.ret-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:600;
+  padding:2px 7px;border-radius:5px;margin-top:7px}
+.ret-tns{background:rgba(245,158,11,.1);color:var(--amb);border:1px solid rgba(245,158,11,.2)}
+.ret-gen{background:rgba(34,197,94,.1);color:var(--grn);border:1px solid rgba(34,197,94,.2)}
+/* Expliqueur */
+.expli{background:rgba(255,255,255,.02);border-top:1px solid var(--bor);padding:11px 13px}
+.expli-tit{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t4);margin-bottom:6px}
+.expli-txt{font-size:11px;color:var(--t2);line-height:1.7}
+.expli-txt strong{color:var(--txt)} .expli-txt em{color:var(--or);font-style:normal}
+.closer-tip{border-top:1px solid rgba(249,115,22,.18);background:rgba(249,115,22,.05);padding:9px 13px}
+.ct-txt{font-size:10px;color:var(--t2);line-height:1.6}
+.ct-txt strong{color:var(--or)}
+/* CTA */
+.cta-zone{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.prospect-field{background:var(--d3);border:1px solid var(--bor);border-radius:9px;padding:10px 12px}
+.prospect-input{width:100%;background:var(--d4);border:1px solid var(--d6);border-radius:7px;
+  padding:8px 11px;color:var(--txt);font-size:13px;font-family:'DM Sans',sans-serif;
+  outline:none;transition:border-color .14s;margin-top:0}
+.prospect-input:focus{border-color:var(--or)}
+.prospect-input::placeholder{color:var(--t4)}
+
+/* ══ OVERLAY PDF ══ */
+#pdf-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px}
+#pdf-overlay.show{display:flex}
+.pdf-modal{background:#FAFAFA;color:#111;border-radius:14px;width:100%;max-width:700px;
+  max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.pdf-bar{background:#1A1A20;border-radius:14px 14px 0 0;padding:12px 18px;
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.pdf-bar-brand{font-family:'Syne',sans-serif;font-size:12px;font-weight:900;
+  background:linear-gradient(90deg,#F97316,#FBBF24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.pdf-btn{padding:6px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;transition:all .15s}
+.pdf-btn:hover{background:rgba(249,115,22,.2);border-color:rgba(249,115,22,.4)}
+.pdf-btn.primary{background:linear-gradient(135deg,#C2410C,#F97316);border-color:transparent}
+.pdf-content{padding:32px 36px 36px}
+
+/* ══ RAPPORT PDF INTERNE ══ */
+.rp-head{display:flex;justify-content:space-between;align-items:flex-start;
+  padding-bottom:20px;border-bottom:2.5px solid #F97316;margin-bottom:24px}
+.rp-brand{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#F97316;margin-bottom:4px}
+.rp-title{font-size:20px;font-weight:900;color:#111;margin-bottom:2px;font-family:'Syne',sans-serif}
+.rp-sub{font-size:12px;color:#888}
+.rp-meta{text-align:right;font-size:11px;color:#888;line-height:1.8}
+.rp-meta strong{color:#333}
+
+.rp-section{margin-bottom:22px}
+.rp-sec-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  color:#F97316;padding-bottom:6px;border-bottom:1px solid #FED7AA;margin-bottom:12px}
+
+/* Résumé paramètres */
+.rp-params{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.rp-param{background:#FFF7ED;border:1px solid #FED7AA;border-radius:7px;padding:9px 11px;text-align:center}
+.rpp-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:900;color:#C2410C}
+.rpp-lbl{font-size:9px;color:#92400E;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+
+/* Tableau comparatif */
+.rp-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.rp-table th{background:#FFF7ED;color:#92400E;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:left;
+  border-bottom:2px solid #FED7AA}
+.rp-table td{padding:8px 10px;border-bottom:1px solid #F3F4F6;vertical-align:top}
+.rp-table tr:last-child td{border:none}
+.rp-table tr.best-row td{background:#FFF7ED}
+.rp-table .net-col{font-family:'Syne',sans-serif;font-weight:800;font-size:13px}
+.rp-table .best-net{color:#C2410C}
+.rp-table .badge-pdf{display:inline-block;font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:4px;margin-left:5px}
+.rp-table .b-winner{background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA}
+
+/* Détail statut gagnant */
+.rp-detail-line{display:flex;justify-content:space-between;align-items:baseline;
+  padding:5px 0;border-bottom:1px solid #F3F4F6;font-size:11px;gap:8px}
+.rp-detail-line:last-child{border:none}
+.rp-detail-line .dl-l{color:#555;flex:1;line-height:1.4}
+.rp-detail-line .dl-note{font-size:9px;color:#9CA3AF;display:block;margin-top:1px}
+.rp-detail-line .dl-v{font-weight:600;white-space:nowrap;flex-shrink:0}
+.rp-detail-line .dl-v.pos{color:#16A34A}
+.rp-detail-line .dl-v.neg{color:#DC2626}
+.rp-detail-line .dl-v.or{color:#C2410C}
+.rp-detail-line .dl-v.gold{color:#D97706}
+.rp-detail-line.sep .dl-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#9CA3AF;padding-top:3px}
+.rp-total{background:#FFF7ED;border-radius:0 0 8px 8px;padding:9px 11px;
+  display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-top:4px}
+.rp-total-lbl{font-size:12px;color:#C2410C}
+.rp-total-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:900;color:#C2410C}
+
+/* VASE recap PDF */
+.rp-vase-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.rp-vase-item{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:7px;padding:8px 10px}
+.rpv-val{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#16A34A}
+.rpv-lbl{font-size:9px;color:#166534;margin-top:1px}
+
+.rp-loi{background:#F0F9FF;border-left:3px solid #93C5FD;border-radius:0 6px 6px 0;
+  padding:9px 13px;font-size:10px;color:#1E40AF;line-height:1.6;margin-bottom:8px}
+.rp-loi strong{color:#1D4ED8;display:block;margin-bottom:2px;font-size:9px;text-transform:uppercase}
+.rp-footer{margin-top:28px;padding-top:14px;border-top:1px solid #E5E7EB;
+  display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
+.rp-footer-brand{color:#F97316;font-weight:700}
+
+@media print{
+  #pdf-overlay{display:flex!important;position:relative!important;background:none!important;
+    backdrop-filter:none!important;padding:0!important;inset:auto!important}
+  .pdf-bar{display:none!important}
+  .pdf-modal{max-height:none!important;box-shadow:none!important;border-radius:0!important}
+  .pdf-content{padding:20px!important}
+  body>*:not(#pdf-overlay){display:none!important}
+}
+.btn-or{background:linear-gradient(135deg,var(--or2),var(--or));color:#fff;border:none;
+  padding:11px 16px;border-radius:9px;font-family:'Syne',sans-serif;font-size:12px;
+  font-weight:800;cursor:pointer;transition:all .2s;display:flex;align-items:center;
+  justify-content:center;gap:7px;width:100%}
+.btn-or:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(249,115,22,.3)}
+.btn-ghost{background:transparent;border:1px solid var(--d5);color:var(--t2);width:100%;
+  padding:9px;border-radius:9px;font-size:11px;font-weight:600;cursor:pointer;
+  transition:all .17s;display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-ghost:hover{border-color:var(--or);color:var(--or)}
+/* Situation actuelle */
+.curr-strip{background:rgba(96,165,250,.07);border:1.5px solid rgba(96,165,250,.22);
+  border-radius:var(--r);padding:11px 14px;margin-bottom:0}
+.curr-strip-hd{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--blu);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.curr-chips{display:flex;flex-wrap:wrap;gap:4px}
+.curr-chip{padding:5px 10px;border:1.5px solid rgba(96,165,250,.2);border-radius:6px;cursor:pointer;
+  font-size:10px;font-weight:600;color:var(--t3);background:rgba(96,165,250,.04);
+  transition:all .12s;user-select:none}
+.curr-chip:hover{border-color:var(--blu);color:var(--blu)}
+.curr-chip.on{border-color:var(--blu);background:rgba(96,165,250,.12);color:var(--blu)}
+/* Bannière résultat actuel */
+.current-banner{background:rgba(96,165,250,.06);border:1.5px solid rgba(96,165,250,.2);
+  border-radius:var(--r);padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:11px}
+.cb-ico{font-size:18px;flex-shrink:0}
+.cb-txt h3{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--blu);margin-bottom:1px}
+.cb-txt p{font-size:10px;color:var(--t3)}
+.cb-net{margin-left:auto;text-align:right;flex-shrink:0}
+.cb-net-n{font-family:'Syne',sans-serif;font-size:15px;font-weight:900;color:var(--blu)}
+.cb-net-l{font-size:10px;color:var(--t3);margin-top:1px}
+/* Delta gain */
+.delta-banner{border-radius:var(--r);padding:12px 16px;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px}
+.delta-banner.gain{background:rgba(34,197,94,.08);border:1.5px solid rgba(34,197,94,.22)}
+.delta-banner.perte{background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.2)}
+.db-ico{font-size:22px;flex-shrink:0}
+.db-txt{flex:1}
+.db-txt h3{font-family:'Syne',sans-serif;font-size:12px;font-weight:900;margin-bottom:2px}
+.db-txt p{font-size:10px;color:var(--t3);line-height:1.5}
+.db-val{text-align:right;flex-shrink:0}
+.db-val-n{font-family:'Syne',sans-serif;font-size:22px;font-weight:900}
+.db-val-n.gain{color:var(--grn)}
+.db-val-n.perte{color:var(--red)}
+.db-val-l{font-size:10px;color:var(--t3);margin-top:1px}
+.foot{text-align:center;padding:18px;color:var(--t4);font-size:9px;
+  border-top:1px solid var(--bor);max-width:860px;margin:0 auto}
+</style>
+</head>
+<body>
+<div class="nav">
+  <div class="nav-logo">DÉCLIC Entrepreneurs</div>
+  <div class="nav-tag">⚡ Comparateur statuts — Barèmes 2026</div>
+</div>
+
+<div class="hero">
+  <h1>Quel statut vous rapporte<br><em>le plus chaque mois ?</em></h1>
+  <p class="hero-sub">Micro · EI Réel · EURL IS · SASU IS — barèmes officiels 2026, calculs certifiés, explications pédagogiques.</p>
+  <div class="hero-tags">
+    <span class="htag">✓ Gratuit & instantané</span>
+    <span class="htag">✓ Barèmes URSSAF & DGFiP 2026</span>
+    <span class="htag">✓ Calculs itératifs précis</span>
+    <span class="htag">✓ Usage interne closers Déclic</span>
+  </div>
+</div>
+
+<!-- TABS STATUTS (style ma-sasu.fr) -->
+<div class="tabs-wrap">
+  <div class="tabs" id="tabs">
+    <div class="tab on" onclick="setTab(0,this)">
+      <div class="tab-ico">🏷️</div>
+      <div class="tab-name">Micro</div>
+      <div class="tab-sub">Abattement forfaitaire</div>
+    </div>
+    <div class="tab" onclick="setTab(1,this)">
+      <div class="tab-ico">🏢</div>
+      <div class="tab-name">EI Réel</div>
+      <div class="tab-sub">Entreprise individuelle</div>
+    </div>
+    <div class="tab" onclick="setTab(2,this)">
+      <div class="tab-ico">⚙️</div>
+      <div class="tab-name">EURL IS</div>
+      <div class="tab-sub">Gérant TNS</div>
+    </div>
+    <div class="tab" onclick="setTab(3,this)">
+      <div class="tab-ico">🏛️</div>
+      <div class="tab-name">SASU IS</div>
+      <div class="tab-sub">Président salarié</div>
+    </div>
+    <div class="tab" onclick="setTab(4,this)">
+      <div class="tab-ico">📋</div>
+      <div class="tab-name">SASU IR</div>
+      <div class="tab-sub">Transparence fiscale</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<!-- ══ SAISIE ══ -->
+<div class="inp">
+  <div class="inp-hd">⚙️ Votre situation</div>
+  <div class="inp-body">
+    <!-- STATUT ACTUEL -->
+    <div class="curr-strip">
+      <div class="curr-strip-hd">📍 Statut actuel du prospect</div>
+      <div class="curr-chips" id="c-curr">
+        <div class="curr-chip on" onclick="pickCurr(this,'micro')">🏷️ Micro</div>
+        <div class="curr-chip" onclick="pickCurr(this,'ei')">🏢 EI Réel</div>
+        <div class="curr-chip" onclick="pickCurr(this,'eurl')">⚙️ EURL IS</div>
+        <div class="curr-chip" onclick="pickCurr(this,'sasu')">🏛️ SASU IS</div>
+        <div class="curr-chip" onclick="pickCurr(this,'sasu-ir')">📋 SASU IR</div>
+        <div class="curr-chip" onclick="pickCurr(this,'salarie')">👔 Salarié</div>
+      </div>
+    </div>
+    <div class="div"></div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">Type d'activité</span></div>
+      <div class="chips" id="c-act">
+        <div class="chip on" onclick="pickAct(this,'bic-s',50,25.6)">Services BIC</div>
+        <div class="chip" onclick="pickAct(this,'bnc',34,23.1)">Libéral BNC</div>
+        <div class="chip" onclick="pickAct(this,'bic-c',71,12.8)">Commerce BIC</div>
+        <div class="chip" onclick="pickAct(this,'art',50,22.1)">Artisanat</div>
+      </div>
+      <p class="f-hint" id="act-hint">Abattement micro : <b>50%</b> · Cotisations micro : <b>25,6%</b> du CA</p>
+    </div>
+    <div class="div"></div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">Chiffre d'affaires HT</span><span class="f-val" id="v-ca">70 000 €</span></div>
+      <input type="range" id="r-ca" min="10000" max="500000" step="5000" value="70000" oninput="sl('ca',this)">
+      <p class="f-hint" id="ca-plaf">Plafond micro services : 83 600 € · commerce : 203 100 €</p>
+    </div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">Dépenses pro hors VASE</span><span class="f-val" id="v-dep">15 000 €</span></div>
+      <input type="range" id="r-dep" min="0" max="200000" step="1000" value="15000" oninput="sl('dep',this)">
+      <p class="f-hint">Logiciels, matériel, publicité, repas clients… Hors IK & bureau à domicile</p>
+    </div>
+    <!-- VASE détaillé -->
+    <div class="adv-btn" id="vase-btn" onclick="toggleVase()" style="margin-bottom:6px">
+      <span>🚗</span><span style="flex:1">Frais VASE détaillés <span id="vase-total-lbl" style="color:var(--or)"></span></span><span class="adv-arr" id="vase-arr">▼</span>
+    </div>
+    <div class="adv-box" id="vase-box">
+      <!-- IK -->
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t4);margin-bottom:7px">🚗 Indemnités kilométriques</div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="f-top"><span class="f-lbl">Km professionnels annuels</span><span class="f-val" id="v-km">8 000 km</span></div>
+        <input type="range" id="r-km" min="0" max="50000" step="500" value="8000" oninput="slVase('km',this)">
+        <p class="f-hint" id="ik-hint"></p>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="f-top"><span class="f-lbl">Puissance fiscale véhicule</span><span class="f-val" id="v-cv">5 CV</span></div>
+        <input type="range" id="r-cv" min="3" max="7" step="1" value="5" oninput="slVase('cv',this)">
+      </div>
+      <!-- Bureau domicile -->
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t4);margin:10px 0 7px">🏠 Bureau à domicile & charges</div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="f-top"><span class="f-lbl">Loyer mensuel (ou valeur locative)</span><span class="f-val" id="v-loyer">0 €</span></div>
+        <input type="range" id="r-loyer" min="0" max="3000" step="50" value="0" oninput="slVase('loyer',this)">
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="f-top"><span class="f-lbl">Surface bureau / surface totale logement</span><span class="f-val" id="v-pct-bur">20%</span></div>
+        <input type="range" id="r-pct-bur" min="5" max="50" step="5" value="20" oninput="slVase('pctBur',this)">
+        <p class="f-hint">Ex. : bureau 20m² dans appt 100m² = 20%</p>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="f-top"><span class="f-lbl">Charges annuelles logement</span><span class="f-val" id="v-charges-log">0 €</span></div>
+        <input type="range" id="r-charges-log" min="0" max="6000" step="100" value="0" oninput="slVase('chargesLog',this)">
+        <p class="f-hint">Eau + électricité + gaz + internet (part pro) · Total annuel</p>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="f-top"><span class="f-lbl">TF + assurance hab. (part pro)</span><span class="f-val" id="v-tf">0 €</span></div>
+        <input type="range" id="r-tf" min="0" max="2000" step="50" value="0" oninput="slVase('tf',this)">
+        <p class="f-hint">Taxe foncière + assurance habitation × % bureau</p>
+      </div>
+      <div class="field" style="margin-bottom:6px">
+        <div class="f-top"><span class="f-lbl">Alarme / surveillance pro</span><span class="f-val" id="v-alarme">0 €</span></div>
+        <input type="range" id="r-alarme" min="0" max="1500" step="50" value="0" oninput="slVase('alarme',this)">
+      </div>
+      <!-- Récap VASE -->
+      <div id="vase-recap" style="background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.18);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px"></div>
+    </div>
+    <div class="div"></div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">Rémunération nette souhaitée</span><span class="f-val" id="v-rem">24 000 €</span></div>
+      <input type="range" id="r-rem" min="0" max="200000" step="1000" value="24000" oninput="sl('rem',this)">
+      <p class="f-hint">EURL & SASU uniquement · Le reste = dividendes ou trésorerie</p>
+    </div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">% bénéfice distribué en dividendes</span><span class="f-val" id="v-div">50%</span></div>
+      <input type="range" id="r-div" min="0" max="100" step="5" value="50" oninput="sl('divp',this)">
+      <p class="f-hint">0% = tout en trésorerie société · 100% = tout distribué (flat tax 30%)</p>
+    </div>
+    <div class="div"></div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">Situation familiale</span></div>
+      <div class="chips" id="c-fam">
+        <div class="chip on" onclick="pickFam(this,1)">Célibataire</div>
+        <div class="chip" onclick="pickFam(this,2)">Marié/Pacsé</div>
+        <div class="chip" onclick="pickFam(this,1)">Divorcé</div>
+        <div class="chip" onclick="pickFam(this,1)">Veuf(ve)</div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="f-top"><span class="f-lbl">Enfants à charge</span></div>
+      <div class="chips" id="c-enf">
+        <div class="chip on" onclick="pickEnf(this,0)">0</div>
+        <div class="chip" onclick="pickEnf(this,1)">1</div>
+        <div class="chip" onclick="pickEnf(this,2)">2</div>
+        <div class="chip" onclick="pickEnf(this,3)">3</div>
+        <div class="chip" onclick="pickEnf(this,4)">4</div>
+        <div class="chip" onclick="pickEnf(this,5)">5</div>
+      </div>
+    </div>
+    <div class="adv-btn" id="adv-btn" onclick="toggleAdv()">
+      <span>⚙️</span><span style="flex:1">Options avancées</span><span class="adv-arr">▼</span>
+    </div>
+    <div class="adv-box" id="adv-box">
+      <div class="field" style="margin-top:0">
+        <div class="f-top"><span class="f-lbl">Capital social EURL / SASU</span><span class="f-val" id="v-cap">1 000 €</span></div>
+        <input type="range" id="r-cap" min="0" max="50000" step="100" value="1000" oninput="sl('cap',this)">
+        <p class="f-hint">EURL : dividendes > 10% du capital = cotisations TNS supplémentaires</p>
+      </div>
+      <div class="field">
+        <div class="f-top"><span class="f-lbl">Autres revenus du foyer</span><span class="f-val" id="v-autr">0 €</span></div>
+        <input type="range" id="r-autr" min="0" max="150000" step="1000" value="0" oninput="sl('autr',this)">
+        <p class="f-hint">Salaire conjoint, foncier… Impact direct sur la TMI</p>
+      </div>
+      <label class="optrow">
+        <input type="checkbox" id="opt-lib" onchange="go()">
+        <span><strong>Versement libératoire Micro</strong><br>IR forfaitaire sur CA : 1,7% services / 1% commerce / 2,2% libéral</span>
+      </label>
+      <label class="optrow">
+        <input type="checkbox" id="opt-bar" onchange="go()">
+        <span><strong>Barème IR sur dividendes</strong><br>Abattement 40% + progressif — avantageux si TMI ≤ 11%</span>
+      </label>
+      <label class="optrow">
+        <input type="checkbox" id="opt-ir" onchange="go()">
+        <span><strong>SASU à l'IR (transparence fiscale)</strong><br>Pas d'IS ni dividendes — bénéfice imposé à l'IR · limité 5 ans</span>
+      </label>
+    </div>
+    <div class="best-strip">
+      <span class="bs-l">🏆 Meilleur revenu mensuel</span>
+      <span class="bs-v" id="bs-v">— €</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RÉSULTATS ══ -->
+<div>
+  <div class="winner">
+    <div class="wi-ico" id="wi-ico">⚡</div>
+    <div class="wi-txt">
+      <h3 id="wi-title">Calcul en cours…</h3>
+      <p id="wi-sub">Résultat instantané</p>
+    </div>
+    <div class="wi-eco">
+      <div class="eco-n" id="wi-eco">—</div>
+      <div class="eco-l" id="wi-ecol">vs 2e statut</div>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--blu)"></div>CA</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--t4)"></div>Dépenses</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--amb)"></div>Cotisations</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--or)"></div>IS</div>
+    <div class="leg"><div class="leg-dot" style="background:#EC4899"></div>IR</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--grn)"></div>Net</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--tea)"></div>Tréso société</div>
+  </div>
+  <div id="current-banner"></div>
+  <div id="delta-banner"></div>
+  <div class="cards" id="cards"></div>
+  <div class="cta-zone">
+    <div class="prospect-field">
+      <label class="f-lbl" style="display:block;margin-bottom:5px">👤 Nom du prospect (pour le PDF)</label>
+      <input type="text" id="prospect-nom" placeholder="ex : Sophie Martin — Consulting Paris" class="prospect-input" oninput="updatePdfLabel()">
+    </div>
+    <button class="btn-or" id="btn-pdf" onclick="exportPDF()">
+      📄 Exporter la simulation en PDF prospect
+    </button>
+    <button class="btn-ghost" onclick="copyRes()">📋 Copier le résumé (texte)</button>
+  </div>
+</div>
+</div>
+
+<div class="foot">
+  PASS 2026 : 47 100 € · IS PME : 15% ≤42 500 € / 25% au-delà · PFU 2026 : 30% (12,8% IR + 17,2% PS) · Barème IR 2026 officiel (LFI déc. 2025)<br>
+  Plafonds micro 2026-2028 (arrêté jan. 2026) : services BIC/BNC 83 600 € · commerce/vente 203 100 €<br>
+  Jérôme Jonnard Conseil · Déclic Entrepreneurs · declic-entrepreneurs.fr · Usage interne
+</div>
+
+<!-- ══════════════ OVERLAY PDF PROSPECT ══════════════ -->
+<div id="pdf-overlay">
+  <div class="pdf-modal">
+    <div class="pdf-bar">
+      <div class="pdf-bar-brand">DÉCLIC — Simulation prospect</div>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="pdf-btn primary" onclick="printPDF()">🖨️ Imprimer / Enregistrer PDF</button>
+        <button class="pdf-btn" onclick="closePDF()">✕ Fermer</button>
+      </div>
+    </div>
+    <div class="pdf-content" id="pdf-content"><!-- généré dynamiquement --></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════ CONSTANTES 2026 ═══════════ */
+const PASS=47100, IS1=42500;
+
+/* ═══════════ ÉTAT ═══════════ */
+const S={ca:70000,dep:15000,rem:24000,divp:50,cap:1000,autr:0,
+  abat:50,cotM:25.6,actKey:'bic-s',partsB:1,enf:0,parts:1,
+  optLib:false,optBar:false,optIR:false,focusIdx:-1,
+  currStatut:'micro',
+  // VASE
+  km:8000,cv:5,loyer:0,pctBur:20,chargesLog:0,tf:0,alarme:0,
+};
+
+/* ═══════════ BARÈME IK 2026 ═══════════
+   Barème officiel 5 CV — extrapolé pour 3-4 CV et 6-7 CV
+   ≤5000 km · 5001-20000 km · >20000 km
+═══════════════════════════════════════ */
+const IK_BAREME = {
+  3:{a:0.502,b:0,c1:0.272,k1:1150,c2:0.325},
+  4:{a:0.575,b:0,c1:0.323,k1:1490,c2:0.387},
+  5:{a:0.636,b:0,c1:0.357,k1:1395,c2:0.427},
+  6:{a:0.665,b:0,c1:0.374,k1:1457,c2:0.447},
+  7:{a:0.697,b:0,c1:0.394,k1:1558,c2:0.470},
+};
+function calcIK(km,cv){
+  if(km<=0)return 0;
+  const b=IK_BAREME[cv]||IK_BAREME[5];
+  if(km<=5000) return Math.round(km*b.a);
+  if(km<=20000) return Math.round(km*b.c1+b.k1);
+  return Math.round(km*b.c2);
+}
+
+/* ═══════════ CALCUL VASE TOTAL ═══════════ */
+function getVASE(){
+  const ik=calcIK(S.km,S.cv);
+  // Mise à disposition bureau : loyer mensuel × 12 × % bureau
+  const miseDispo=Math.round(S.loyer*12*S.pctBur/100);
+  // Charges logement proratisées (eau, élec, gaz, internet, etc.)
+  const chargesPro=Math.round(S.chargesLog*S.pctBur/100);
+  // TF + assurance : déjà proratisées par l'utilisateur (il entre la part pro)
+  const tfPro=S.tf;
+  const alarmePro=S.alarme;
+  const total=ik+miseDispo+chargesPro+tfPro+alarmePro;
+  return{ik,miseDispo,chargesPro,tfPro,alarmePro,total};
+}
+
+/* ═══════════ BARÈME IR 2026 ═══════════ */
+function IR(rev,parts){
+  if(rev<=0)return 0;
+  const r=rev/parts;
+  let t=0;
+  if(r>11497)  t+=(Math.min(r,29315) -11497)*0.11;
+  if(r>29315)  t+=(Math.min(r,83823) -29315)*0.30;
+  if(r>83823)  t+=(Math.min(r,180294)-83823)*0.41;
+  if(r>180294) t+=(r-180294)*0.45;
+  let imp=t*parts;
+  if(parts>S.partsB){
+    const impB=IR(rev,S.partsB);
+    const demi=(parts-S.partsB)*2;
+    if((impB-imp)>demi*1791)imp=impB-demi*1791;
+  }
+  return Math.max(0,Math.round(imp));
+}
+
+/* ═══════════ COTISATIONS TNS 2026 (itératif) ═══════════ */
+function cotBase(B){
+  if(B<=0)return 0;
+  let af=B<=1.1*PASS?B*0.031:B<=1.4*PASS?1.1*PASS*0.031*(1-(B-1.1*PASS)/(0.6*PASS)):0;
+  const retB=Math.min(B,PASS)*0.1775+Math.max(B-PASS,0)*0.006;
+  const retC=Math.min(B,4*PASS)*0.070;
+  const prev=Math.min(B,PASS)*0.013;
+  const ij=Math.min(B,5*PASS)*0.0085;
+  let mal=B<=1.1*PASS?B*0.065:B<=1.4*PASS?1.1*PASS*0.065*(1-(B-1.1*PASS)/(0.6*PASS)):0;
+  const csg=B*1.35*0.097;
+  return Math.round(af+retB+retC+prev+ij+mal+csg);
+}
+function cotTNS(revBrut){
+  if(revBrut<=0)return 0;
+  let c=revBrut*0.44;
+  for(let i=0;i<60;i++){const c2=cotBase(Math.max(revBrut-c,0));if(Math.abs(c2-c)<1){c=c2;break;}c=c*0.5+c2*0.5;}
+  return c;
+}
+
+/* ═══════════ CHARGES SASU (itératif) ═══════════ */
+function salNet(b){
+  return Math.max(b-(
+    Math.min(b,PASS)*0.0690+Math.max(b-PASS,0)*0.001+
+    Math.min(b,PASS)*0.0319+Math.min(Math.max(b-PASS,0),2*PASS)*0.0219+
+    Math.min(b,4*PASS)*0.024+b*0.0675+b*0.029+b*0.007),0);
+}
+function salBrut(net){
+  if(net<=0)return 0;
+  let b=net/0.55;
+  for(let i=0;i<60;i++){const e=net-salNet(b);if(Math.abs(e)<1)break;b+=e*0.8;}
+  return Math.max(0,b);
+}
+function salPat(b){
+  return b*(0.1275+0.0486+0.040+0.070+0.0153+0.010+0.005)+
+    Math.max(b-PASS,0)*(0.017+0.0217)+Math.min(b,4*PASS)*0;
+}
+
+/* ═══════════ IS 2026 ═══════════ */
+function IS(b){if(b<=0)return 0;return b<=IS1?Math.round(b*0.15):Math.round(IS1*0.15+(b-IS1)*0.25);}
+
+/* ═══════════ FLAT TAX DIVIDENDES 2026 ═══════════ */
+function fiscDiv(div,autreRev,optBar){
+  if(div<=0)return{ps:0,ir:0,net:0};
+  const ps=Math.round(div*0.172);
+  const ir=optBar?Math.max(0,IR(autreRev+div*0.60,S.parts)-IR(autreRev,S.parts)):Math.round(div*0.128);
+  return{ps,ir,net:div-ps-ir};
+}
+
+/* ═══════════════════════════════════════════════
+   CONCEPT "NET CASH EN POCHE"
+   = salaire net + dividendes nets + remboursements VASE
+   Les remboursements VASE (IK, mise à dispo, charges)
+   ne sont pas des revenus imposables — ils sont en
+   poche "par-dessus" la rémunération.
+═══════════════════════════════════════════════ */
+
+/* ═══════════ CALCUL MICRO ═══════════
+   La Micro ne permet PAS de rembourser IK ni mise à dispo.
+   Le net cash = CA - cotisations - IR - dépenses réelles
+   (toutes les dépenses sortent de la poche, même non déductibles)
+═══════════════════════════════════════ */
+function calcMicro(){
+  const{ca,dep,abat,cotM,parts,autr,optLib}=S;
+  const vase=getVASE();
+  // En micro : VASE n'est pas remboursable par la société
+  // Les dépenses (dep + VASE) sortent toutes de la poche du gérant
+  const depTotal=dep+vase.total; // tout sort de sa poche
+  const cot=Math.round(ca*cotM/100);
+  const revImp=Math.round(ca*(1-abat/100));
+  const tl=S.actKey==='bic-c'?0.010:S.actKey==='bnc'?0.022:0.017;
+  const ir=optLib?Math.round(ca*tl):Math.max(0,IR(revImp+autr,parts)-IR(autr,parts));
+  // Net cash = ce qui reste vraiment en poche après TOUT
+  const netCash=ca-depTotal-cot-ir;
+  const plaf=abat===71?203100:83600;
+  const abatEuro=Math.round(ca*abat/100);
+  const depWarning=depTotal>abatEuro
+    ?`💡 Dépenses réelles totales (${f(depTotal)} €) > abattement (${f(abatEuro)} €) → société bien plus avantageuse.`
+    :null;
+  return{
+    id:'micro',ico:'🏷️',nom:'Micro-entreprise',sub:'Abattement forfaitaire '+abat+'%',
+    net:netCash,netCash,vasePoche:0,// en micro : VASE non remboursé = 0 gain VASE
+    cot,ir,is:0,divNet:0,divBrut:0,trezo:0,regime:'TNS',
+    warn:ca>plaf
+      ?`⚠️ CA (${f(ca)} €) dépasse le plafond micro (${f(plaf)} €) → société obligatoire.`
+      :depWarning,
+    bars:[{l:'CA',v:ca,c:'var(--blu)'},{l:'Dép. réelles',v:depTotal,c:'var(--t4)'},
+          {l:'Cotis.'+Math.round(cotM)+'%',v:cot,c:'var(--amb)'},{l:'IR',v:Math.max(ir,0),c:'#EC4899'},
+          {l:'Net cash',v:Math.max(netCash,0),c:'var(--grn)'}],
+    lines:[
+      {l:'Chiffre d\'affaires',v:ca,cls:'bl'},
+      {sep:'Dépenses réelles (sortent de votre poche en Micro)'},
+      {l:'Dépenses pro hors VASE',v:-dep,cls:'neg',note:'Non déductibles fiscalement en Micro'},
+      ...(vase.ik>0?[{l:'IK ('+S.km+' km × barème '+S.cv+' CV)',v:-vase.ik,cls:'neg',note:'⚠ Non remboursables en Micro — sortent de votre poche'}]:[]),
+      ...(vase.miseDispo>0?[{l:'Mise à dispo bureau (loyer × '+S.pctBur+'%)',v:-vase.miseDispo,cls:'neg',note:'⚠ Impossible en Micro — dépense personnelle'}]:[]),
+      ...((vase.chargesPro+vase.tfPro+vase.alarmePro)>0?[{l:'Charges bureau (eau/élec/TF/alarme)',v:-(vase.chargesPro+vase.tfPro+vase.alarmePro),cls:'neg',note:'⚠ Non remboursables en Micro'}]:[]),
+      {sep:'Charges sociales & fiscales (base = CA brut)'},
+      {l:'Cotisations sociales ('+cotM+'% × CA)',v:-cot,cls:'neg',note:'Calculées sur le CA brut, pas le bénéfice réel'},
+      {l:'Revenu imposable IR (abatt. '+abat+'%)',v:revImp,cls:'or',note:'Forfaitaire — ne tient pas compte des vraies dépenses'},
+      {l:'Impôt sur le revenu'+(optLib?' (libératoire '+Math.round(tl*100)+'%)':''),v:-ir,cls:'neg'},
+    ],
+    expli:`<strong>⚠️ En Micro, vos dépenses réelles ne sont pas déductibles.</strong> L'abattement forfaitaire (${abat}%) remplace tous les frais — y compris IK et bureau. Si vos dépenses réelles (${f(depTotal)} €) dépassent l'abattement (${f(abatEuro)} €), vous <em>perdez la différence</em>.<br><br>Le Net Cash affiché déduit <strong>toutes vos vraies dépenses</strong> pour refléter ce qui reste réellement dans votre poche.`,
+    tip:`<strong>La Micro n'est avantageuse</strong> que si vos dépenses réelles totales (${f(depTotal)} €) restent sous l'abattement forfaitaire (${f(abatEuro)} €). ${depTotal>abatEuro?`❌ Ce n'est pas le cas ici — société IS recommandée.`:`✅ Cas favorable ici, mais vérifiez les autres statuts.`}`,
+  };
+}
+
+/* ═══════════ CALCUL EI RÉEL ═══════════ */
+function calcEI(){
+  const{ca,dep,parts,autr}=S;
+  const vase=getVASE();
+  // En EI réel, toutes les dépenses VASE sont déductibles du bénéfice
+  const depFisc=dep+vase.total; // IK + mise dispo + charges déductibles
+  const benAv=ca-depFisc;
+  const cot=cotTNS(benAv);
+  const ben=benAv-cot;
+  const ab10=Math.min(ben*0.10,14130);
+  const ir=Math.max(0,IR(Math.max(ben-ab10,0)+autr,parts)-IR(autr,parts));
+  // Net cash = bénéfice net - IR (les dépenses VASE sont déjà en poche = remboursées par déduction)
+  const netCash=ben-ir;
+  const tx=benAv>0?Math.round(cot/benAv*100):0;
+  return{
+    id:'ei',ico:'🏢',nom:'EI au Réel',sub:'Entreprise individuelle',
+    net:netCash,netCash,vasePoche:vase.total,
+    cot,ir,is:0,divNet:0,divBrut:0,trezo:0,regime:'TNS',warn:null,
+    bars:[{l:'CA',v:ca,c:'var(--blu)'},{l:'Dép.+VASE',v:depFisc,c:'var(--t4)'},
+          {l:'Cotis.~'+tx+'%',v:cot,c:'var(--amb)'},{l:'IR',v:Math.max(ir,0),c:'#EC4899'},
+          {l:'Net cash',v:Math.max(netCash,0),c:'var(--grn)'}],
+    lines:[
+      {l:'Chiffre d\'affaires',v:ca,cls:'bl'},
+      {sep:'Dépenses déductibles EI Réel'},
+      {l:'Dépenses pro hors VASE',v:-dep,cls:'neg'},
+      ...(vase.ik>0?[{l:'IK ('+S.km+' km × barème '+S.cv+' CV)',v:-vase.ik,cls:'pos',note:'✓ Déductibles + en poche'}]:[]),
+      ...(vase.miseDispo>0?[{l:'Mise à dispo bureau (loyer × '+S.pctBur+'%)',v:-vase.miseDispo,cls:'pos',note:'✓ Déductible'}]:[]),
+      ...((vase.chargesPro+vase.tfPro+vase.alarmePro)>0?[{l:'Charges bureau (eau/élec/TF/alarme)',v:-(vase.chargesPro+vase.tfPro+vase.alarmePro),cls:'pos',note:'✓ Déductibles'}]:[]),
+      {l:'Bénéfice avant cotisations',v:benAv,cls:'or'},
+      {sep:'Cotisations TNS URSSAF 2026 (itératif)'},
+      {l:'Cotisations sociales (~'+tx+'% du bénéfice)',v:-cot,cls:'neg'},
+      {l:'Bénéfice net',v:ben,cls:'or'},
+      {l:'Abattement 10% (max 14 130 €)',v:-ab10,cls:'neg'},
+      {l:'Impôt sur le revenu',v:-ir,cls:'neg'},
+    ],
+    expli:`En EI réel, <strong>toutes les dépenses sont déductibles</strong> (IK, bureau, charges). Les cotisations TNS sont calculées sur le bénéfice réel.<br><br>✅ <strong>Avantage sur Micro :</strong> IK et bureau à domicile déductibles.<br>⚠️ <strong>Limite :</strong> pas de levier salaire/dividendes, pas d'IS à 15%.`,
+    tip:`EI > Micro si dépenses réelles totales (${f(depFisc)} €) > abattement forfaitaire (${f(Math.round(ca*S.abat/100))} €). Mais sans dividendes → EURL ou SASU permettent d'aller plus loin.`,
+  };
+}
+
+/* ═══════════ CALCUL EURL IS ═══════════ */
+function calcEURL(){
+  const{ca,dep,rem,divp,cap,parts,autr,optBar}=S;
+  const vase=getVASE();
+  // EURL : dépenses + VASE déductibles de l'IS
+  // IK = remboursement de frais (en poche, non imposable)
+  // Mise à dispo = charge déductible IS (convention obligatoire)
+  const depFisc=dep+vase.total; // tout déductible IS
+  const cot=cotTNS(rem);
+  const remBrut=rem+cot;
+  const ben=Math.max(ca-depFisc-remBrut,0);
+  const is=IS(ben);
+  const benAIS=ben-is;
+  const divBrut=Math.round(benAIS*divp/100);
+  const trezo=benAIS-divBrut;
+  const seuil10=cap*0.10;
+  const divExc=Math.max(divBrut-seuil10,0);
+  const cotDiv=cotTNS(divExc);
+  const fd=fiscDiv(divBrut-cotDiv,rem+autr,optBar);
+  const irRem=Math.max(0,IR(Math.max(rem*0.90,rem-14130)+autr,parts)-IR(autr,parts));
+  // NET CASH = rémunération nette + dividendes nets - IR rém + remboursements VASE (en poche non imposable)
+  const netCash=rem+fd.net-irRem+vase.total;
+  const tx=rem>0?Math.round(cot/rem*100):0;
+  return{
+    id:'eurl',ico:'⚙️',nom:'EURL à l\'IS',sub:'Gérant majoritaire — régime TNS',
+    net:netCash,netCash,vasePoche:vase.total,
+    cot,ir:irRem,is,divNet:fd.net,divBrut,trezo,regime:'TNS',
+    warn:divExc>0?`⚠️ ${f(divExc)} € de dividendes soumis aux cotisations TNS (part > 10% du capital = ${f(seuil10)} €). Augmentez le capital social.`:null,
+    bars:[{l:'CA',v:ca,c:'var(--blu)'},{l:'Dép.+VASE',v:depFisc,c:'var(--t4)'},
+          {l:'Rém.+cotis.',v:remBrut,c:'var(--amb)'},{l:'IS',v:is,c:'var(--or)'},
+          {l:'Flat tax+IR',v:fd.ps+fd.ir+cotDiv+irRem,c:'#EC4899'},
+          {l:'Net cash',v:Math.max(netCash,0),c:'var(--grn)'},{l:'Tréso',v:trezo,c:'var(--tea)'}],
+    lines:[
+      {l:'Chiffre d\'affaires',v:ca,cls:'bl'},
+      {sep:'Charges déductibles IS'},
+      {l:'Dépenses pro hors VASE',v:-dep,cls:'neg'},
+      ...(vase.ik>0?[{l:'IK ('+S.km+' km · '+S.cv+' CV)',v:-vase.ik,cls:'neg',note:'Déductible IS + remboursé = en poche net'}]:[]),
+      ...(vase.miseDispo>0?[{l:'Mise à dispo bureau (loyer × '+S.pctBur+'%)',v:-vase.miseDispo,cls:'neg',note:'Déductible IS — convention requise'}]:[]),
+      ...((vase.chargesPro+vase.tfPro+vase.alarmePro)>0?[{l:'Charges bureau (eau/élec/TF/alarme)',v:-(vase.chargesPro+vase.tfPro+vase.alarmePro),cls:'neg',note:'Remboursées par la société = en poche'}]:[]),
+      {l:'Rémunération brute gérant',v:-remBrut,cls:'neg',note:'Net '+f(rem)+' € + cotisations TNS '+f(Math.round(cot))+' € (~'+tx+'%)'},
+      {l:'Bénéfice avant IS',v:ben,cls:'or'},
+      {sep:'IS PME 2026'},
+      {l:'Impôt sur les Sociétés (15% / 25%)',v:-is,cls:'neg'},
+      {l:'Bénéfice distribuable après IS',v:benAIS,cls:'or'},
+      {sep:'Dividendes ('+divp+'% du bénéfice après IS)'},
+      {l:'Dividendes bruts',v:divBrut,cls:'gold'},
+      {l:'Part > 10% capital → cotisations TNS',v:divExc>0?-cotDiv:0,cls:'neg',note:'Spécificité EURL — '+f(divExc)+' € > seuil '+f(seuil10)+' €'},
+      {l:'Flat tax 30% (PS 17,2% + IR 12,8%)',v:-(fd.ps+fd.ir),cls:'neg'},
+      {l:'Dividendes nets',v:fd.net,cls:'pos'},
+      {sep:'NET CASH EN POCHE (total annuel)'},
+      {l:'Rémunération nette',v:rem,cls:'pos'},
+      {l:'IR sur rémunération (abatt. 10%)',v:-irRem,cls:'neg'},
+      ...(vase.total>0?[{l:'Remboursements VASE (IK + bureau + charges)',v:vase.total,cls:'pos',note:'✓ Non imposable — argent en poche en plus du salaire'}]:[]),
+      {l:'Trésorerie conservée en société',v:trezo,cls:'gold'},
+    ],
+    expli:`En EURL IS, les remboursements VASE (IK : ${f(vase.ik)} €, bureau : ${f(vase.miseDispo+vase.chargesPro+vase.tfPro+vase.alarmePro)} €) sont <strong>déduits de l'IS ET en poche non imposables</strong>.<br><br>⚠️ <strong>Piège EURL :</strong> dividendes > 10% capital (${f(seuil10)} €) = cotisations TNS.`,
+    tip:`Net cash = salaire net + dividendes nets + ${f(vase.total)} € VASE remboursés. ${divExc>0?`Augmentez le capital à ${f(Math.round(divBrut/0.10))} € pour éviter les cotisations TNS sur dividendes.`:'Capital adapté — dividendes sans surcharge.'}`,
+  };
+}
+
+/* ═══════════ CALCUL SASU IS ═══════════ */
+function calcSASU(){
+  const{ca,dep,rem,divp,parts,autr,optBar}=S;
+  const vase=getVASE();
+  const depFisc=dep+vase.total;
+  const brut=salBrut(rem);
+  const pat=salPat(brut);
+  const ben=Math.max(ca-depFisc-brut-pat,0);
+  const is=IS(ben);
+  const benAIS=ben-is;
+  const divBrut=Math.round(benAIS*divp/100);
+  const trezo=benAIS-divBrut;
+  const fd=fiscDiv(divBrut,rem+autr,optBar);
+  const irRem=Math.max(0,IR(Math.max(rem*0.90,rem-14130)+autr,parts)-IR(autr,parts));
+  // NET CASH = rém. nette + dividendes nets - IR rém + VASE remboursés
+  const netCash=rem+fd.net-irRem+vase.total;
+  const tc=rem>0?Math.round((brut+pat-rem)/rem*100):0;
+  return{
+    id:'sasu',ico:'🏛️',nom:'SASU à l\'IS',sub:'Président assimilé salarié',
+    net:netCash,netCash,vasePoche:vase.total,
+    cot:brut+pat-rem,ir:irRem,is,divNet:fd.net,divBrut,trezo,regime:'Régime général',warn:null,
+    bars:[{l:'CA',v:ca,c:'var(--blu)'},{l:'Dép.+VASE',v:depFisc,c:'var(--t4)'},
+          {l:'Charges soc.',v:brut+pat-rem,c:'var(--amb)'},{l:'IS',v:is,c:'var(--or)'},
+          {l:'Flat tax+IR',v:fd.ps+fd.ir+irRem,c:'#EC4899'},
+          {l:'Net cash',v:Math.max(netCash,0),c:'var(--grn)'},{l:'Tréso',v:trezo,c:'var(--tea)'}],
+    lines:[
+      {l:'Chiffre d\'affaires',v:ca,cls:'bl'},
+      {sep:'Charges déductibles IS'},
+      {l:'Dépenses pro hors VASE',v:-dep,cls:'neg'},
+      ...(vase.ik>0?[{l:'IK ('+S.km+' km · '+S.cv+' CV)',v:-vase.ik,cls:'neg',note:'Déductible IS + remboursé = en poche net'}]:[]),
+      ...(vase.miseDispo>0?[{l:'Mise à dispo bureau (loyer × '+S.pctBur+'%)',v:-vase.miseDispo,cls:'neg',note:'Déductible IS — convention requise'}]:[]),
+      ...((vase.chargesPro+vase.tfPro+vase.alarmePro)>0?[{l:'Charges bureau (eau/élec/TF/alarme)',v:-(vase.chargesPro+vase.tfPro+vase.alarmePro),cls:'neg',note:'Remboursées par la société = en poche'}]:[]),
+      {l:'Salaire brut président',v:-brut,cls:'neg',note:'Net souhaité : '+f(rem)+' €'},
+      {l:'Charges patronales (~'+tc+'% du net)',v:-pat,cls:'neg'},
+      {l:'Bénéfice avant IS',v:ben,cls:'or'},
+      {sep:'IS PME 2026'},
+      {l:'Impôt sur les Sociétés (15% / 25%)',v:-is,cls:'neg'},
+      {l:'Bénéfice distribuable après IS',v:benAIS,cls:'or'},
+      {sep:'Dividendes ('+divp+'% du bénéfice après IS)'},
+      {l:'Dividendes bruts',v:divBrut,cls:'gold'},
+      {l:'Prélèvements sociaux 17,2%',v:-fd.ps,cls:'neg',note:'✓ Jamais de cotisations TNS sur dividendes SASU'},
+      {l:'IR sur dividendes (PFU 12,8%)',v:-fd.ir,cls:'neg'},
+      {l:'Dividendes nets',v:fd.net,cls:'pos'},
+      {sep:'NET CASH EN POCHE (total annuel)'},
+      {l:'Rémunération nette',v:rem,cls:'pos'},
+      {l:'IR sur rémunération (abatt. 10%)',v:-irRem,cls:'neg'},
+      ...(vase.total>0?[{l:'Remboursements VASE (IK + bureau + charges)',v:vase.total,cls:'pos',note:'✓ Non imposable — argent en poche en plus du salaire'}]:[]),
+      {l:'Trésorerie conservée en société',v:trezo,cls:'gold'},
+    ],
+    expli:`En SASU IS, les remboursements VASE (IK : ${f(vase.ik)} €, bureau : ${f(vase.miseDispo+vase.chargesPro+vase.tfPro+vase.alarmePro)} €) sont <strong>déduits de l'IS ET en poche non imposables</strong>. Les dividendes ne supportent <strong>jamais</strong> de cotisations TNS — uniquement la flat tax 30%.`,
+    tip:`Net cash = ${f(rem)} € salaire net + ${f(fd.net)} € dividendes nets${vase.total>0?' + '+f(vase.total)+' € VASE':''} - ${f(irRem)} € IR. Dividendes sans cotisations TNS = avantage massif vs EURL. Très efficace dès 50k€ de CA.`,
+  };
+}
+
+/* ═══════════ CALCUL SASU IR (corrigé) ═══════════
+   SASU à l'IR = transparence fiscale
+   Le bénéfice après charges salariales est imposé à l'IR personnel
+   Pas d'IS. Les PS (17,2%) s'appliquent sur le bénéfice professionnel
+   (régime micro-social professions libérales non réglementées ou BNC)
+   → En pratique : PS = 17,2% sur bénéfice net après charges
+   Disponible 5 exercices max — option irrévocable avant clôture
+═══════════════════════════════════════════════ */
+function calcSASU_IR(){
+  const{ca,dep,rem,parts,autr}=S;
+  const vase=getVASE();
+  const depFisc=dep+vase.total;
+  const brut=salBrut(rem);
+  const pat=salPat(brut);
+  // Bénéfice de la société avant imposition (transparence : pas d'IS)
+  const benSoc=Math.max(ca-depFisc-brut-pat,0);
+  // Le dirigeant est imposé sur : rémunération + bénéfice de la société (qu'il soit distribué ou non)
+  const revImposable=rem+benSoc;
+  // Prélèvements sociaux sur bénéfice (17,2% — assimilé BNC/revenus du capital non salarié)
+  const ps=Math.round(benSoc*0.172);
+  // IR sur l'ensemble (salaire + bénéfice), avec abattement 10% sur la part salariale
+  const baseIR=Math.max(rem*0.90,rem-14130)+benSoc+autr;
+  const ir=Math.max(0,IR(baseIR,parts)-IR(autr,parts));
+  // Net cash : rémunération nette + bénéfice - IR - PS + VASE remboursés
+  const netCash=rem+benSoc-ir-ps+vase.total;
+  const chargesTotal=brut+pat-rem;
+  return{
+    id:'sasu-ir',ico:'📋',nom:'SASU à l\'IR',sub:'Transparence fiscale — 5 exercices max',
+    net:netCash,netCash,vasePoche:vase.total,
+    cot:chargesTotal,ir,is:0,divNet:0,divBrut:0,trezo:0,regime:'Régime général',
+    warn:'⚠️ Option IR limitée à 5 exercices · Tout le bénéfice est imposé à l\'IR même s\'il reste en société · Irrévocable avant clôture',
+    bars:[{l:'CA',v:ca,c:'var(--blu)'},{l:'Dép.+VASE',v:depFisc,c:'var(--t4)'},
+          {l:'Ch. soc.',v:chargesTotal,c:'var(--amb)'},
+          {l:'PS 17,2%',v:ps,c:'var(--or)'},{l:'IR',v:ir,c:'#EC4899'},
+          {l:'Net cash',v:Math.max(netCash,0),c:'var(--grn)'}],
+    lines:[
+      {l:'Chiffre d\'affaires',v:ca,cls:'bl'},
+      {sep:'Charges déductibles'},
+      {l:'Dépenses pro hors VASE',v:-dep,cls:'neg'},
+      ...(vase.ik>0?[{l:'IK ('+S.km+' km · '+S.cv+' CV)',v:-vase.ik,cls:'neg',note:'Déductible + remboursé = en poche'}]:[]),
+      ...(vase.miseDispo>0?[{l:'Mise à dispo bureau',v:-vase.miseDispo,cls:'neg',note:'Déductible'}]:[]),
+      ...((vase.chargesPro+vase.tfPro+vase.alarmePro)>0?[{l:'Charges bureau (eau/élec/TF/alarme)',v:-(vase.chargesPro+vase.tfPro+vase.alarmePro),cls:'neg',note:'Remboursées = en poche'}]:[]),
+      {l:'Salaire brut président',v:-brut,cls:'neg',note:'Net : '+f(rem)+' €'},
+      {l:'Charges patronales',v:-pat,cls:'neg'},
+      {l:'Bénéfice société (imposé à l\'IR — pas d\'IS)',v:benSoc,cls:'or'},
+      {sep:'Imposition transparente SASU IR'},
+      {l:'Prélèvements sociaux 17,2% (sur bénéfice)',v:-ps,cls:'neg',note:'Sur le bénéfice de la société, qu\'il soit distribué ou non'},
+      {l:'IR progressif (salaire abatt.10% + bénéfice)',v:-ir,cls:'neg',note:'Base imposable : '+f(Math.round(baseIR-autr))+' €'},
+      {sep:'NET CASH EN POCHE (total annuel)'},
+      {l:'Rémunération nette',v:rem,cls:'pos'},
+      {l:'Bénéfice net (après PS et IR)',v:benSoc-ps-ir+rem-rem,cls:'or',note:'Disponible si distribué'},
+      ...(vase.total>0?[{l:'Remboursements VASE',v:vase.total,cls:'pos',note:'Non imposable'}]:[]),
+    ],
+    expli:`En <strong>SASU à l'IR</strong>, la société est transparente : pas d'IS. <strong>Tout le bénéfice</strong> (distribué ou non) est imposé à votre IR personnel + PS 17,2%.<br><br>✅ <strong>Avantageux si</strong> : bénéfice faible, TMI ≤ 30%, démarrage d'activité.<br>⚠️ <strong>Piège :</strong> le bénéfice est imposé même s'il reste en société. <strong>Limité 5 exercices.</strong>`,
+    tip:`SASU IR vs SASU IS : avantageux uniquement si TMI ≤ 30% ET bénéfice société < ${f(42500)} €. Au-delà, l'IS à 15% + flat tax 30% est plus efficace. Calculez soigneusement avant d'opter.`,
+  };
+}
+
+/* ═══════════ RENDU ═══════════ */
+const f=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n));
+
+function renderBars(bars){
+  const mx=Math.max(...bars.map(b=>b.v),1);
+  const H=65;
+  return`<div class="bar-sec">
+    <div class="bar-tit">Décomposition visuelle</div>
+    <div class="bars-chart">
+      ${bars.map(b=>{
+        const h=Math.max(0,Math.round((b.v/mx)*H));
+        const amt=b.v>=1000?Math.round(b.v/1000)+'k':b.v>0?'<1k':'';
+        return`<div class="bc-col">
+          <div class="bc-amt">${amt}</div>
+          <div class="bc-bar" style="height:${h}px;background:${b.c};min-height:${b.v>0?'3px':'0'}"></div>
+          <div class="bc-lbl">${b.l}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderLines(lines){
+  return lines.map(l=>{
+    if(l.sep)return`<div class="dl sep"><span class="dl-l">${l.sep}</span></div>`;
+    return`<div class="dl">
+      <span class="dl-l">${l.l}${l.note?`<span class="dl-note">${l.note}</span>`:''}</span>
+      <span class="dl-v ${l.cls||''}">${l.v>=0?'+':'−'} ${f(Math.abs(l.v))} €</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCard(s,isBest,expanded,currId){
+  const isCurr=s.id===currId;
+  const badge=isBest?'badge-best':s.net<0?'badge-neg':'badge-ok';
+  const bl=isBest?'✓ Meilleur net cash':s.net<0?'⚠ Déficit':'';
+  // Badge "Actuel" si c'est le statut courant (et pas déjà best)
+  const currBadge=isCurr&&!isBest?`<span class="sh-badge" style="background:rgba(96,165,250,.12);color:var(--blu);border:1px solid rgba(96,165,250,.3)">📍 Actuel</span>`:'';
+  return`<div class="sc${isBest?' best':''}${isCurr&&!isBest?' curr-card':''}" id="sc-${s.id}"
+    style="${isCurr&&!isBest?'border-color:rgba(96,165,250,.3)':''}">
+    <div class="sc-hd" onclick="toggleCard('${s.id}')">
+      ${bl?`<span class="sh-badge ${badge}">${bl}</span>`:''}
+      ${currBadge}
+      <div class="sh-info"><h3>${s.ico} ${s.nom}</h3><p>${s.sub}</p></div>
+      <div class="sh-net">
+        <div class="net-n${isBest?' cg':''}">${f(s.net)} €</div>
+        <div class="net-pct">${Math.max(0,Math.round(s.net/S.ca*100))}% CA · ${f(Math.round(s.net/12))} €/mois</div>
+      </div>
+      <div class="sc-arr${expanded?' open':''}" id="arr-${s.id}">▼</div>
+    </div>
+    <div class="sc-body${expanded?' open':''}" id="body-${s.id}">
+      ${s.warn?`<div class="sc-alert">${s.warn}</div>`:''}
+      ${s.vasePoche>0?`<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:8px 11px;margin:8px 13px 0;font-size:11px;color:var(--grn)">💰 <strong>VASE remboursé : +${f(s.vasePoche)} €</strong> en poche (non imposable) — inclus dans le Net Cash</div>`:''}
+      ${renderBars(s.bars)}
+      <div class="lines-sec">
+        <div class="lines-tit">Calcul ligne par ligne</div>
+        ${renderLines(s.lines)}
+        <div class="dl total">
+          <span class="dl-l">💰 Net Cash en poche (annuel)</span>
+          <span class="dl-v ${s.net>=0?'pos':'neg'}">${f(s.net)} €</span>
+        </div>
+        ${s.trezo>0?`<div class="trezo-row"><span class="dl-l">🏦 Trésorerie conservée en société</span><span class="dl-v">${f(s.trezo)} €</span></div>`:''}
+        <div class="${s.regime==='Régime général'?'ret-badge ret-gen':'ret-badge ret-tns'}">${s.regime==='Régime général'?'✓ Régime général — maladie & retraite':'⚠ Régime TNS — cotisations réduites'}</div>
+      </div>
+      <div class="expli">
+        <div class="expli-tit">📖 Comment ça marche ?</div>
+        <div class="expli-txt">${s.expli}</div>
+      </div>
+      <div class="closer-tip">
+        <div class="ct-txt"><strong>💬 Argument Closer :</strong> ${s.tip}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function go(){
+  S.optLib=document.getElementById('opt-lib').checked;
+  S.optBar=document.getElementById('opt-bar').checked;
+  S.optIR=document.getElementById('opt-ir').checked;
+  const all=[calcMicro(),calcEI(),calcEURL(),calcSASU(),calcSASU_IR()];
+
+  // Statut actuel du prospect
+  const currId=S.currStatut;
+  let currResult=null;
+  if(currId==='salarie'){
+    const brut=S.ca;
+    const net=salNet(brut);
+    const vase=getVASE();
+    const ab10=Math.min(net*0.10,14130);
+    const ir=Math.max(0,IR(Math.max(net-ab10,0)+S.autr,S.parts)-IR(S.autr,S.parts));
+    currResult={id:'salarie',ico:'👔',nom:'Salarié',sub:'Régime général · Charges ~22% sal.',
+      net:net-ir+vase.total,netCash:net-ir+vase.total,vasePoche:vase.total};
+  } else {
+    currResult=all.find(s=>s.id===currId)||all[0];
+  }
+
+  all.sort((a,b)=>b.net-a.net);
+  const best=all[0];
+
+  // Winner strip
+  document.getElementById('wi-ico').textContent=best.ico;
+  document.getElementById('wi-title').textContent=best.nom+' — '+f(best.net)+' €/an';
+  document.getElementById('wi-sub').textContent=f(Math.round(best.net/12))+' €/mois · '+Math.max(0,Math.round(best.net/S.ca*100))+'% du CA';
+  document.getElementById('wi-eco').textContent='+'+f(best.net-all[1].net)+' €/an';
+  document.getElementById('wi-ecol').textContent='vs '+all[1].nom;
+  document.getElementById('bs-v').textContent=f(Math.round(best.net/12))+' €/mois';
+
+  // Bannière situation actuelle
+  const currEl=document.getElementById('current-banner');
+  currEl.innerHTML=`<div class="current-banner">
+    <div class="cb-ico">${currResult.ico}</div>
+    <div class="cb-txt">
+      <h3>📍 Situation actuelle — ${currResult.nom}</h3>
+      <p>${currResult.sub}${currResult.vasePoche>0?' · VASE '+f(currResult.vasePoche)+' €':''}</p>
+    </div>
+    <div class="cb-net">
+      <div class="cb-net-n">${f(currResult.net)} €</div>
+      <div class="cb-net-l">${f(Math.round(currResult.net/12))} €/mois</div>
+    </div>
+  </div>`;
+
+  // Bannière delta gain
+  const deltaEl=document.getElementById('delta-banner');
+  const isCurrBest=currResult.id===best.id;
+  if(isCurrBest){
+    deltaEl.innerHTML=`<div class="delta-banner gain">
+      <div class="db-ico">✅</div>
+      <div class="db-txt">
+        <h3 style="color:var(--grn)">Vous êtes déjà sur le statut optimal !</h3>
+        <p>Le statut actuel (${currResult.nom}) génère le meilleur net cash avec la configuration renseignée. Vérifiez l'optimisation VASE si non faite.</p>
+      </div>
+    </div>`;
+  } else {
+    const delta=best.net-currResult.net;
+    const isGain=delta>0;
+    deltaEl.innerHTML=`<div class="delta-banner ${isGain?'gain':'perte'}">
+      <div class="db-ico">${isGain?'🚀':'⚠️'}</div>
+      <div class="db-txt">
+        <h3 style="color:${isGain?'var(--grn)':'var(--red)'}">${isGain?'Gain potentiel en passant à '+best.nom:'Attention — statut actuel plus avantageux'}</h3>
+        <p>${currResult.nom} → <strong>${best.nom}</strong> · +${f(Math.round(Math.abs(delta)/12))} €/mois · soit +${f(Math.abs(delta))} €/an</p>
+      </div>
+      <div class="db-val">
+        <div class="db-val-n ${isGain?'gain':'perte'}">${isGain?'+':'−'}${f(Math.abs(delta))} €</div>
+        <div class="db-val-l">par an</div>
+      </div>
+    </div>`;
+  }
+
+  // Cards
+  const cards=document.getElementById('cards');
+  const tabIds=['micro','ei','eurl','sasu','sasu-ir'];
+  if(S.focusIdx>=0){
+    const focusId=tabIds[S.focusIdx];
+    const sc=all.find(s=>s.id===focusId)||all[0];
+    const isBest=all[0].id===focusId;
+    const others=all.filter(s=>s.id!==focusId);
+    cards.innerHTML=renderCard(sc,isBest,true,currResult.id)+
+      `<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t4);margin:8px 0 5px">Comparer avec :</div>`+
+      others.map(s=>renderCard(s,all[0].id===s.id,false,currResult.id)).join('');
+  } else {
+    cards.innerHTML=all.map((s,i)=>renderCard(s,i===0,i===0,currResult.id)).join('');
+  }
+  updateVaseRecap();
+}
+
+function updateVaseRecap(){
+  const v=getVASE();
+  const el=document.getElementById('vase-recap');
+  if(!el)return;
+  const rows=[
+    v.ik>0?`<div style="display:flex;justify-content:space-between"><span>IK (${S.km} km · ${S.cv} CV barème 2026)</span><span style="color:var(--or);font-weight:700">${f(v.ik)} €</span></div>`:'',
+    v.miseDispo>0?`<div style="display:flex;justify-content:space-between"><span>Mise à dispo bureau (loyer ${f(S.loyer)}€/mois × ${S.pctBur}%)</span><span style="color:var(--or);font-weight:700">${f(v.miseDispo)} €</span></div>`:'',
+    v.chargesPro>0?`<div style="display:flex;justify-content:space-between"><span>Charges (eau/élec/gaz/internet × ${S.pctBur}%)</span><span style="color:var(--or);font-weight:700">${f(v.chargesPro)} €</span></div>`:'',
+    v.tfPro>0?`<div style="display:flex;justify-content:space-between"><span>TF + assurance hab. (part pro)</span><span style="color:var(--or);font-weight:700">${f(v.tfPro)} €</span></div>`:'',
+    v.alarmePro>0?`<div style="display:flex;justify-content:space-between"><span>Alarme / surveillance</span><span style="color:var(--or);font-weight:700">${f(v.alarmePro)} €</span></div>`:'',
+  ].filter(Boolean);
+  if(v.total>0){
+    el.innerHTML=rows.join('')+
+      `<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(249,115,22,.2);margin-top:7px;padding-top:7px;font-weight:700">
+        <span style="color:var(--or)">Total VASE remboursable</span>
+        <span style="color:var(--grn);font-family:'Syne',sans-serif;font-size:14px">${f(v.total)} €/an</span>
+      </div>`;
+    document.getElementById('vase-total-lbl').textContent='('+f(v.total)+' €/an)';
+  } else {
+    el.innerHTML='<span style="color:var(--t3)">Renseignez les champs ci-dessus pour calculer vos remboursements VASE.</span>';
+    document.getElementById('vase-total-lbl').textContent='';
+  }
+}
+
+function toggleCard(id){
+  const b=document.getElementById('body-'+id);
+  const a=document.getElementById('arr-'+id);
+  if(!b||!a)return;
+  const o=b.classList.toggle('open');
+  a.classList.toggle('open',o);
+}
+
+function toggleVase(){
+  document.getElementById('vase-box').classList.toggle('open');
+  const arr=document.getElementById('vase-arr');
+  if(arr)arr.style.transform=document.getElementById('vase-box').classList.contains('open')?'rotate(180deg)':'';
+}
+
+/* TABS */
+function setTab(idx,el){
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.remove('on'));
+  if(S.focusIdx===idx){S.focusIdx=-1;}else{S.focusIdx=idx;el.classList.add('on');}
+  go();
+}
+
+/* SLIDERS */
+function sl(key,el){
+  S[key]=+el.value;
+  const fmt={ca:v=>f(v)+' €',dep:v=>f(v)+' €',rem:v=>f(v)+' €',divp:v=>v+'%',cap:v=>f(v)+' €',autr:v=>f(v)+' €'};
+  const ids={ca:'v-ca',dep:'v-dep',rem:'v-rem',divp:'v-div',cap:'v-cap',autr:'v-autr'};
+  if(ids[key])document.getElementById(ids[key]).textContent=fmt[key](S[key]);
+  if(key==='ca'){
+    const plaf=S.abat===71?203100:83600;
+    const h=document.getElementById('ca-plaf');
+    h.textContent=S.ca>plaf?`⚠️ CA dépasse le plafond micro (${f(plaf)} €) → société obligatoire`:`Plafond micro ${S.abat===71?'commerce':'services'} : ${f(plaf)} €`;
+    h.className='f-hint'+(S.ca>plaf?' warn':'');
+  }
+  go();
+}
+
+function slVase(key,el){
+  S[key]=+el.value;
+  const ids={km:'v-km',cv:'v-cv',loyer:'v-loyer',pctBur:'v-pct-bur',chargesLog:'v-charges-log',tf:'v-tf',alarme:'v-alarme'};
+  const fmts={km:v=>f(v)+' km',cv:v=>v+' CV',loyer:v=>f(v)+' €',pctBur:v=>v+'%',chargesLog:v=>f(v)+' €',tf:v=>f(v)+' €',alarme:v=>f(v)+' €'};
+  if(ids[key])document.getElementById(ids[key]).textContent=fmts[key](S[key]);
+  // Met à jour le hint IK
+  const v=getVASE();
+  const hint=document.getElementById('ik-hint');
+  if(hint&&S.km>0)hint.textContent=`Barème 2026 (${S.cv} CV) → ${f(v.ik)} €/an (${f(Math.round(v.ik/S.km*100)/100)} €/km)`;
+  go();
+}
+
+/* CHIPS */
+function pickCurr(el,key){
+  document.querySelectorAll('#c-curr .curr-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  S.currStatut=key;
+  go();
+}
+function pickAct(el,key,abat,cotM){
+  document.querySelectorAll('#c-act .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  S.actKey=key;S.abat=abat;S.cotM=cotM;
+  const hints={'bic-s':'Abattement micro : <b>50%</b> · Cotisations micro : <b>25,6%</b> du CA',
+    'bnc':'Abattement micro : <b>34%</b> · Cotisations micro : <b>23,1%</b> du CA',
+    'bic-c':'Abattement micro : <b>71%</b> · Cotisations micro : <b>12,8%</b> du CA',
+    'art':'Abattement micro : <b>50%</b> · Cotisations micro : <b>22,1%</b> du CA'};
+  document.getElementById('act-hint').innerHTML=hints[key];
+  go();
+}
+function pickFam(el,pb){
+  document.querySelectorAll('#c-fam .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');S.partsB=pb;calcParts();
+}
+function pickEnf(el,n){
+  document.querySelectorAll('#c-enf .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');S.enf=n;calcParts();
+}
+function calcParts(){
+  const n=S.enf;
+  const ex=n<=0?0:n<=2?n*0.5:2*0.5+(n-2)*1.0;
+  S.parts=S.partsB+ex;go();
+}
+function toggleAdv(){
+  document.getElementById('adv-box').classList.toggle('open');
+  document.getElementById('adv-btn').classList.toggle('adv-open');
+}
+
+/* EXPORT */
+function copyRes(){
+  const all=[calcMicro(),calcEI(),calcEURL(),calcSASU(),calcSASU_IR()];
+  all.sort((a,b)=>b.net-a.net);
+  const v=getVASE();
+  let t=`📊 SIMULATION DÉCLIC — ${new Date().toLocaleDateString('fr-FR')}\nCA : ${f(S.ca)} € · Dépenses pro : ${f(S.dep)} € · VASE : ${f(v.total)} € · Rém. souhaitée : ${f(S.rem)} €\n\n`;
+  all.forEach((s,i)=>t+=`${i===0?'🏆':'  '} ${s.nom} : ${f(s.net)} €/an net cash (${f(Math.round(s.net/12))} €/mois)${s.vasePoche>0?' dont '+f(s.vasePoche)+' € VASE':''}\n`);
+  t+=`\n→ Simulation réalisée par Jérôme Jonnard Conseil · Déclic Entrepreneurs`;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.querySelector('.btn-ghost');
+    b.textContent='✅ Copié !';
+    setTimeout(()=>b.textContent='📋 Copier le résumé pour le prospect',2500);
+  });
+}
+/* ═══════════ PDF EXPORT ═══════════ */
+function updatePdfLabel(){
+  const nom=document.getElementById('prospect-nom').value.trim();
+  const btn=document.getElementById('btn-pdf');
+  btn.textContent=nom?`📄 Générer le PDF pour ${nom}`:'📄 Exporter la simulation en PDF prospect';
+}
+
+function exportPDF(){
+  const nom=document.getElementById('prospect-nom').value.trim()||'Prospect';
+  const all=[calcMicro(),calcEI(),calcEURL(),calcSASU(),calcSASU_IR()];
+  all.sort((a,b)=>b.net-a.net);
+  const best=all[0];
+  const vase=getVASE();
+  const date=new Date().toLocaleDateString('fr-FR');
+
+  // Situation actuelle pour le PDF
+  const currId=S.currStatut;
+  let currResult=null;
+  if(currId==='salarie'){
+    const brut=S.ca; const net=salNet(brut);
+    const ab10=Math.min(net*0.10,14130);
+    const ir=Math.max(0,IR(Math.max(net-ab10,0)+S.autr,S.parts)-IR(S.autr,S.parts));
+    currResult={id:'salarie',ico:'👔',nom:'Salarié',sub:'Régime général',net:net-ir+vase.total,vasePoche:vase.total};
+  } else {
+    currResult=all.find(s=>s.id===currId)||all[0];
+  }
+  const delta=best.net-currResult.net;
+  const isCurrBest=currResult.id===best.id;
+
+  // Helper lignes détail
+  function renderDetailLines(lines){
+    return lines.map(l=>{
+      if(l.sep)return`<div class="rp-detail-line sep"><span class="dl-l">${l.sep}</span></div>`;
+      const sign=l.v>=0?'+':'−';
+      const cls=l.cls||'';
+      return`<div class="rp-detail-line">
+        <span class="dl-l">${l.l}${l.note?`<span class="dl-note">${l.note}</span>`:''}</span>
+        <span class="dl-v ${cls}">${sign} ${f(Math.abs(l.v))} €</span>
+      </div>`;
+    }).join('');
+  }
+
+  const html=`
+  <div class="rp-head">
+    <div>
+      <div class="rp-brand">Déclic Entrepreneurs — Jérôme Jonnard Conseil</div>
+      <div class="rp-title">Simulation comparative statuts 2026</div>
+      <div class="rp-sub">Préparée pour : <strong>${nom}</strong> · ${date}</div>
+    </div>
+    <div class="rp-meta">
+      <div><strong>Barèmes officiels 2026</strong></div>
+      <div>PASS : 47 100 € · IS PME : 15%/25%</div>
+      <div>PFU : 30% · IR LFI déc. 2025</div>
+    </div>
+  </div>
+
+  <!-- Paramètres -->
+  <div class="rp-section">
+    <div class="rp-sec-title">Paramètres de simulation</div>
+    <div class="rp-params">
+      <div class="rp-param"><div class="rpp-val">${f(S.ca)} €</div><div class="rpp-lbl">CA annuel HT</div></div>
+      <div class="rp-param"><div class="rpp-val">${f(S.dep)} €</div><div class="rpp-lbl">Dépenses pro</div></div>
+      <div class="rp-param"><div class="rpp-val">${f(S.rem)} €</div><div class="rpp-lbl">Rém. nette souhaitée</div></div>
+      <div class="rp-param"><div class="rpp-val">${S.divp}%</div><div class="rpp-lbl">% bénéfice en dividendes</div></div>
+      <div class="rp-param"><div class="rpp-val">${S.parts} part${S.parts>1?'s':''}</div><div class="rpp-lbl">Parts fiscales</div></div>
+      <div class="rp-param"><div class="rpp-val">${f(S.cap)} €</div><div class="rpp-lbl">Capital social</div></div>
+    </div>
+  </div>
+
+  ${vase.total>0?`
+  <!-- VASE -->
+  <div class="rp-section">
+    <div class="rp-sec-title">Remboursements VASE inclus (non imposables)</div>
+    <div class="rp-vase-grid">
+      ${vase.ik>0?`<div class="rp-vase-item"><div class="rpv-val">${f(vase.ik)} €</div><div class="rpv-lbl">IK — ${f(S.km)} km · ${S.cv} CV (barème 2026)</div></div>`:''}
+      ${vase.miseDispo>0?`<div class="rp-vase-item"><div class="rpv-val">${f(vase.miseDispo)} €</div><div class="rpv-lbl">Mise à dispo bureau (loyer × ${S.pctBur}%)</div></div>`:''}
+      ${vase.chargesPro>0?`<div class="rp-vase-item"><div class="rpv-val">${f(vase.chargesPro)} €</div><div class="rpv-lbl">Charges logement proratisées (${S.pctBur}%)</div></div>`:''}
+      ${vase.tfPro>0?`<div class="rp-vase-item"><div class="rpv-val">${f(vase.tfPro)} €</div><div class="rpv-lbl">TF + assurance habitation (part pro)</div></div>`:''}
+      ${vase.alarmePro>0?`<div class="rp-vase-item"><div class="rpv-val">${f(vase.alarmePro)} €</div><div class="rpv-lbl">Alarme / surveillance</div></div>`:''}
+      <div class="rp-vase-item" style="background:#ECFDF5;border-color:#6EE7B7">
+        <div class="rpv-val" style="color:#16A34A;font-size:18px">${f(vase.total)} €</div>
+        <div class="rpv-lbl" style="color:#166534">Total VASE / an — en poche en plus du salaire</div>
+      </div>
+    </div>
+  </div>`:''}
+
+  <!-- Tableau comparatif -->
+  <div class="rp-section">
+    <div class="rp-sec-title">📍 Situation actuelle → Statut optimal</div>
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-bottom:14px">
+      <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:9px;padding:13px 16px;text-align:center">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#3B82F6;margin-bottom:6px">📍 Situation actuelle</div>
+        <div style="font-size:20px;margin-bottom:3px">${currResult.ico}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:900;color:#1D4ED8">${currResult.nom}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:900;color:#1E40AF;margin-top:6px">${f(currResult.net)} €</div>
+        <div style="font-size:11px;color:#3B82F6">${f(Math.round(currResult.net/12))} €/mois</div>
+      </div>
+      <div style="text-align:center;color:${delta>0?'#16A34A':'#DC2626'};font-size:24px">→</div>
+      <div style="background:${isCurrBest?'#EFF6FF':'#FFF7ED'};border:1.5px solid ${isCurrBest?'#BFDBFE':'#FED7AA'};border-radius:9px;padding:13px 16px;text-align:center">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${isCurrBest?'#3B82F6':'#C2410C'};margin-bottom:6px">✓ Statut optimal</div>
+        <div style="font-size:20px;margin-bottom:3px">${best.ico}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:900;color:${isCurrBest?'#1D4ED8':'#C2410C'}">${best.nom}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:900;color:${isCurrBest?'#1E40AF':'#C2410C'};margin-top:6px">${f(best.net)} €</div>
+        <div style="font-size:11px;color:${isCurrBest?'#3B82F6':'#EA580C'}">${f(Math.round(best.net/12))} €/mois</div>
+      </div>
+    </div>
+    ${!isCurrBest?`<div style="background:${delta>0?'#F0FDF4':'#FEF2F2'};border:1.5px solid ${delta>0?'#86EFAC':'#FCA5A5'};border-radius:9px;padding:12px 16px;text-align:center;margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:900;color:${delta>0?'#16A34A':'#DC2626'}">${delta>0?'+':'−'}${f(Math.abs(delta))} €/an</div>
+      <div style="font-size:12px;color:${delta>0?'#166534':'#991B1B'};margin-top:3px">${delta>0?'gain potentiel':'à optimiser'} · soit ${delta>0?'+':'−'}${f(Math.round(Math.abs(delta)/12))} €/mois supplémentaires en passant à ${best.nom}</div>
+    </div>`:'<div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;padding:10px 14px;text-align:center;margin-bottom:14px;font-size:12px;color:#166534">✅ Vous êtes déjà sur le statut optimal — focus sur l\'optimisation VASE et dividendes</div>'}
+
+    <div class="rp-sec-title">Comparaison tous statuts — Net Cash annuel en poche</div>
+    <table class="rp-table">
+      <thead>
+        <tr>
+          <th>Statut</th>
+          <th>Régime social</th>
+          <th style="text-align:right">Cotisations</th>
+          <th style="text-align:right">IS</th>
+          <th style="text-align:right">IR total</th>
+          <th style="text-align:right">Net Cash / an</th>
+          <th style="text-align:right">Net / mois</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${all.map((s,i)=>`
+        <tr class="${i===0?'best-row':''}">
+          <td><strong>${s.ico} ${s.nom}</strong>${i===0?`<span class="badge-pdf b-winner">✓ Optimal</span>`:''}</td>
+          <td style="font-size:10px;color:#666">${s.regime}</td>
+          <td style="text-align:right;color:#DC2626">${f(s.cot)} €</td>
+          <td style="text-align:right;color:#D97706">${f(s.is)} €</td>
+          <td style="text-align:right;color:#DC2626">${f(s.ir)} €</td>
+          <td style="text-align:right" class="net-col ${i===0?'best-net':''}">${f(s.net)} €</td>
+          <td style="text-align:right;font-weight:600;color:${i===0?'#C2410C':'#374151'}">${f(Math.round(s.net/12))} €</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 14px;font-size:11px;color:#92400E">
+      💰 <strong>Gain annuel ${best.nom} vs 2e statut (${all[1].nom}) : +${f(best.net-all[1].net)} €/an · +${f(Math.round((best.net-all[1].net)/12))} €/mois</strong>
+      ${vase.total>0?` · dont ${f(vase.total)} € VASE non imposables inclus`:''}
+    </div>
+  </div>
+
+  <!-- Détail statut optimal -->
+  <div class="rp-section">
+    <div class="rp-sec-title">${best.ico} Détail calcul — ${best.nom} (statut optimal)</div>
+    ${best.warn?`<div style="background:#FEF2F2;border-left:3px solid #FCA5A5;border-radius:0 6px 6px 0;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#991B1B">${best.warn}</div>`:''}
+    ${renderDetailLines(best.lines)}
+    <div class="rp-total">
+      <span class="rp-total-lbl">💰 Net Cash en poche (annuel)</span>
+      <span class="rp-total-val">${f(best.net)} €</span>
+    </div>
+    ${best.trezo>0?`<div style="display:flex;justify-content:space-between;padding:7px 11px;background:#F0FDFA;border-radius:0 0 7px 7px;font-size:11px;color:#0F766E;font-weight:600">
+      <span>🏦 Trésorerie conservée en société</span><span>${f(best.trezo)} €</span></div>`:''}
+  </div>
+
+  <!-- Bases légales -->
+  <div class="rp-section">
+    <div class="rp-sec-title">Bases légales & barèmes 2026</div>
+    <div class="rp-loi"><strong>Barème IR 2026 (LFI déc. 2025)</strong>0% ≤ 11 497 € · 11% de 11 497 à 29 315 € · 30% de 29 315 à 83 823 € · 41% de 83 823 à 180 294 € · 45% au-delà. Plafonnement QF : 1 791 €/demi-part.</div>
+    <div class="rp-loi"><strong>IS PME 2026</strong>Taux réduit 15% sur bénéfice ≤ 42 500 € · taux normal 25% au-delà. Conditions : CA < 10M€ · capital 75%+ personnes physiques (Art. 219 I-b CGI).</div>
+    <div class="rp-loi"><strong>Cotisations TNS 2026 (URSSAF)</strong>Calcul itératif sur revenu net : AF 3,1% · retraite base 17,75%+0,6% · retraite compl. 7% · prévoyance 1,3% · IJ 0,85% · maladie 6,5% · CSG-CRDS 9,7% base ×1,35. PASS 2026 : 47 100 €.</div>
+    <div class="rp-loi"><strong>Flat tax PFU 2026</strong>30% total : 12,8% IR + 17,2% prélèvements sociaux. Option barème possible si TMI ≤ 11% (abattement 40% + progressif).</div>
+    ${vase.ik>0?`<div class="rp-loi"><strong>Barème IK 2026 (${S.cv} CV)</strong>≤ 5 000 km : ${S.cv===5?'d × 0,636':'barème '+S.cv+' CV'} · 5 001–20 000 km · > 20 000 km. IK calculées : ${f(vase.ik)} € pour ${f(S.km)} km.</div>`:''}
+    ${vase.miseDispo>0?`<div class="rp-loi"><strong>Mise à disposition bureau domicile</strong>Convention obligatoire entre le dirigeant et la société. Loyer mensuel × surface bureau / surface totale × 12 mois. Déductible IS — Art. 39 CGI.</div>`:''}
+  </div>
+
+  <div class="rp-footer">
+    <span>Simulation réalisée le ${date} · Données indicatives, à vérifier avec un expert-comptable</span>
+    <span class="rp-footer-brand">Jérôme Jonnard Conseil · Déclic Entrepreneurs</span>
+  </div>`;
+
+  document.getElementById('pdf-content').innerHTML=html;
+  document.getElementById('pdf-overlay').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+
+function closePDF(){
+  document.getElementById('pdf-overlay').classList.remove('show');
+  document.body.style.overflow='';
+}
+
+function printPDF(){
+  window.print();
+}
+
+// ═══════════ INIT ═══════════
+// Init
+updateVaseRecap();
+go();
+</script>
+</body>
+</html>

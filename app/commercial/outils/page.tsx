@@ -79,7 +79,7 @@ export default function CloserOutilsPage() {
     } else if (type === 'html') {
       const iframe = document.createElement('iframe');
       iframe.src = url;
-      iframe.sandbox.add('allow-scripts', 'allow-same-origin');
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
       iframe.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;z-index:9999;background:#fff';
       
       const closeBtn = document.createElement('button');

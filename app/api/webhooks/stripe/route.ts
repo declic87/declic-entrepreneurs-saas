@@ -56,6 +56,22 @@ const PAYMENT_LINK_TO_PACK: Record<string, {
   }
 };
 
+// Mapping des Price IDs Stripe (pour paiements directs sans payment_link)
+const PRICE_ID_TO_PACK: Record<string, {
+  pack: string;
+  price: number;
+  duration_months: number;
+  rdv_expert_included: number;
+}> = {
+  'price_1SudKRAl0RypxECLDunC6wcJ': {
+    pack: 'plateforme',
+    price: 97,
+    duration_months: 1,
+    rdv_expert_included: 0
+  },
+  // AJOUTE ICI TES AUTRES PRICE_ID QUAND TU LES AURAS
+};
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get('stripe-signature');
@@ -116,16 +132,65 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log('💰 Paiement reçu pour:', customerEmail);
 
-  // Récupérer les détails du Payment Link
-  const paymentLink = session.payment_link;
-  const packConfig = PAYMENT_LINK_TO_PACK[paymentLink as string];
+  // NOUVELLE LOGIQUE : Chercher le pack par payment_link OU par price_id
+  let packConfig: {
+    pack: string;
+    price: number;
+    duration_months: number;
+    rdv_expert_included: number;
+  } | undefined;
+
+  // Méthode 1 : Via Payment Link
+  if (session.payment_link) {
+    packConfig = PAYMENT_LINK_TO_PACK[session.payment_link as string];
+    console.log('🔗 Payment Link détecté:', session.payment_link);
+  }
+
+  // Méthode 2 : Via Price ID (si pas de payment_link)
+  if (!packConfig && session.subscription) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+      const priceId = subscription.items.data[0]?.price.id;
+      
+      if (priceId) {
+        packConfig = PRICE_ID_TO_PACK[priceId];
+        console.log('💰 Price ID détecté:', priceId);
+      }
+    } catch (error) {
+      console.error('⚠️ Erreur récupération subscription:', error);
+    }
+  }
+
+  // Méthode 3 : Via montant (fallback - si ni payment_link ni price_id connus)
+  if (!packConfig && session.amount_total) {
+    const amount = session.amount_total / 100; // Convertir centimes en euros
+    console.log('💵 Détection par montant:', amount);
+    
+    if (amount === 97) {
+      packConfig = { pack: 'plateforme', price: 97, duration_months: 1, rdv_expert_included: 0 };
+    } else if (amount === 497) {
+      packConfig = { pack: 'createur', price: 497, duration_months: 3, rdv_expert_included: 0 };
+    } else if (amount === 897) {
+      packConfig = { pack: 'agent_immo', price: 897, duration_months: 3, rdv_expert_included: 0 };
+    } else if (amount === 3600) {
+      packConfig = { pack: 'starter', price: 3600, duration_months: 6, rdv_expert_included: 3 };
+    } else if (amount === 4600) {
+      packConfig = { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 };
+    } else if (amount === 6600) {
+      packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 };
+    }
+  }
 
   if (!packConfig) {
-    console.error('❌ Unknown payment link:', paymentLink);
+    console.error('❌ Pack non identifié pour:', {
+      payment_link: session.payment_link,
+      subscription: session.subscription,
+      amount: session.amount_total
+    });
     return;
   }
 
-  console.log('📦 Pack acheté:', packConfig.pack);
+  console.log('📦 Pack identifié:', packConfig.pack);
 
   // Récupérer ou créer l'utilisateur
   let { data: user } = await supabase
@@ -162,10 +227,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       },
     });
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Création Auth échouée');
+    if (authError) {
+      console.error('❌ Erreur création auth:', authError);
+      throw authError;
+    }
+    
+    if (!authData.user) {
+      throw new Error('Création Auth échouée');
+    }
 
     authId = authData.user.id;
+    console.log('✅ Auth créé:', authId);
 
     // 2. Créer l'utilisateur dans users
     const { data: userData, error: userError } = await supabase
@@ -181,10 +253,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .select()
       .single();
 
-    if (userError) throw userError;
+    if (userError) {
+      console.error('❌ Erreur création user:', userError);
+      throw userError;
+    }
+    
     userId = userData.id;
-
-    console.log('✅ Compte créé:', userId);
+    console.log('✅ User créé:', userId);
 
     // 3. Envoyer email de bienvenue avec création mot de passe
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(customerEmail, {
@@ -194,7 +269,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (resetError) {
       console.error('⚠️ Erreur envoi email:', resetError);
     } else {
-      console.log('📧 Email de création de mot de passe envoyé');
+      console.log('📧 Email de création de mot de passe envoyé à', customerEmail);
     }
 
   } else {
@@ -204,29 +279,57 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     authId = user.auth_id;
   }
 
-  // 4. Créer/Mettre à jour les accès via client_access
-  console.log('🔐 Création des accès...');
+  // 4. Créer l'entrée dans clients si elle n'existe pas
+  const { data: existingClient } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+
+  if (!existingClient) {
+    console.log('📝 Création entrée clients...');
+    
+    await supabase
+      .from('clients')
+      .insert({
+        user_id: userId,
+        pack_type: packConfig.pack,
+        stripe_customer_id: session.customer as string,
+        stripe_subscription_id: session.subscription as string
+      });
+      
+    console.log('✅ Entrée clients créée');
+  } else {
+    console.log('✅ Entrée clients existe déjà');
+  }
+
+  // 5. Créer/Mettre à jour les accès via client_access
+  console.log('🔐 Création des accès via RPC...');
   
-  await supabase.rpc('create_default_access', {
+  const { error: rpcError } = await supabase.rpc('create_default_access', {
     p_user_id: userId,
     p_pack_type: packConfig.pack,
     p_pack_price: packConfig.price,
   });
 
-  console.log('✅ Accès créés');
+  if (rpcError) {
+    console.error('⚠️ Erreur RPC create_default_access:', rpcError);
+  } else {
+    console.log('✅ Accès créés via RPC');
+  }
 
-  // 5. Calculer les dates
+  // 6. Calculer les dates
   const startDate = new Date();
   const endDate = new Date();
   
   if (packConfig.pack === 'plateforme') {
-    // Plateforme = mensuel, pas de date de fin
+    // Plateforme = mensuel
     endDate.setMonth(endDate.getMonth() + 1);
   } else {
     endDate.setMonth(endDate.getMonth() + packConfig.duration_months);
   }
 
-  // 6. Créer la subscription dans user_subscriptions (ton ancienne table)
+  // 7. Créer la subscription dans user_subscriptions
   const { error: subError } = await supabase
     .from('user_subscriptions')
     .insert({
@@ -244,9 +347,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (subError) {
     console.error('⚠️ Erreur création subscription:', subError);
+  } else {
+    console.log('✅ Subscription créée');
   }
 
-  // 7. Enregistrer le paiement
+  // 8. Enregistrer le paiement
   await supabase.from('payments').insert({
     user_id: userId,
     stripe_session_id: session.id,
@@ -257,20 +362,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     status: 'succeeded',
   });
 
-  // 8. Créer une notification
+  console.log('✅ Paiement enregistré');
+
+  // 9. Créer une notification
   await supabase.from('notifications').insert({
     user_id: userId,
     type: isNewUser ? 'welcome' : 'payment_success',
-    title: isNewUser ? '🎉 Bienvenue !' : '✅ Paiement confirmé',
+    title: isNewUser ? '🎉 Bienvenue sur Déclic Entrepreneurs !' : '✅ Paiement confirmé',
     message: isNewUser 
-      ? `Votre compte a été créé. Consultez votre email pour créer votre mot de passe.`
+      ? `Votre compte a été créé avec succès. Consultez votre email ${customerEmail} pour créer votre mot de passe.`
       : `Votre pack ${packConfig.pack} a été activé avec succès !`,
     link: '/client',
   });
 
-  console.log('✅ Paiement traité avec succès');
+  console.log('✅ Notification créée');
 
-  // 9. Générer et envoyer le contrat
+  console.log('🎉 Paiement traité avec succès pour', customerEmail);
+
+  // 10. Générer et envoyer le contrat (optionnel)
   try {
     const contractResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/contracts/generate`, {
       method: 'POST',

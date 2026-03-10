@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { UploadPDFTuto } from "@/components/admin/UploadPDFTuto";
 import { 
   Video, Plus, Trash2, Save, X, FileText, Calendar, 
-  Users, Link as LinkIcon, Upload, CheckCircle2, Send
+  Users, Link as LinkIcon, Upload, CheckCircle2, Send,
+  Hash, List, ArrowUpDown
 } from "lucide-react";
 
 type Tab = "formations" | "tutos" | "coachings" | "ateliers";
@@ -79,7 +80,7 @@ export default function AdminContenus() {
 }
 
 // ============================================
-// ONGLET 1 : FORMATIONS (AVEC CATÉGORIES)
+// ONGLET 1 : FORMATIONS (AVEC MODULES)
 // ============================================
 function FormationsTab({ supabase }: any) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -91,7 +92,10 @@ function FormationsTab({ supabase }: any) {
     description: "",
     duration: "",
     loom_id: "",
-    is_new: false
+    is_new: false,
+    module_number: 1,
+    module_title: "",
+    order_in_module: 1
   });
 
   useEffect(() => {
@@ -99,24 +103,23 @@ function FormationsTab({ supabase }: any) {
   }, [categoryFilter]);
 
   async function fetchVideos() {
-    // ⭐ FIX : Lire depuis onboarding_videos_client au lieu de videos
     let query = supabase
       .from("onboarding_videos_client")
       .select("*")
       .eq("section", "formations")
-      .order("created_at", { ascending: false });
+      .order("category", { ascending: true })
+      .order("module_number", { ascending: true })
+      .order("order_in_module", { ascending: true });
     
     if (categoryFilter !== "all") {
       query = query.eq("category", categoryFilter);
     }
     
     const { data } = await query;
-    console.log("✅ Données reçues:", data?.length || 0);
     setVideos(data || []);
   }
 
   async function saveVideo() {
-    // ⭐ FIX : Publier dans onboarding_videos_client
     const videoData = {
       title: formData.title,
       category: formData.category,
@@ -124,6 +127,9 @@ function FormationsTab({ supabase }: any) {
       duration: formData.duration,
       loom_id: formData.loom_id,
       is_new: formData.is_new,
+      module_number: formData.module_number,
+      module_title: formData.module_title,
+      order_in_module: formData.order_in_module,
       section: 'formations',
       page_slug: 'formations',
       video_type: 'loom',
@@ -141,17 +147,23 @@ function FormationsTab({ supabase }: any) {
   }
 
   function resetForm() {
-    setFormData({ title: "", category: "Créateur", description: "", duration: "", loom_id: "", is_new: false });
+    setFormData({ 
+      title: "", 
+      category: "Créateur", 
+      description: "", 
+      duration: "", 
+      loom_id: "", 
+      is_new: false,
+      module_number: 1,
+      module_title: "",
+      order_in_module: 1
+    });
     setEditingId(null);
   }
 
   async function deleteVideo(id: string) {
     await supabase.from("onboarding_videos_client").delete().eq("id", id);
     fetchVideos();
-  }
-
-  async function handlePublish(video: any) {
-    alert(`✅ Vidéo "${video.title}" publiée ! Les clients la verront dans Formations.`);
   }
 
   const categories = [
@@ -161,8 +173,59 @@ function FormationsTab({ supabase }: any) {
     { value: "Accompagnement", label: "💼 Formations Accompagnement", color: "purple" }
   ];
 
+  // Modules prédéfinis pour faciliter la saisie
+  const modulesPredefinis = {
+    "Créateur": [
+      { number: 1, title: "Introduction" },
+      { number: 2, title: "Choix du statut" },
+      { number: 3, title: "Fiscalité" },
+      { number: 4, title: "Social" },
+      { number: 5, title: "TVA" },
+      { number: 6, title: "Patrimoine" },
+      { number: 7, title: "Zones fiscales" },
+      { number: 8, title: "Création pas-à-pas" },
+      { number: 9, title: "Après la création" },
+      { number: 10, title: "Bonus" }
+    ],
+    "Agent Immo": [
+      { number: 1, title: "Introduction" },
+      { number: 2, title: "Spécificités Agent Immo" },
+      { number: 3, title: "Optimisation IK" },
+      { number: 4, title: "Frais réels" },
+      { number: 5, title: "Commissions" },
+      { number: 6, title: "Cas pratiques" },
+      { number: 7, title: "Bonus" }
+    ],
+    "Accompagnement": [
+      { number: 1, title: "Introduction" },
+      { number: 2, title: "Stratégies avancées" },
+      { number: 3, title: "Cas pratiques" }
+    ]
+  };
+
+  // Grouper les vidéos par module pour l'affichage
+  const videosByModule = videos.reduce((acc: any, video) => {
+    const key = `${video.category}-${video.module_number || 999}-${video.module_title || 'Sans module'}`;
+    if (!acc[key]) {
+      acc[key] = {
+        category: video.category,
+        module_number: video.module_number || 999,
+        module_title: video.module_title || 'Sans module',
+        videos: []
+      };
+    }
+    acc[key].videos.push(video);
+    return acc;
+  }, {});
+
+  const modulesList = Object.values(videosByModule).sort((a: any, b: any) => {
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    return a.module_number - b.module_number;
+  });
+
   return (
     <div className="space-y-6">
+      
       {/* Filtres par catégorie */}
       <div className="flex gap-2 flex-wrap">
         {categories.map(cat => (
@@ -171,8 +234,8 @@ function FormationsTab({ supabase }: any) {
             onClick={() => setCategoryFilter(cat.value)}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               categoryFilter === cat.value
-                ? `bg-${cat.color}-500 text-white shadow-md`
-                : `bg-${cat.color}-50 text-${cat.color}-700 hover:bg-${cat.color}-100`
+                ? "bg-amber-500 text-white shadow-md"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
             {cat.label}
@@ -187,49 +250,139 @@ function FormationsTab({ supabase }: any) {
             {editingId ? "✏️ Modifier la vidéo" : "➕ Ajouter une vidéo"}
           </h3>
           
+          {/* Catégorie */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               📂 Catégorie (détermine l'accès)
             </label>
             <select
               value={formData.category}
-              onChange={e => setFormData({ ...formData, category: e.target.value })}
+              onChange={e => {
+                setFormData({ ...formData, category: e.target.value });
+              }}
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 ring-amber-500/20 outline-none"
             >
-              <option value="Créateur">🚀 Formation Créateur (497€ - 3 mois)</option>
-              <option value="Agent Immo">🏠 Formation Agent Immo (897€ - 3 mois)</option>
-              <option value="Accompagnement">💼 Formations Accompagnement (STARTER/PRO/EXPERT)</option>
+              <option value="Créateur">🚀 Formation Créateur (497€)</option>
+              <option value="Agent Immo">🏠 Formation Agent Immo (897€)</option>
+              <option value="Accompagnement">💼 Formations Accompagnement</option>
             </select>
-            <p className="text-xs text-slate-500 mt-1">
-              {formData.category === "Créateur" && "✅ Visible uniquement pour les clients avec pack Formation Créateur"}
-              {formData.category === "Agent Immo" && "✅ Visible uniquement pour les clients avec pack Formation Agent Immo"}
-              {formData.category === "Accompagnement" && "✅ Visible pour STARTER, PRO et EXPERT"}
-            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <Input 
-              placeholder="Titre du module" 
-              value={formData.title} 
-              onChange={e => setFormData({ ...formData, title: e.target.value })} 
-            />
-            <Input 
-              placeholder="Durée (ex: 15 min)" 
-              value={formData.duration} 
-              onChange={e => setFormData({ ...formData, duration: e.target.value })} 
-            />
-            <div className="col-span-2">
+          {/* MODULE : Numéro + Titre */}
+          <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="col-span-3">
+              <label className="block text-sm font-bold text-amber-800 mb-2 flex items-center gap-2">
+                <Hash size={16} />
+                ORGANISATION PAR MODULE
+              </label>
+            </div>
+            
+            {/* Sélection module prédéfini */}
+            <div className="col-span-3">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                Module prédéfini (optionnel)
+              </label>
+              <select
+                onChange={e => {
+                  const selected = JSON.parse(e.target.value || '{}');
+                  if (selected.number) {
+                    setFormData({ 
+                      ...formData, 
+                      module_number: selected.number,
+                      module_title: selected.title
+                    });
+                  }
+                }}
+                className="w-full p-2 border rounded-lg text-sm"
+              >
+                <option value="">-- Choisir un module prédéfini --</option>
+                {(modulesPredefinis[formData.category as keyof typeof modulesPredefinis] || []).map(mod => (
+                  <option key={mod.number} value={JSON.stringify(mod)}>
+                    Module {mod.number} : {mod.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Numéro de module */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                <Hash size={12} />
+                Numéro module
+              </label>
               <Input 
-                placeholder="Loom ID (ex: abc123def456)" 
-                value={formData.loom_id} 
-                onChange={e => setFormData({ ...formData, loom_id: e.target.value })} 
+                type="number"
+                min="1"
+                placeholder="1" 
+                value={formData.module_number} 
+                onChange={e => setFormData({ ...formData, module_number: parseInt(e.target.value) || 1 })} 
+                className="text-center font-bold"
               />
-              <p className="text-xs text-slate-500 mt-1">
-                💡 Copiez l'ID depuis l'URL Loom : https://www.loom.com/share/<strong>abc123def456</strong>
+            </div>
+
+            {/* Titre du module */}
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                Titre du module
+              </label>
+              <Input 
+                placeholder="ex: Introduction, Choix du statut..." 
+                value={formData.module_title} 
+                onChange={e => setFormData({ ...formData, module_title: e.target.value })} 
+              />
+            </div>
+
+            {/* Ordre dans le module */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                <List size={12} />
+                Ordre
+              </label>
+              <Input 
+                type="number"
+                min="1"
+                placeholder="1" 
+                value={formData.order_in_module} 
+                onChange={e => setFormData({ ...formData, order_in_module: parseInt(e.target.value) || 1 })} 
+                className="text-center"
+              />
+              <p className="text-[10px] text-slate-500 mt-0.5">Position dans le module</p>
+            </div>
+
+            <div className="col-span-2">
+              <p className="text-xs text-amber-700 bg-amber-100 p-2 rounded">
+                📌 Exemple : Module 2 "Choix du statut" → Vidéo #1, #2, #3...
               </p>
             </div>
           </div>
 
+          {/* Titre et durée */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <Input 
+              placeholder="Titre de la vidéo" 
+              value={formData.title} 
+              onChange={e => setFormData({ ...formData, title: e.target.value })} 
+            />
+            <Input 
+              placeholder="Durée (ex: 15 minutes)" 
+              value={formData.duration} 
+              onChange={e => setFormData({ ...formData, duration: e.target.value })} 
+            />
+          </div>
+
+          {/* Loom ID */}
+          <div className="mb-4">
+            <Input 
+              placeholder="Loom ID (ex: abc123def456)" 
+              value={formData.loom_id} 
+              onChange={e => setFormData({ ...formData, loom_id: e.target.value })} 
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              💡 Copiez l'ID depuis l'URL Loom : https://www.loom.com/share/<strong>abc123def456</strong>
+            </p>
+          </div>
+
+          {/* Description */}
           <textarea
             placeholder="Description du module (objectifs, contenu...)"
             value={formData.description}
@@ -238,6 +391,7 @@ function FormationsTab({ supabase }: any) {
             rows={3}
           />
 
+          {/* Marquer comme nouveau */}
           <div className="flex items-center gap-2 mb-4">
             <input
               type="checkbox"
@@ -248,6 +402,7 @@ function FormationsTab({ supabase }: any) {
             <label className="text-sm font-medium">⭐ Marquer comme "Nouveau"</label>
           </div>
 
+          {/* Boutons */}
           <div className="flex gap-2">
             <Button onClick={saveVideo} className="bg-[#F59E0B] hover:bg-[#D97706] text-white">
               <Save size={18} className="mr-2" />
@@ -263,74 +418,100 @@ function FormationsTab({ supabase }: any) {
         </CardContent>
       </Card>
 
-      {/* Liste des vidéos */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-bold text-slate-700">
-          {categoryFilter === "all" 
-            ? `📚 Toutes les formations (${videos.length})` 
-            : `${categories.find(c => c.value === categoryFilter)?.label} (${videos.length})`}
+      {/* Aperçu par modules */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+          <ArrowUpDown size={20} />
+          Structure des formations ({videos.length} vidéo{videos.length > 1 ? 's' : ''})
         </h3>
 
-        {videos.length === 0 ? (
+        {modulesList.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center text-slate-400">
               <Video size={64} className="mx-auto mb-4 opacity-20" />
-              <p>Aucune vidéo dans cette catégorie</p>
+              <p>Aucune vidéo</p>
             </CardContent>
           </Card>
         ) : (
-          videos.map(video => (
-            <Card key={video.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                      video.category === "Créateur" ? "bg-blue-100 text-blue-700" :
-                      video.category === "Agent Immo" ? "bg-green-100 text-green-700" :
-                      "bg-purple-100 text-purple-700"
+          modulesList.map((module: any, idx) => (
+            <Card key={idx} className="border-2">
+              <CardContent className="p-0">
+                {/* En-tête du module */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white ${
+                      module.category === "Créateur" ? "bg-blue-500" :
+                      module.category === "Agent Immo" ? "bg-green-500" :
+                      "bg-purple-500"
                     }`}>
-                      {video.category}
-                    </span>
-                    {video.is_new && (
-                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">
-                        NOUVEAU
-                      </span>
-                    )}
+                      {module.module_number}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          module.category === "Créateur" ? "bg-blue-100 text-blue-700" :
+                          module.category === "Agent Immo" ? "bg-green-100 text-green-700" :
+                          "bg-purple-100 text-purple-700"
+                        }`}>
+                          {module.category}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-lg text-slate-900 uppercase">
+                        {module.module_title}
+                      </h4>
+                      <p className="text-sm text-slate-600">
+                        {module.videos.length} vidéo{module.videos.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
                   </div>
-                  <h4 className="font-bold text-[#123055]">{video.title}</h4>
-                  <p className="text-sm text-slate-600">{video.duration}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => handlePublish(video)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Send size={16} className="mr-1" />
-                    Publier
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => { 
-                      setFormData(video); 
-                      setEditingId(video.id); 
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  >
-                    Modifier
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => {
-                      if (confirm(`Supprimer "${video.title}" ?`)) {
-                        deleteVideo(video.id);
-                      }
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+
+                {/* Liste des vidéos du module */}
+                <div className="divide-y">
+                  {module.videos.map((video: any) => (
+                    <div key={video.id} className="p-4 hover:bg-slate-50 flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">
+                          {video.order_in_module}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h5 className="font-semibold text-slate-900">{video.title}</h5>
+                            {video.is_new && (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-600">{video.duration}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => { 
+                            setFormData(video); 
+                            setEditingId(video.id); 
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          Modifier
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => {
+                            if (confirm(`Supprimer "${video.title}" ?`)) {
+                              deleteVideo(video.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -342,7 +523,7 @@ function FormationsTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 2 : TUTOS PRATIQUES (AVEC UPLOAD PDF)
+// ONGLET 2 : TUTOS PRATIQUES (CODE INCHANGÉ)
 // ============================================
 function TutosPratiquesTab({ supabase }: any) {
   const [tutos, setTutos] = useState<any[]>([]);
@@ -388,10 +569,6 @@ function TutosPratiquesTab({ supabase }: any) {
     fetchTutos();
   }
 
-  async function handlePublish(tuto: any) {
-    alert(`✅ Tuto "${tuto.title}" publié !`);
-  }
-
   return (
     <div className="space-y-6">
       <Card>
@@ -405,7 +582,6 @@ function TutosPratiquesTab({ supabase }: any) {
             <Input placeholder="Catégorie" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
             <Input placeholder="Loom ID" value={formData.loom_id} onChange={e => setFormData({ ...formData, loom_id: e.target.value })} />
             
-            {/* Upload PDF ou URL manuelle */}
             <div className="col-span-2">
               {showUpload ? (
                 <UploadPDFTuto
@@ -474,14 +650,6 @@ function TutosPratiquesTab({ supabase }: any) {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => handlePublish(tuto)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Send size={16} className="mr-1" />
-                  Publier
-                </Button>
                 <Button size="sm" variant="outline" onClick={() => { setFormData(tuto); setEditingId(tuto.id); }}>
                   Modifier
                 </Button>
@@ -498,7 +666,7 @@ function TutosPratiquesTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 3 : COACHINGS
+// ONGLET 3 : COACHINGS (CODE INCHANGÉ)
 // ============================================
 function CoachingsTab({ supabase }: any) {
   const [subTab, setSubTab] = useState<"lives" | "archives">("lives");
@@ -545,10 +713,6 @@ function CoachingsTab({ supabase }: any) {
     const table = subTab === "lives" ? "coaching_sessions" : "coaching_archives";
     await supabase.from(table).delete().eq("id", id);
     fetchCoachings();
-  }
-
-  async function handlePublish(coaching: any) {
-    alert(`✅ Coaching "${coaching.title}" publié !`);
   }
 
   const currentData = subTab === "lives" ? lives : archives;
@@ -624,16 +788,6 @@ function CoachingsTab({ supabase }: any) {
                 </p>
               </div>
               <div className="flex gap-2">
-                {subTab === "lives" && (
-                  <Button 
-                    size="sm" 
-                    onClick={() => handlePublish(item)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Send size={16} className="mr-1" />
-                    Publier
-                  </Button>
-                )}
                 <Button size="sm" variant="outline" onClick={() => { setFormData(item); setEditingId(item.id); }}>
                   Modifier
                 </Button>
@@ -650,7 +804,7 @@ function CoachingsTab({ supabase }: any) {
 }
 
 // ============================================
-// ONGLET 4 : ATELIERS
+// ONGLET 4 : ATELIERS (CODE INCHANGÉ)
 // ============================================
 function AteliersTab({ supabase }: any) {
   const [subTab, setSubTab] = useState<"lives" | "archives">("lives");
@@ -699,10 +853,6 @@ function AteliersTab({ supabase }: any) {
     const table = subTab === "lives" ? "ateliers" : "atelier_archives";
     await supabase.from(table).delete().eq("id", id);
     fetchAteliers();
-  }
-
-  async function handlePublish(atelier: any) {
-    alert(`✅ Atelier "${atelier.title}" publié !`);
   }
 
   const currentData = subTab === "lives" ? lives : archives;
@@ -779,16 +929,6 @@ function AteliersTab({ supabase }: any) {
                 </p>
               </div>
               <div className="flex gap-2">
-                {subTab === "lives" && (
-                  <Button 
-                    size="sm" 
-                    onClick={() => handlePublish(item)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Send size={16} className="mr-1" />
-                    Publier
-                  </Button>
-                )}
                 <Button size="sm" variant="outline" onClick={() => { setFormData(item); setEditingId(item.id); }}>
                   Modifier
                 </Button>

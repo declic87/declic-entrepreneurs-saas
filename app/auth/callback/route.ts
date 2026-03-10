@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -7,6 +7,32 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   const type = requestUrl.searchParams.get('type');
 
+  console.log('🔄 Callback type:', type);
+
+  // ⭐ NOUVEAU : Si c'est un reset password, rediriger vers la page de reset
+  if (type === 'recovery') {
+    console.log('🔑 Reset password flow detected');
+    
+    if (code) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      // Échange le code pour une session
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (error) {
+        console.error('❌ Erreur exchange code:', error);
+        return NextResponse.redirect(new URL('/login?error=reset_failed', requestUrl.origin));
+      }
+    }
+    
+    // Redirige vers la page de reset password
+    return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin));
+  }
+
+  // ⭐ Flow normal (invitation, etc.)
   if (code) {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,7 +75,7 @@ export async function GET(request: NextRequest) {
       if (role === 'EXPERT') {
         return NextResponse.redirect(new URL('/expert', requestUrl.origin));
       } else if (role === 'HOS' || role === 'CLOSER' || role === 'SETTER') {
-        return NextResponse.redirect(new URL('/hos', requestUrl.origin));
+        return NextResponse.redirect(new URL('/commercial', requestUrl.origin));
       } else if (role === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin', requestUrl.origin));
       } else if (role === 'CLIENT') {

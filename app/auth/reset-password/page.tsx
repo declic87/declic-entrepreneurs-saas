@@ -11,6 +11,7 @@ export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -20,18 +21,38 @@ export default function ResetPasswordPage() {
   );
 
   useEffect(() => {
-    // Récupère le token depuis le hash (#access_token=...)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
+    async function initSession() {
+      try {
+        // Vérifie d'abord si on a déjà une session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          // Pas de session → essaye de récupérer depuis le hash
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
 
-    if (accessToken && refreshToken) {
-      // Établit la session avec les tokens
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+          if (accessToken && refreshToken) {
+            console.log('🔑 Setting session from hash params');
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+          } else {
+            setError('Lien invalide ou expiré. Veuillez demander un nouveau lien de réinitialisation.');
+          }
+        } else {
+          console.log('✅ Session already exists');
+        }
+      } catch (err: any) {
+        console.error('Error initializing session:', err);
+        setError('Erreur lors de l\'initialisation de la session');
+      } finally {
+        setInitializing(false);
+      }
     }
+
+    initSession();
   }, [supabase]);
 
   async function handleResetPassword(e: React.FormEvent) {
@@ -52,6 +73,13 @@ export default function ResetPasswordPage() {
     }
 
     try {
+      // Vérifie qu'on a bien une session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Session expirée. Veuillez demander un nouveau lien.');
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -70,6 +98,14 @@ export default function ResetPasswordPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+      </div>
+    );
   }
 
   if (success) {

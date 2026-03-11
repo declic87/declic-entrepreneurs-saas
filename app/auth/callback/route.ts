@@ -5,21 +5,28 @@ import type { NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const token_hash = requestUrl.searchParams.get('token_hash');
   const type = requestUrl.searchParams.get('type');
 
-  console.log('🔄 Callback type:', type);
+  console.log('🔄 Callback - type:', type, 'code:', !!code, 'token_hash:', !!token_hash);
 
-  // ⭐ RECOVERY : On redirige vers reset-password AVEC les query params
+  // ⭐ RECOVERY avec token_hash
+  if (type === 'recovery' && token_hash) {
+    console.log('🔑 Reset password flow (token_hash)');
+    return NextResponse.redirect(
+      new URL(`/auth/reset-password?token_hash=${token_hash}&type=recovery`, requestUrl.origin)
+    );
+  }
+
+  // ⭐ RECOVERY avec code
   if (type === 'recovery' && code) {
-    console.log('🔑 Reset password flow detected');
-    
-    // On passe le code dans l\'URL pour que la page client puisse l\'échanger
+    console.log('🔑 Reset password flow (code)');
     return NextResponse.redirect(
       new URL(`/auth/reset-password?code=${code}`, requestUrl.origin)
     );
   }
 
-  // ⭐ Flow normal (invitation, etc.)
+  // ⭐ Flow normal
   if (code) {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,18 +51,13 @@ export async function GET(request: NextRequest) {
 
       const needsPassword = userData?.status === 'pending';
 
-      console.log('👤 User:', user.email);
-      console.log('📊 Status:', userData?.status);
-      console.log('🔑 Needs password:', needsPassword);
+      console.log('👤 User:', user.email, 'Status:', userData?.status, 'Needs password:', needsPassword);
 
       if (needsPassword) {
-        console.log('➡️ Redirect to set-password');
         return NextResponse.redirect(new URL('/auth/set-password', requestUrl.origin));
       }
 
       const role = userData?.role || type;
-
-      console.log('✅ User has password, redirect to dashboard. Role:', role);
 
       if (role === 'EXPERT') {
         return NextResponse.redirect(new URL('/expert', requestUrl.origin));
@@ -69,6 +71,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log('⚠️ No code or user, redirect to login');
+  console.log('⚠️ No valid params, redirect to login');
   return NextResponse.redirect(new URL('/login', requestUrl.origin));
 }

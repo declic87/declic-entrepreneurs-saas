@@ -249,16 +249,39 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const tempPassword = 'Declic2026!';
     console.log('🔑 Mot de passe temporaire : Declic2026!');
 
-    // 1. Créer compte Auth avec email_confirm: true (pas d'email auto)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: customerEmail,
-      password: tempPassword,
-      email_confirm: true, // ✅ Confirme directement sans email auto
-      user_metadata: {
-        first_name: firstName || 'Client',
-        last_name: lastName || '',
-      },
-    });
+    // 1. Créer compte Auth SANS password (évite le reset password auto)
+const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  email: customerEmail,
+  email_confirm: true,
+  user_metadata: {
+    first_name: firstName || 'Client',
+    last_name: lastName || '',
+  },
+});
+
+if (authError) {
+  console.error('❌ Erreur création auth:', authError);
+  throw authError;
+}
+
+if (!authData.user) {
+  throw new Error('Création Auth échouée');
+}
+
+authId = authData.user.id;
+console.log('✅ Auth créé:', authId);
+
+// 2. Set le password APRÈS (évite le trigger email)
+const { error: passwordError } = await supabase.auth.admin.updateUserById(authData.user.id, {
+  password: tempPassword
+});
+
+if (passwordError) {
+  console.error('❌ Erreur set password:', passwordError);
+  throw passwordError;
+}
+
+console.log('✅ Password défini:', tempPassword);
 
     if (authError) {
       console.error('❌ Erreur création auth:', authError);
@@ -481,7 +504,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         `
       });
       
-      console.log('✅ Email Resend envoyé !');
+      console.log('✅ Email Resend envoyé !', emailResult.data ? `ID: ${emailResult.data.id}` : '');
       console.log('📧 Email de bienvenue Resend envoyé à', customerEmail);
     } catch (emailError: any) {
       console.error('❌ ERREUR RESEND COMPLÈTE:', JSON.stringify(emailError, null, 2));

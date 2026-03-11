@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -20,47 +19,12 @@ export default function ResetPasswordPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    async function initSession() {
-      try {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-
-        if (!accessToken || !refreshToken) {
-          setError('Lien invalide. Veuillez demander un nouveau lien de réinitialisation.');
-          setInitializing(false);
-          return;
-        }
-
-        console.log('🔑 Tokens trouvés, création de la session...');
-        
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (sessionError) {
-          console.error('❌ Erreur setSession:', sessionError);
-          setError('Lien expiré ou invalide. Veuillez demander un nouveau lien.');
-        } else {
-          console.log('✅ Session créée avec succès');
-        }
-      } catch (err: any) {
-        console.error('❌ Erreur initialisation:', err);
-        setError('Erreur lors de l\'initialisation');
-      } finally {
-        setInitializing(false);
-      }
-    }
-
-    initSession();
-  }, [supabase]);
-
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    console.log('🔐 Tentative de changement de mot de passe...');
 
     if (newPassword.length < 6) {
       setError('Le mot de passe doit contenir au moins 6 caractères');
@@ -75,8 +39,6 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      console.log('🔐 Tentative de changement de mot de passe...');
-      
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -86,7 +48,7 @@ export default function ResetPasswordPage() {
         throw updateError;
       }
 
-      console.log('✅ Mot de passe changé avec succès');
+      console.log('✅ Mot de passe changé avec succès !');
       setSuccess(true);
 
       setTimeout(() => {
@@ -101,17 +63,6 @@ export default function ResetPasswordPage() {
     }
   }
 
-  if (initializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
-          <p className="text-white">Vérification du lien...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
@@ -121,7 +72,7 @@ export default function ResetPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Mot de passe créé !</h2>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Mot de passe changé !</h2>
           <p className="text-slate-600">Redirection vers la page de connexion...</p>
         </div>
       </div>
@@ -138,10 +89,10 @@ export default function ResetPasswordPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">
-            Créez votre mot de passe
+            Nouveau mot de passe
           </h1>
           <p className="text-slate-600">
-            Bienvenue ! Choisissez un mot de passe sécurisé
+            Choisissez un nouveau mot de passe sécurisé
           </p>
         </div>
 
@@ -157,7 +108,6 @@ export default function ResetPasswordPage() {
               placeholder="Minimum 6 caractères"
               className="w-full"
               required
-              autoFocus
             />
           </div>
 
@@ -186,9 +136,18 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3"
           >
-            {loading ? 'Création en cours...' : '🔐 Créer mon mot de passe'}
+            {loading ? 'Changement en cours...' : '🔐 Changer mon mot de passe'}
           </Button>
         </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => router.push('/login')}
+            className="text-sm text-slate-600 hover:text-slate-900"
+          >
+            ← Retour à la connexion
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -131,7 +131,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 8. Envoyer l'email de bienvenue
+    // ⚠️ 8. EMAIL DÉSACTIVÉ - Envoyé par le webhook Stripe à la place
+    /*
     const emailHtml = generateWelcomeEmail({
       firstName: first_name,
       email,
@@ -156,12 +157,13 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('⚠️ Exception email:', emailError);
     }
+    */
 
     return NextResponse.json({ 
       success: true, 
       user: userData,
       contract: contractData,
-      message: 'Client créé avec succès. Email et contrat envoyés.'
+      message: 'Client créé avec succès. Contrat envoyé.'
     });
 
   } catch (error: any) {

@@ -66,47 +66,36 @@ const PRICE_ID_TO_PACK: Record<string, {
   duration_months: number;
   rdv_expert_included: number;
 }> = {
-  // Pack Plateforme 97€ (mensuel)
   'price_1SudKRAl0RypxECLES8yeyGR': {
     pack: 'plateforme',
     price: 97,
     duration_months: 1,
     rdv_expert_included: 0
   },
-  
-  // Formation Créateur 497€ (3 mois)
   'price_1SusbbAl0RypxECLZdJtW0Yw': {
     pack: 'createur',
     price: 497,
     duration_months: 3,
     rdv_expert_included: 0
   },
-  
-  // Formation Agent Immo 897€ (3 mois)
   'price_1SuscjAl0RypxECLsKbwzXWD': {
     pack: 'agent_immo',
     price: 897,
     duration_months: 3,
     rdv_expert_included: 0
   },
-  
-  // Pack Starter 3600€ (6 mois, 3 RDV)
   'price_1SudOrAl0RypxECLWFt3aZG1': {
     pack: 'starter',
     price: 3600,
     duration_months: 6,
     rdv_expert_included: 3
   },
-  
-  // Pack Pro 4600€ (12 mois, 4 RDV)
   'price_1SudUPAl0RypxECLnFEHD5q3': {
     pack: 'pro',
     price: 4600,
     duration_months: 12,
     rdv_expert_included: 4
   },
-  
-  // Pack Expert 6600€ (18 mois, 5 RDV)
   'price_1SudWxAl0RypxECLGwOY7SDe': {
     pack: 'expert',
     price: 6600,
@@ -306,8 +295,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log('✅ User créé:', userId);
 
     // ⭐ 3. ENVOYER EMAIL DE BIENVENUE AVEC RESEND
+    console.log('🔍 DEBUG: Avant envoi Resend...');
+    console.log('🔍 RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Présente ✅' : 'MANQUANTE ❌');
+    console.log('🔍 Email destination:', customerEmail);
+    console.log('🔍 Prénom:', firstName);
+    
     try {
-      await resend.emails.send({
+      const emailResult = await resend.emails.send({
         from: 'Déclic Entrepreneurs <noreply@declic-entrepreneurs.fr>',
         to: customerEmail,
         subject: '🎉 Bienvenue sur Déclic Entrepreneurs !',
@@ -487,9 +481,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         `
       });
       
+      console.log('✅ Email Resend envoyé !');
       console.log('📧 Email de bienvenue Resend envoyé à', customerEmail);
-    } catch (emailError) {
-      console.error('⚠️ Erreur envoi email Resend:', emailError);
+    } catch (emailError: any) {
+      console.error('❌ ERREUR RESEND COMPLÈTE:', JSON.stringify(emailError, null, 2));
+      console.error('❌ Message:', emailError.message);
+      console.error('❌ Name:', emailError.name);
+      if (emailError.statusCode) console.error('❌ Status Code:', emailError.statusCode);
     }
 
   } else {

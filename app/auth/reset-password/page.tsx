@@ -23,30 +23,32 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     async function initSession() {
       try {
-        // Vérifie d'abord si on a déjà une session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // Pas de session → essaye de récupérer depuis le hash
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
 
-          if (accessToken && refreshToken) {
-            console.log('🔑 Setting session from hash params');
-            await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-          } else {
-            setError('Lien invalide ou expiré. Veuillez demander un nouveau lien de réinitialisation.');
-          }
+        if (!accessToken || !refreshToken) {
+          setError('Lien invalide. Veuillez demander un nouveau lien de réinitialisation.');
+          setInitializing(false);
+          return;
+        }
+
+        console.log('🔑 Tokens trouvés, création de la session...');
+        
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          console.error('❌ Erreur setSession:', sessionError);
+          setError('Lien expiré ou invalide. Veuillez demander un nouveau lien.');
         } else {
-          console.log('✅ Session already exists');
+          console.log('✅ Session créée avec succès');
         }
       } catch (err: any) {
-        console.error('Error initializing session:', err);
-        setError('Erreur lors de l\'initialisation de la session');
+        console.error('❌ Erreur initialisation:', err);
+        setError('Erreur lors de l\'initialisation');
       } finally {
         setInitializing(false);
       }
@@ -73,19 +75,18 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      // Vérifie qu'on a bien une session
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔐 Tentative de changement de mot de passe...');
       
-      if (!session) {
-        throw new Error('Session expirée. Veuillez demander un nouveau lien.');
-      }
-
-      const { error } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('❌ Erreur updateUser:', updateError);
+        throw updateError;
+      }
 
+      console.log('✅ Mot de passe changé avec succès');
       setSuccess(true);
 
       setTimeout(() => {
@@ -93,7 +94,7 @@ export default function ResetPasswordPage() {
       }, 2000);
 
     } catch (error: any) {
-      console.error('Erreur reset password:', error);
+      console.error('❌ Erreur reset password:', error);
       setError(error.message || 'Erreur lors du changement de mot de passe');
     } finally {
       setLoading(false);
@@ -103,7 +104,10 @@ export default function ResetPasswordPage() {
   if (initializing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-white">Vérification du lien...</p>
+        </div>
       </div>
     );
   }
@@ -117,7 +121,7 @@ export default function ResetPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Mot de passe changé !</h2>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Mot de passe créé !</h2>
           <p className="text-slate-600">Redirection vers la page de connexion...</p>
         </div>
       </div>
@@ -134,10 +138,10 @@ export default function ResetPasswordPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">
-            Nouveau mot de passe
+            Créez votre mot de passe
           </h1>
           <p className="text-slate-600">
-            Choisissez un nouveau mot de passe sécurisé
+            Bienvenue ! Choisissez un mot de passe sécurisé
           </p>
         </div>
 
@@ -153,6 +157,7 @@ export default function ResetPasswordPage() {
               placeholder="Minimum 6 caractères"
               className="w-full"
               required
+              autoFocus
             />
           </div>
 
@@ -181,18 +186,9 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3"
           >
-            {loading ? 'Changement en cours...' : '🔐 Changer mon mot de passe'}
+            {loading ? 'Création en cours...' : '🔐 Créer mon mot de passe'}
           </Button>
         </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push('/login')}
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
-            ← Retour à la connexion
-          </button>
-        </div>
       </div>
     </div>
   );

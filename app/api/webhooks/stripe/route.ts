@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -10,6 +11,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 // Mapping des Payment Links Stripe vers les packs
 const PAYMENT_LINK_TO_PACK: Record<string, {
@@ -257,11 +260,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const tempPassword = 'Declic2026!';
     console.log('🔑 Mot de passe temporaire : Declic2026!');
 
-    // 1. Créer compte Auth avec email_confirm: true (envoie l'email automatiquement)
+    // 1. Créer compte Auth avec email_confirm: true (pas d'email auto)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: customerEmail,
       password: tempPassword,
-      email_confirm: true,
+      email_confirm: true, // ✅ Confirme directement sans email auto
       user_metadata: {
         first_name: firstName || 'Client',
         last_name: lastName || '',
@@ -302,9 +305,192 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     userId = userData.id;
     console.log('✅ User créé:', userId);
 
-    // ⭐ 3. L'email de confirmation est envoyé automatiquement par Supabase via email_confirm: true
-    console.log('📧 Email de bienvenue automatique envoyé à', customerEmail);
-    console.log('🔑 Mot de passe temporaire : Declic2026!');
+    // ⭐ 3. ENVOYER EMAIL DE BIENVENUE AVEC RESEND
+    try {
+      await resend.emails.send({
+        from: 'Déclic Entrepreneurs <noreply@declic-entrepreneurs.fr>',
+        to: customerEmail,
+        subject: '🎉 Bienvenue sur Déclic Entrepreneurs !',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                background-color: #0F172A;
+                margin: 0;
+                padding: 0;
+              }
+              .container {
+                max-width: 600px;
+                margin: 40px auto;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              }
+              .header {
+                background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+                padding: 40px 20px;
+                text-align: center;
+              }
+              .header h1 {
+                color: white;
+                margin: 0;
+                font-size: 28px;
+                font-weight: bold;
+              }
+              .content {
+                padding: 40px 30px;
+              }
+              .content h2 {
+                color: #0F172A;
+                font-size: 22px;
+                margin-bottom: 20px;
+              }
+              .content p {
+                color: #475569;
+                line-height: 1.6;
+                margin-bottom: 15px;
+              }
+              .credentials {
+                background: #FEF3C7;
+                border-left: 4px solid #F59E0B;
+                padding: 20px;
+                margin: 25px 0;
+                border-radius: 8px;
+              }
+              .credentials p {
+                margin: 8px 0;
+                color: #92400E;
+              }
+              .credentials strong {
+                color: #78350F;
+                font-weight: bold;
+              }
+              .button {
+                display: inline-block;
+                background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+                color: white !important;
+                text-decoration: none;
+                padding: 16px 40px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 16px;
+                margin: 20px 0;
+              }
+              .features {
+                margin: 30px 0;
+              }
+              .feature {
+                display: flex;
+                align-items: flex-start;
+                margin: 15px 0;
+              }
+              .feature-icon {
+                background: #FEF3C7;
+                color: #F59E0B;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 15px;
+                flex-shrink: 0;
+                font-weight: bold;
+              }
+              .footer {
+                background: #F8FAFC;
+                padding: 30px;
+                text-align: center;
+                color: #64748B;
+                font-size: 14px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎉 Bienvenue sur Déclic Entrepreneurs !</h1>
+              </div>
+              
+              <div class="content">
+                <h2>Bonjour ${firstName || 'Client'},</h2>
+                
+                <p>Votre compte a été créé avec succès ! Nous sommes ravis de vous accompagner dans votre aventure entrepreneuriale.</p>
+                
+                <div class="credentials">
+                  <p><strong>📧 Email :</strong> ${customerEmail}</p>
+                  <p><strong>🔑 Mot de passe temporaire :</strong> Declic2026!</p>
+                </div>
+                
+                <p style="text-align: center;">
+                  <a href="https://www.declic-entrepreneurs.fr/login" class="button">
+                    🚀 Me connecter à la plateforme
+                  </a>
+                </p>
+                
+                <p style="font-size: 14px; color: #64748B; text-align: center;">
+                  Une fois connecté, vous pourrez changer votre mot de passe dans <strong>Paramètres</strong>
+                </p>
+                
+                <div class="features">
+                  <p><strong>Vous avez maintenant accès à :</strong></p>
+                  
+                  <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div>
+                      <strong>Vos formations vidéo</strong><br>
+                      <span style="color: #64748B; font-size: 14px;">Créateur d'entreprise ou Agent immobilier</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div>
+                      <strong>Les simulateurs fiscaux</strong><br>
+                      <span style="color: #64748B; font-size: 14px;">Calculez vos impôts, charges et optimisations</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div>
+                      <strong>Le support expert</strong><br>
+                      <span style="color: #64748B; font-size: 14px;">Messagerie et RDV avec nos experts fiscaux</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div>
+                      <strong>La communauté</strong><br>
+                      <span style="color: #64748B; font-size: 14px;">Coachings et ateliers en direct</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="footer">
+                <p><strong>L'équipe Déclic Entrepreneurs</strong></p>
+                <p>Payez moins d'impôts. Légalement.</p>
+                <p style="margin-top: 20px; font-size: 12px;">
+                  <a href="https://www.declic-entrepreneurs.fr" style="color: #F59E0B; text-decoration: none;">www.declic-entrepreneurs.fr</a>
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      });
+      
+      console.log('📧 Email de bienvenue Resend envoyé à', customerEmail);
+    } catch (emailError) {
+      console.error('⚠️ Erreur envoi email Resend:', emailError);
+    }
 
   } else {
     // ✅ CLIENT EXISTANT

@@ -253,8 +253,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const [firstName, ...lastNameParts] = name.split(' ');
     const lastName = lastNameParts.join(' ');
 
-    // Mot de passe temporaire
-    const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
+    // ⭐ MOT DE PASSE TEMPORAIRE FIXE
+    const tempPassword = 'Declic2026!';
+    console.log('🔑 Mot de passe temporaire : Declic2026!');
 
     // 1. Créer compte Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -301,16 +302,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     userId = userData.id;
     console.log('✅ User créé:', userId);
 
-    // 3. Envoyer email de bienvenue avec création mot de passe
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(customerEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
-    });
-
-    if (resetError) {
-      console.error('⚠️ Erreur envoi email:', resetError);
-    } else {
-      console.log('📧 Email de création de mot de passe envoyé à', customerEmail);
-    }
+    // ⭐ 3. EMAIL DÉSACTIVÉ TEMPORAIREMENT (on le fera plus tard avec une belle charte graphique)
+    console.log('📧 Email de bienvenue : désactivé temporairement');
+    console.log('📧 Le client peut se connecter avec : ' + customerEmail + ' / Declic2026!');
 
   } else {
     // ✅ CLIENT EXISTANT
@@ -410,7 +404,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     type: isNewUser ? 'welcome' : 'payment_success',
     title: isNewUser ? '🎉 Bienvenue sur Déclic Entrepreneurs !' : '✅ Paiement confirmé',
     message: isNewUser 
-      ? `Votre compte a été créé avec succès. Consultez votre email ${customerEmail} pour créer votre mot de passe.`
+      ? `Votre compte a été créé ! Connectez-vous avec le mot de passe temporaire : Declic2026!`
       : `Votre pack ${packConfig.pack} a été activé avec succès !`,
     link: '/client',
   });
@@ -418,39 +412,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log('✅ Notification créée');
 
   console.log('🎉 Paiement traité avec succès pour', customerEmail);
-
-  // 10. Générer et envoyer le contrat (optionnel)
-  try {
-    const contractResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/contracts/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: userId,
-        contractType: 'client_subscription',
-        packType: packConfig.pack,
-        contractData: {
-          price: packConfig.price,
-          duration: packConfig.duration_months,
-        },
-      }),
-    });
-
-    const contractData = await contractResponse.json();
-
-    if (contractData.success && process.env.YOUSIGN_API_KEY) {
-      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/yousign/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contractId: contractData.contract.id,
-        }),
-      });
-      
-      console.log('✅ Contrat généré et envoyé à YouSign');
-    }
-  } catch (error) {
-    console.error('⚠️ Erreur génération contrat:', error);
-  }
 }
 
 // ==========================================

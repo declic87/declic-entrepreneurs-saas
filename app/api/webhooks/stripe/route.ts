@@ -56,20 +56,60 @@ const PAYMENT_LINK_TO_PACK: Record<string, {
   }
 };
 
-// Mapping des Price IDs Stripe (pour paiements directs sans payment_link)
+// Mapping des Price IDs Stripe (MODE TEST)
 const PRICE_ID_TO_PACK: Record<string, {
   pack: string;
   price: number;
   duration_months: number;
   rdv_expert_included: number;
 }> = {
-  'price_1SudKRAl0RypxECLDunC6wcJ': {
+  // Pack Plateforme 97€ (mensuel)
+  'price_1SudKRAl0RypxECLES8yeyGR': {
     pack: 'plateforme',
     price: 97,
     duration_months: 1,
     rdv_expert_included: 0
   },
-  // AJOUTE ICI TES AUTRES PRICE_ID QUAND TU LES AURAS
+  
+  // Formation Créateur 497€ (3 mois)
+  'price_1SusbbAl0RypxECLZdJtW0Yw': {
+    pack: 'createur',
+    price: 497,
+    duration_months: 3,
+    rdv_expert_included: 0
+  },
+  
+  // Formation Agent Immo 897€ (3 mois)
+  'price_1SuscjAl0RypxECLsKbwzXWD': {
+    pack: 'agent_immo',
+    price: 897,
+    duration_months: 3,
+    rdv_expert_included: 0
+  },
+  
+  // Pack Starter 3600€ (6 mois, 3 RDV)
+  'price_1SudOrAl0RypxECLWFt3aZG1': {
+    pack: 'starter',
+    price: 3600,
+    duration_months: 6,
+    rdv_expert_included: 3
+  },
+  
+  // Pack Pro 4600€ (12 mois, 4 RDV)
+  'price_1SudUPAl0RypxECLnFEHD5q3': {
+    pack: 'pro',
+    price: 4600,
+    duration_months: 12,
+    rdv_expert_included: 4
+  },
+  
+  // Pack Expert 6600€ (18 mois, 5 RDV)
+  'price_1SudWxAl0RypxECLGwOY7SDe': {
+    pack: 'expert',
+    price: 6600,
+    duration_months: 18,
+    rdv_expert_included: 5
+  },
 };
 
 export async function POST(req: NextRequest) {

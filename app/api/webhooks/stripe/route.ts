@@ -138,24 +138,37 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const lastName = lastNameParts.join(' ');
     const tempPassword = 'Declic2026!';
 
-    // Créer avec password directement (évite le updateUserById qui trigger l'email)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: customerEmail,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: {
-        first_name: firstName || 'Client',
-        last_name: lastName || '',
-      },
-    });
+    // 1. Inviter le user (n'envoie PAS de reset password automatique)
+    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
+      customerEmail,
+      {
+        data: {
+          first_name: firstName || 'Client',
+          last_name: lastName || '',
+        },
+      }
+    );
 
     if (authError || !authData.user) {
-      console.error('❌ Auth error:', authError);
-      throw authError || new Error('Auth failed');
+      console.error('❌ Erreur invitation:', authError);
+      throw authError || new Error('Invitation failed');
     }
 
     authId = authData.user.id;
-    console.log('✅ Auth:', authId);
+    console.log('✅ Auth invité:', authId);
+
+    // 2. Confirmer l'email et set le password APRÈS
+    const { error: updateError } = await supabase.auth.admin.updateUserById(authData.user.id, {
+      password: tempPassword,
+      email_confirm: true,
+    });
+
+    if (updateError) {
+      console.error('❌ Erreur confirmation:', updateError);
+      throw updateError;
+    }
+
+    console.log('✅ Password défini:', tempPassword);
 
     const { data: userData, error: userError } = await supabase.from('users').insert({
       auth_id: authId,

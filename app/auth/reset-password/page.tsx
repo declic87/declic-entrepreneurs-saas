@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,21 @@ export default function ResetPasswordPage() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  useEffect(() => {
+    // Récupère le token depuis le hash (#access_token=...)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (accessToken && refreshToken) {
+      // Établit la session avec les tokens
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+    }
+  }, [supabase]);
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();

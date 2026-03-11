@@ -257,7 +257,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const tempPassword = 'Declic2026!';
     console.log('🔑 Mot de passe temporaire : Declic2026!');
 
-    // 1. Créer compte Auth
+    // 1. Créer compte Auth avec email_confirm: true (envoie l'email automatiquement)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: customerEmail,
       password: tempPassword,
@@ -302,9 +302,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     userId = userData.id;
     console.log('✅ User créé:', userId);
 
-    // ⭐ 3. EMAIL DÉSACTIVÉ TEMPORAIREMENT (on le fera plus tard avec une belle charte graphique)
-    console.log('📧 Email de bienvenue : désactivé temporairement');
-    console.log('📧 Le client peut se connecter avec : ' + customerEmail + ' / Declic2026!');
+    // ⭐ 3. L'email de confirmation est envoyé automatiquement par Supabase via email_confirm: true
+    console.log('📧 Email de bienvenue automatique envoyé à', customerEmail);
+    console.log('🔑 Mot de passe temporaire : Declic2026!');
 
   } else {
     // ✅ CLIENT EXISTANT

@@ -24,34 +24,25 @@ function ResetPasswordForm() {
   useEffect(() => {
     async function initSession() {
       try {
-        const code = searchParams.get('code');
         const token_hash = searchParams.get('token_hash');
         const type = searchParams.get('type');
         
-        console.log('🔑 Init avec:', { code, token_hash, type });
+        console.log('🔑 Token hash:', token_hash);
+        console.log('📝 Type:', type);
         
-        if (code) {
-          console.log('🔑 Échange code...');
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (token_hash && type === 'recovery') {
+          console.log('🔑 Vérification du token recovery...');
           
-          if (exchangeError) {
-            console.error('❌ Erreur exchange:', exchangeError);
-            setError('Lien expiré. Veuillez demander un nouveau lien.');
-          } else {
-            console.log('✅ Session établie via code !');
-          }
-        } else if (token_hash && type === 'recovery') {
-          console.log('🔑 Vérification token hash...');
           const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash,
-            type: 'recovery'
+            type: 'recovery',
           });
           
           if (verifyError) {
             console.error('❌ Erreur verify:', verifyError);
-            setError('Lien expiré. Veuillez demander un nouveau lien.');
+            setError('Lien expiré ou invalide. Veuillez demander un nouveau lien.');
           } else {
-            console.log('✅ Session établie via token hash !');
+            console.log('✅ Session établie !');
           }
         } else {
           setError('Lien invalide. Veuillez demander un nouveau lien.');

@@ -12,15 +12,19 @@ export async function GET(request: NextRequest) {
   console.log('🔑 Code:', code);
   console.log('🔑 Token hash:', token_hash);
 
-  // ⭐ RECOVERY : On redirige vers reset-password AVEC le token
-  if (type === 'recovery' && (code || token_hash)) {
-    console.log('🔑 Reset password flow detected');
+  // ⭐ RECOVERY : On redirige vers reset-password avec le code OU token_hash
+  if (type === 'recovery') {
+    const authCode = code || token_hash;
     
-    const tokenParam = code ? `code=${code}` : `token_hash=${token_hash}`;
-    
-    return NextResponse.redirect(
-      new URL(`/auth/reset-password?${tokenParam}&type=recovery`, requestUrl.origin)
-    );
+    if (authCode) {
+      console.log('🔑 Reset password flow detected');
+      // On passe le token dans l\'URL pour que la page client puisse l\'échanger
+      return NextResponse.redirect(
+        new URL(`/auth/reset-password?token_hash=${authCode}&type=recovery`, requestUrl.origin)
+      );
+    } else {
+      return NextResponse.redirect(new URL('/login?error=no_token', requestUrl.origin));
+    }
   }
 
   // ⭐ Flow normal (invitation, etc.)

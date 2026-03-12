@@ -34,12 +34,18 @@ const PRICE_ID_TO_PACK: Record<string, {
   duration_months: number;
   rdv_expert_included: number;
 }> = {
+  // MODE TEST - Paiements comptants
   'price_1SudKRAl0RypxECLES8yeyGR': { pack: 'plateforme', price: 97, duration_months: 1, rdv_expert_included: 0 },
   'price_1SusbbAl0RypxECLZdJtW0Yw': { pack: 'createur', price: 497, duration_months: 3, rdv_expert_included: 0 },
   'price_1SuscjAl0RypxECLsKbwzXWD': { pack: 'agent_immo', price: 897, duration_months: 3, rdv_expert_included: 0 },
   'price_1SudOrAl0RypxECLWFt3aZG1': { pack: 'starter', price: 3600, duration_months: 6, rdv_expert_included: 3 },
   'price_1SudUPAl0RypxECLnFEHD5q3': { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 },
   'price_1SudWxAl0RypxECLGwOY7SDe': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 },
+  
+  // MODE TEST - Paiements en plusieurs fois
+  'price_1TACK0Al0RypxECLF6bZlSAv': { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 }, // Pro 5x920€
+  'price_1TACSHAl0RypxECLrNSjwD4S': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }, // Expert 5x1320€
+  'price_1TACSpAl0RypxECLudWSn6jZ': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }, // Expert 6x1100€
 };
 
 export async function POST(req: NextRequest) {
@@ -115,6 +121,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     else if (amt === 3600) packConfig = { pack: 'starter', price: 3600, duration_months: 6, rdv_expert_included: 3 };
     else if (amt === 4600) packConfig = { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 };
     else if (amt === 6600) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 };
+    else if (amt === 920) packConfig = { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 }; // Pro 5x
+    else if (amt === 1320) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }; // Expert 5x
+    else if (amt === 1100) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }; // Expert 6x
   }
 
   if (!packConfig) {
@@ -138,37 +147,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const lastName = lastNameParts.join(' ');
     const tempPassword = 'Declic2026!';
 
-    // 1. Inviter le user (n'envoie PAS de reset password automatique)
-    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
-      customerEmail,
-      {
-        data: {
-          first_name: firstName || 'Client',
-          last_name: lastName || '',
-        },
-      }
-    );
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: customerEmail,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName || 'Client',
+        last_name: lastName || '',
+      },
+    });
 
     if (authError || !authData.user) {
-      console.error('❌ Erreur invitation:', authError);
-      throw authError || new Error('Invitation failed');
+      console.error('❌ Erreur auth:', authError);
+      throw authError || new Error('Auth failed');
     }
 
     authId = authData.user.id;
-    console.log('✅ Auth invité:', authId);
-
-    // 2. Confirmer l'email et set le password APRÈS
-    const { error: updateError } = await supabase.auth.admin.updateUserById(authData.user.id, {
-      password: tempPassword,
-      email_confirm: true,
-    });
-
-    if (updateError) {
-      console.error('❌ Erreur confirmation:', updateError);
-      throw updateError;
-    }
-
-    console.log('✅ Password défini:', tempPassword);
+    console.log('✅ Auth:', authId);
 
     const { data: userData, error: userError } = await supabase.from('users').insert({
       auth_id: authId,

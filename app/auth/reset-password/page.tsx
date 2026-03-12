@@ -1,16 +1,18 @@
 ﻿'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -18,6 +20,43 @@ export default function ResetPasswordPage() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  useEffect(() => {
+    async function initSession() {
+      try {
+        const token_hash = searchParams.get('token_hash');
+        const type = searchParams.get('type');
+        
+        console.log('🔑 Token hash:', token_hash);
+        console.log('📝 Type:', type);
+        
+        if (token_hash && type === 'recovery') {
+          console.log('🔑 Vérification du token recovery...');
+          
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash,
+            type: 'recovery',
+          });
+          
+          if (verifyError) {
+            console.error('❌ Erreur verify:', verifyError);
+            setError('Lien expiré ou invalide. Veuillez demander un nouveau lien.');
+          } else {
+            console.log('✅ Session établie !');
+          }
+        } else {
+          setError('Lien invalide. Veuillez demander un nouveau lien.');
+        }
+      } catch (err: any) {
+        console.error('❌ Erreur init:', err);
+        setError('Erreur lors de l\'initialisation');
+      } finally {
+        setInitializing(false);
+      }
+    }
+
+    initSession();
+  }, [supabase, searchParams]);
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -43,12 +82,9 @@ export default function ResetPasswordPage() {
         password: newPassword
       });
 
-      if (updateError) {
-        console.error('❌ Erreur updateUser:', updateError);
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
-      console.log('✅ Mot de passe changé avec succès !');
+      console.log('✅ Mot de passe changé !');
       setSuccess(true);
 
       setTimeout(() => {
@@ -56,11 +92,22 @@ export default function ResetPasswordPage() {
       }, 2000);
 
     } catch (error: any) {
-      console.error('❌ Erreur reset password:', error);
+      console.error('❌ Erreur:', error);
       setError(error.message || 'Erreur lors du changement de mot de passe');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-white">Vérification du lien...</p>
+        </div>
+      </div>
+    );
   }
 
   if (success) {
@@ -72,7 +119,7 @@ export default function ResetPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Mot de passe changé !</h2>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Mot de passe créé !</h2>
           <p className="text-slate-600">Redirection vers la page de connexion...</p>
         </div>
       </div>
@@ -89,10 +136,10 @@ export default function ResetPasswordPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">
-            Nouveau mot de passe
+            Créez votre mot de passe
           </h1>
           <p className="text-slate-600">
-            Choisissez un nouveau mot de passe sécurisé
+            Bienvenue ! Choisissez un mot de passe sécurisé
           </p>
         </div>
 
@@ -136,19 +183,22 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3"
           >
-            {loading ? 'Changement en cours...' : '🔐 Changer mon mot de passe'}
+            {loading ? 'Création en cours...' : '🔐 Créer mon mot de passe'}
           </Button>
         </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push('/login')}
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
-            ← Retour à la connexion
-          </button>
-        </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

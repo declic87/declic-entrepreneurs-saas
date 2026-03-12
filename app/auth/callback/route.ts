@@ -5,31 +5,26 @@ import type { NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const token_hash = requestUrl.searchParams.get('token_hash');
   const type = requestUrl.searchParams.get('type');
 
   console.log('🔄 Callback type:', type);
+  console.log('🔑 Code:', code);
+  console.log('🔑 Token hash:', token_hash);
 
-  // ⭐ NOUVEAU : Si c'est un reset password, rediriger vers la page de reset
+  // ⭐ RECOVERY : On redirige vers reset-password avec le code OU token_hash
   if (type === 'recovery') {
-    console.log('🔑 Reset password flow detected');
+    const authCode = code || token_hash;
     
-    if (code) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    if (authCode) {
+      console.log('🔑 Reset password flow detected');
+      // On passe le token dans l\'URL pour que la page client puisse l\'échanger
+      return NextResponse.redirect(
+        new URL(`/auth/reset-password?token_hash=${authCode}&type=recovery`, requestUrl.origin)
       );
-      
-      // Échange le code pour une session
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      
-      if (error) {
-        console.error('❌ Erreur exchange code:', error);
-        return NextResponse.redirect(new URL('/login?error=reset_failed', requestUrl.origin));
-      }
+    } else {
+      return NextResponse.redirect(new URL('/login?error=no_token', requestUrl.origin));
     }
-    
-    // Redirige vers la page de reset password
-    return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin));
   }
 
   // ⭐ Flow normal (invitation, etc.)
@@ -55,7 +50,6 @@ export async function GET(request: NextRequest) {
         .eq('auth_id', user.id)
         .single();
 
-      // ⭐ SI STATUS = PENDING → Jamais créé de mot de passe
       const needsPassword = userData?.status === 'pending';
 
       console.log('👤 User:', user.email);
@@ -71,7 +65,6 @@ export async function GET(request: NextRequest) {
 
       console.log('✅ User has password, redirect to dashboard. Role:', role);
 
-      // Rediriger selon le rôle
       if (role === 'EXPERT') {
         return NextResponse.redirect(new URL('/expert', requestUrl.origin));
       } else if (role === 'HOS' || role === 'CLOSER' || role === 'SETTER') {

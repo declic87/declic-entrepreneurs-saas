@@ -52,6 +52,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
   commercial: [
     { label: "Dashboard", href: "/commercial", icon: LayoutDashboard },
     { label: "Pipeline", href: "/commercial/pipeline", icon: Target },
+    { label: "💳 Liens Paiement", href: "/commercial/liens-paiement", icon: CreditCard },
     { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },

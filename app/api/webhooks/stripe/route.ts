@@ -14,21 +14,6 @@ const supabase = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-const PAYMENT_LINK_TO_PACK: Record<string, {
-  pack: string;
-  price: number;
-  duration_months: number;
-  rdv_expert_included: number;
-}> = {
-  // MODE PRODUCTION
-  'plink_1SvfQEAl0RypxECL30FQAkFp': { pack: 'plateforme', price: 97, duration_months: 1, rdv_expert_included: 0 },
-  'plink_1SvfP8Al0RypxECLOmBfTPBw': { pack: 'createur', price: 497, duration_months: 3, rdv_expert_included: 0 },
-  'plink_1SvfOrAl0RypxECLKQZR0Io1': { pack: 'agent_immo', price: 897, duration_months: 3, rdv_expert_included: 0 },
-  'plink_1SvfQ4Al0RypxECLUaOUG52Y': { pack: 'starter', price: 3600, duration_months: 6, rdv_expert_included: 3 },
-  'plink_1SvfPsAl0RypxECLoXQfpyag': { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 },
-  'plink_1SvfPiAl0RypxECLvjfNr4wv': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }
-};
-
 const PRICE_ID_TO_PACK: Record<string, {
   pack: string;
   price: number;
@@ -36,7 +21,6 @@ const PRICE_ID_TO_PACK: Record<string, {
   rdv_expert_included: number;
 }> = {
   // ========== MODE TEST ==========
-  // Paiements comptants TEST
   'price_1SudKRAl0RypxECLES8yeyGR': { pack: 'plateforme', price: 97, duration_months: 1, rdv_expert_included: 0 },
   'price_1SusbbAl0RypxECLZdJtW0Yw': { pack: 'createur', price: 497, duration_months: 3, rdv_expert_included: 0 },
   'price_1SuscjAl0RypxECLsKbwzXWD': { pack: 'agent_immo', price: 897, duration_months: 3, rdv_expert_included: 0 },
@@ -45,7 +29,6 @@ const PRICE_ID_TO_PACK: Record<string, {
   'price_1SudWxAl0RypxECLGwOY7SDe': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 },
 
   // ========== MODE PRODUCTION ==========
-  // Paiements comptants LIVE
   'price_1SudKRAl0RypxECLDunC6wcJ': { pack: 'plateforme', price: 97, duration_months: 1, rdv_expert_included: 0 },
   'price_1SusbbAl0RypxECLiGegTEuv': { pack: 'createur', price: 497, duration_months: 3, rdv_expert_included: 0 },
   'price_1SuscjAl0RypxECLdOdYsAt4': { pack: 'agent_immo', price: 897, duration_months: 3, rdv_expert_included: 0 },
@@ -53,7 +36,7 @@ const PRICE_ID_TO_PACK: Record<string, {
   'price_1SudUPAl0RypxECLgiW2eN6a': { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 },
   'price_1SudWxAl0RypxECLVajytCgm': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 },
   
-  // Paiements en plusieurs fois (IDENTIQUES TEST ET LIVE)
+  // Paiements en plusieurs fois (TEST ET LIVE)
   'price_1TACK0Al0RypxECLF6bZlSAv': { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 },
   'price_1TACSHAl0RypxECLrNSjwD4S': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 },
   'price_1TACSpAl0RypxECLudWSn6jZ': { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 },
@@ -105,39 +88,48 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   let packConfig: { pack: string; price: number; duration_months: number; rdv_expert_included: number; } | undefined;
 
-  // 1. Essayer par Payment Link
-  if (session.payment_link) {
-    packConfig = PAYMENT_LINK_TO_PACK[session.payment_link as string];
-    console.log('🔗 Payment Link:', session.payment_link);
+  // Récupérer le Price ID depuis le line_items
+  if (session.mode === 'payment' || session.mode === 'subscription') {
+    try {
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+      const priceId = lineItems.data[0]?.price?.id;
+      
+      if (priceId) {
+        packConfig = PRICE_ID_TO_PACK[priceId];
+        console.log('💰 Price ID:', priceId, '→ Pack:', packConfig?.pack);
+      }
+    } catch (e) {
+      console.error('⚠️ Line items error:', e);
+    }
   }
 
-  // 2. Essayer par Price ID (abonnements)
+  // Fallback: essayer via subscription
   if (!packConfig && session.subscription) {
     try {
       const sub = await stripe.subscriptions.retrieve(session.subscription as string);
       const priceId = sub.items.data[0]?.price.id;
       if (priceId) {
         packConfig = PRICE_ID_TO_PACK[priceId];
-        console.log('💰 Price ID:', priceId);
+        console.log('💰 Subscription Price ID:', priceId);
       }
     } catch (e) {
       console.error('⚠️ Sub error:', e);
     }
   }
 
-  // 3. Fallback par montant
+  // Fallback final par montant
   if (!packConfig && session.amount_total) {
     const amt = session.amount_total / 100;
-    console.log('💵 Montant:', amt);
+    console.log('💵 Montant fallback:', amt);
     if (amt === 97) packConfig = { pack: 'plateforme', price: 97, duration_months: 1, rdv_expert_included: 0 };
     else if (amt === 497) packConfig = { pack: 'createur', price: 497, duration_months: 3, rdv_expert_included: 0 };
     else if (amt === 897) packConfig = { pack: 'agent_immo', price: 897, duration_months: 3, rdv_expert_included: 0 };
     else if (amt === 3600) packConfig = { pack: 'starter', price: 3600, duration_months: 6, rdv_expert_included: 3 };
     else if (amt === 4600) packConfig = { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 };
     else if (amt === 6600) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 };
-    else if (amt === 920) packConfig = { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 }; // Pro 5x
-    else if (amt === 1320) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }; // Expert 5x
-    else if (amt === 1100) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 }; // Expert 6x
+    else if (amt === 920) packConfig = { pack: 'pro', price: 4600, duration_months: 12, rdv_expert_included: 4 };
+    else if (amt === 1320) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 };
+    else if (amt === 1100) packConfig = { pack: 'expert', price: 6600, duration_months: 18, rdv_expert_included: 5 };
   }
 
   if (!packConfig) {
@@ -145,7 +137,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  console.log('📦 Pack:', packConfig.pack);
+  console.log('📦 Pack final:', packConfig.pack);
 
   let { data: user } = await supabase.from('users').select('id, auth_id, email').eq('email', customerEmail).single();
   let userId: string;
@@ -161,7 +153,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const lastName = lastNameParts.join(' ');
     const tempPassword = 'Declic2026!';
 
-    // Créer le user avec createUser (évite rate limit)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: customerEmail,
       password: tempPassword,

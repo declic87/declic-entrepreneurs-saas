@@ -68,7 +68,7 @@ const OFFRES = [
     name: "Starter",
     price: "3 600€",
     bullets: ["Audit fiscal complet","Création de société","3 RDV de suivi","Support messagerie 6 mois","Accès partenaire"],
-    payLink: "https://buy.stripe.com/test_fZueVcb9Z4wCf1r9zh9fW04",
+    payLink: "https://buy.stripe.com/00weVcdi72ou8D34eX9fW06",
     cta: "/signup?plan=starter",
   },
   {
@@ -76,7 +76,7 @@ const OFFRES = [
     tag: "POPULAIRE",
     price: "4 600€",
     bullets: ["Tout Starter inclus","Optimisation VASE complète","4 RDV de suivi","Support prioritaire 12 mois","Accès partenaire"],
-    payLink: "https://buy.stripe.com/test_aFafZg2Dt3sy06x5j19fW03",
+    payLink: "https://buy.stripe.com/00w9AS7XNgfk5qR6n59fW05",
     cta: "/signup?plan=pro",
     featured: true,
   },
@@ -84,7 +84,7 @@ const OFFRES = [
     name: "Expert",
     price: "6 600€",
     bullets: ["Tout Pro inclus","Accompagnement premium","5 RDV de suivi","1er Audit annuel inclus","Support prioritaire 18 mois"],
-    payLink: "https://buy.stripe.com/test_4gM3cu5PFd382eF5j19fW02",
+    payLink: "https://buy.stripe.com/fZueVcb9Z4wCf1r9zh9fW04",
     cta: "/signup?plan=expert",
     dark: true,
   },
@@ -337,7 +337,7 @@ export default function HomePage() {
 
           {/* 👉 Acheter (Stripe Payment Link) */}
           <a
-            href="https://buy.stripe.com/test_cNi00iguj8MSbPfcLt9fW01"
+            href="https://buy.stripe.com/aFafZg2Dt3sy06x5j19fW03"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -372,7 +372,7 @@ export default function HomePage() {
 
           {/* 👉 Acheter (Stripe Payment Link) */}
           <a
-            href="https://buy.stripe.com/test_cNi6oGb9ZbZ41aB5j19fW00"
+            href="https://buy.stripe.com/4gM3cu5PFd382eF5j19fW02"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -489,7 +489,7 @@ export default function HomePage() {
           97€ <span className="text-sm font-semibold">/mois</span>
         </p>
         {/* 👉 si tu as un Payment Link “Plateforme”, mets-le ici */}
-        <a href="https://buy.stripe.com/test_00w9AS7XNgfk5qR6n59fW05" target="_blank" rel="noopener noreferrer">
+        <a href="https://buy.stripe.com/eVqeVc2Dtgfk2eFdPx9fW07" target="_blank" rel="noopener noreferrer">
   <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-xl">S'abonner</Button>
 </a>
       </div>

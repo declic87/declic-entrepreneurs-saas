@@ -38,6 +38,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Onboarding Staff", href: "/admin/onboarding-staff", icon: Play },
     { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video },
     { label: "Paiements", href: "/admin/paiements", icon: CreditCard },
+    { label: "🏦 Activer Client", href: "/admin/activer-client", icon: UserPlus },
     { label: "Outils Experts", href: "/admin/outils-experts", icon: FileText },
     { label: "🎯 Outils Closers", href: "/admin/outils-closers", icon: Target },
     { label: "Remboursements", href: "/admin/remboursements", icon: RefreshCw },

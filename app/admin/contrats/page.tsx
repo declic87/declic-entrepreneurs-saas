@@ -22,7 +22,7 @@ interface Contract {
   status: string;
   amount: number;
   signed_at: string;
-  file_url: string;
+  contract_url: string;
   file_name: string;
   created_at: string;
   is_manual_upload: boolean;
@@ -121,7 +121,7 @@ export default function ContratsPage() {
           contract_type: contractType,
           amount: amount ? parseFloat(amount) : null,
           status,
-          file_url: uploadData.file_url,
+          contract_url: uploadData.file_url,
           file_name: uploadData.file_name,
           is_manual_upload: true,
         })
@@ -300,6 +300,7 @@ export default function ContratsPage() {
                     <SelectItem value="closer">Closer</SelectItem>
                     <SelectItem value="setter">Setter</SelectItem>
                     <SelectItem value="expert">Expert</SelectItem>
+                    <SelectItem value="hos">HOS</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -373,6 +374,7 @@ export default function ContratsPage() {
             <SelectItem value="closer">Closers</SelectItem>
             <SelectItem value="setter">Setters</SelectItem>
             <SelectItem value="expert">Experts</SelectItem>
+            <SelectItem value="hos">HOS</SelectItem>
           </SelectContent>
         </Select>
 
@@ -443,11 +445,11 @@ export default function ContratsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      {contract.file_url && (
+                      {contract.contract_url && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(contract.file_url, '_blank')}
+                          onClick={() => window.open(contract.contract_url, '_blank')}
                         >
                           <Download size={14} />
                         </Button>

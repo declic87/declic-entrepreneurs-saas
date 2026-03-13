@@ -108,7 +108,14 @@ export default function ExpertOutilsPage() {
           });
       }
 
-      // Télécharger le fichier
+      // Si HTML, ouvrir dans le viewer
+      if (tool.file_type === 'html') {
+        window.open(`/expert/outils/viewer/${tool.id}`, '_blank');
+        toast.success('Document ouvert !');
+        return;
+      }
+
+      // Sinon, télécharger normalement
       const link = document.createElement('a');
       link.href = tool.file_url;
       link.download = tool.file_name;
@@ -243,14 +250,23 @@ export default function ExpertOutilsPage() {
                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Download className="mr-2 h-4 w-4" />
-                      Télécharger
+                      {tool.file_type === 'html' ? 'Ouvrir' : 'Télécharger'}
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => window.open(tool.file_url, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
+                    {tool.file_type === 'html' ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(`/expert/outils/viewer/${tool.id}`, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(tool.file_url, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
 
                   {/* Info fichier */}

@@ -9,6 +9,7 @@ interface Contract {
   status: string;
   signed_at: string | null;
   created_at: string;
+  contract_url: string | null;
   yousign_signature_request_id: string | null;
 }
 
@@ -49,27 +50,24 @@ export default function CloserContratPage() {
   }
 
   async function loadContract() {
-    // Trouver le team_member_id
-    const { data: teamMember } = await supabase
-      .from('team_members')
-      .select('id')
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from('contracts')
+      .select('*')
       .eq('user_id', userId)
-      .eq('role', 'closer')
+      .in('contract_type', ['closer', 'commercial'])
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
-    if (teamMember) {
-      const { data } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('team_member_id', teamMember.id)
-        .eq('contract_type', 'closer')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      setContract(data);
-    }
+    setContract(data);
     setLoading(false);
+  }
+
+  function downloadContract() {
+    if (!contract?.contract_url) return;
+    window.open(contract.contract_url, '_blank');
   }
 
   if (loading) {
@@ -121,8 +119,11 @@ export default function CloserContratPage() {
                   </div>
                 </div>
 
-                {contract.status === 'signed' && (
-                  <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                {contract.status === 'signed' && contract.contract_url && (
+                  <button 
+                    onClick={downloadContract}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
                     <Download size={20} />
                     Télécharger
                   </button>
@@ -157,6 +158,17 @@ export default function CloserContratPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Aperçu PDF */}
+              {contract.contract_url && (
+                <div className="border rounded-lg overflow-hidden">
+                  <iframe
+                    src={`${contract.contract_url}#toolbar=0`}
+                    className="w-full h-96"
+                    title="Aperçu du contrat"
+                  />
+                </div>
+              )}
 
               {contract.status === 'sent' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

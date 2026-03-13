@@ -34,7 +34,10 @@ export default function ExpertContratPage() {
   }, [userId]);
 
   async function loadUser() {
+    console.log('🔍 DÉBUT loadUser');
     const { data: { user } } = await supabase.auth.getUser();
+    
+    console.log('👤 Auth user:', user);
     
     if (user) {
       const { data: profile } = await supabase
@@ -43,16 +46,28 @@ export default function ExpertContratPage() {
         .eq('auth_id', user.id)
         .single();
 
+      console.log('📋 Profile trouvé:', profile);
+
       if (profile) {
+        console.log('✅ USER ID TROUVÉ:', profile.id);
         setUserId(profile.id);
+      } else {
+        console.log('❌ AUCUN PROFILE TROUVÉ');
       }
+    } else {
+      console.log('❌ AUCUN AUTH USER');
     }
   }
 
   async function loadContract() {
-    if (!userId) return;
+    if (!userId) {
+      console.log('❌ PAS DE USER ID');
+      return;
+    }
 
-    const { data } = await supabase
+    console.log('🔍 Recherche contrat pour userId:', userId);
+
+    const { data, error } = await supabase
       .from('contracts')
       .select('*')
       .eq('user_id', userId)
@@ -60,6 +75,15 @@ export default function ExpertContratPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
+
+    console.log('📦 DATA:', data);
+    console.log('❌ ERROR:', error);
+
+    if (data) {
+      console.log('✅ CONTRAT TROUVÉ:', data);
+    } else {
+      console.log('❌ AUCUN CONTRAT TROUVÉ');
+    }
 
     setContract(data);
     setLoading(false);
@@ -85,6 +109,13 @@ export default function ExpertContratPage() {
         <div>
           <h1 className="text-4xl font-bold text-gray-900">Mon Contrat</h1>
           <p className="text-gray-600 mt-2">Contrat de prestation expert</p>
+          {/* DEBUG INFO */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded text-sm">
+            <p className="font-bold">🔍 DEBUG INFO:</p>
+            <p>User ID: {userId || 'Non trouvé'}</p>
+            <p>Contrat trouvé: {contract ? '✅ OUI' : '❌ NON'}</p>
+            {contract && <p>Contract URL: {contract.contract_url || 'Vide'}</p>}
+          </div>
         </div>
 
         {contract ? (

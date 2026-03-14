@@ -1,14 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: {
-      finalY: number;
-    };
-  }
-}
+import autoTable from 'jspdf-autotable';
 
 interface SimulationData {
   clientName: string;
@@ -139,7 +130,7 @@ export function generateSimulationPDF(data: SimulationData) {
   
   yPos += 5;
   
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [['', 'Situation actuelle', 'Méthode Déclic', 'Écart']],
     body: [

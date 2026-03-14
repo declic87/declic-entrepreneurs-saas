@@ -1,0 +1,15 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond dégradé orange -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F39C12"/>
+      <stop offset="100%" stop-color="#E67E22"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Rectangle arrondi avec dégradé -->
+  <rect x="0" y="0" width="100" height="100" rx="15" fill="url(#bg-gradient)"/>
+  
+  <!-- Éclair blanc -->
+  <path d="M54 8L16 52h29l-4 32l38-44H50l4-32z" fill="white" stroke="white" stroke-width="2"/>
+</svg>

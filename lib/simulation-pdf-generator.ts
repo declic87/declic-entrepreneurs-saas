@@ -41,45 +41,12 @@ const COLORS = {
   lightGray: '#F1F5F9',
 };
 
-// Fonction pour nettoyer TOUS les caractères accentués
-function cleanText(text: string): string {
-  if (!text) return '';
-  
-  return text
-    .replace(/é/g, 'e')
-    .replace(/è/g, 'e')
-    .replace(/ê/g, 'e')
-    .replace(/ë/g, 'e')
-    .replace(/à/g, 'a')
-    .replace(/â/g, 'a')
-    .replace(/ä/g, 'a')
-    .replace(/ù/g, 'u')
-    .replace(/û/g, 'u')
-    .replace(/ü/g, 'u')
-    .replace(/ô/g, 'o')
-    .replace(/ö/g, 'o')
-    .replace(/î/g, 'i')
-    .replace(/ï/g, 'i')
-    .replace(/ç/g, 'c')
-    .replace(/É/g, 'E')
-    .replace(/È/g, 'E')
-    .replace(/Ê/g, 'E')
-    .replace(/À/g, 'A')
-    .replace(/Â/g, 'A')
-    .replace(/Ô/g, 'O')
-    .replace(/Î/g, 'I')
-    .replace(/Ç/g, 'C')
-    .replace(/'/g, "'")
-    .replace(/'/g, "'")
-    .replace(/"/g, '"')
-    .replace(/"/g, '"')
-    .replace(/…/g, '...')
-    .replace(/€/g, 'EUR')
-    .replace(/'/g, "'");
-}
-
 export function generateSimulationPDF(data: SimulationData) {
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    putOnlyUsedFonts: true,
+    compress: true
+  });
+  
   const pageWidth = doc.internal.pageSize.getWidth();
   
   // ═══════════════════════════════════════════════
@@ -96,7 +63,7 @@ export function generateSimulationPDF(data: SimulationData) {
   
   doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
-  doc.text('Simulation d\'Optimisation Fiscale', pageWidth / 2, 25, { align: 'center' });
+  doc.text('Simulation Optimisation Fiscale', pageWidth / 2, 25, { align: 'center' });
   
   doc.setFontSize(9);
   doc.text(new Date().toLocaleDateString('fr-FR'), pageWidth / 2, 33, { align: 'center' });
@@ -117,8 +84,8 @@ export function generateSimulationPDF(data: SimulationData) {
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(cleanText(`Client: ${data.clientName}`), 20, yPos + 16);
-  doc.text(cleanText(`Email: ${data.clientEmail}`), 20, yPos + 22);
+  doc.text(`Client: ${data.clientName}`, 20, yPos + 16);
+  doc.text(`Email: ${data.clientEmail}`, 20, yPos + 22);
   
   yPos += 35;
   
@@ -132,19 +99,21 @@ export function generateSimulationPDF(data: SimulationData) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(COLORS.dark);
-  doc.text('RESULTAT DE L\'OPTIMISATION', pageWidth / 2, yPos + 10, { align: 'center' });
+  doc.text('RESULTAT OPTIMISATION', pageWidth / 2, yPos + 10, { align: 'center' });
   
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text('Situation actuelle:', 25, yPos + 23);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${data.results.situationActuelle.netCash.toLocaleString('fr-FR')} EUR`, pageWidth - 25, yPos + 23, { align: 'right' });
+  const netActuel = Math.round(data.results.situationActuelle.netCash).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  doc.text(`${netActuel} EUR`, pageWidth - 25, yPos + 23, { align: 'right' });
   
   doc.setFont('helvetica', 'normal');
-  doc.text('Avec Methode Declic:', 25, yPos + 33);
+  doc.text('Avec Declic:', 25, yPos + 33);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(COLORS.green);
-  doc.text(`${data.results.situationOptimisee.netCash.toLocaleString('fr-FR')} EUR`, pageWidth - 25, yPos + 33, { align: 'right' });
+  const netOptimise = Math.round(data.results.situationOptimisee.netCash).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  doc.text(`${netOptimise} EUR`, pageWidth - 25, yPos + 33, { align: 'right' });
   
   // GAIN
   doc.setFillColor(COLORS.secondary);
@@ -152,7 +121,8 @@ export function generateSimulationPDF(data: SimulationData) {
   doc.setFontSize(14);
   doc.setTextColor(COLORS.dark);
   doc.setFont('helvetica', 'bold');
-  doc.text(`GAIN ANNUEL: +${data.results.gain.toLocaleString('fr-FR')} EUR`, pageWidth / 2, yPos + 47, { align: 'center' });
+  const gain = Math.round(data.results.gain).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  doc.text(`GAIN ANNUEL: +${gain} EUR`, pageWidth / 2, yPos + 47, { align: 'center' });
   
   yPos += 60;
   
@@ -167,64 +137,28 @@ export function generateSimulationPDF(data: SimulationData) {
   
   yPos += 5;
   
+  const formatNumber = (num: number) => Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' EUR';
+  
   autoTable(doc, {
     startY: yPos,
-    head: [['', 'Situation actuelle', 'Methode Declic', 'Ecart']],
+    head: [['Ligne', 'Actuel', 'Declic', 'Ecart']],
     body: [
-      [
-        'Chiffre d\'affaires',
-        `${data.results.situationActuelle.ca.toLocaleString('fr-FR')} EUR`,
-        `${data.results.situationOptimisee.ca.toLocaleString('fr-FR')} EUR`,
-        '-'
-      ],
-      [
-        'Charges deductibles',
-        `${data.results.situationActuelle.charges.toLocaleString('fr-FR')} EUR`,
-        `${data.results.situationOptimisee.charges.toLocaleString('fr-FR')} EUR`,
-        `+${(data.results.situationOptimisee.charges - data.results.situationActuelle.charges).toLocaleString('fr-FR')} EUR`
-      ],
-      [
-        'dont IK rembourses',
-        '0 EUR',
-        `${data.results.situationOptimisee.ik.toLocaleString('fr-FR')} EUR`,
-        `+${data.results.situationOptimisee.ik.toLocaleString('fr-FR')} EUR`
-      ],
-      [
-        'dont MDA habitation',
-        '0 EUR',
-        `${data.results.situationOptimisee.mda.toLocaleString('fr-FR')} EUR`,
-        `+${data.results.situationOptimisee.mda.toLocaleString('fr-FR')} EUR`
-      ],
-      [
-        'Charges sociales',
-        `${data.results.situationActuelle.chargesSociales.toLocaleString('fr-FR')} EUR`,
-        `${data.results.situationOptimisee.chargesSociales.toLocaleString('fr-FR')} EUR`,
-        `${(data.results.situationOptimisee.chargesSociales - data.results.situationActuelle.chargesSociales).toLocaleString('fr-FR')} EUR`
-      ],
-      [
-        'Impots',
-        `${data.results.situationActuelle.impots.toLocaleString('fr-FR')} EUR`,
-        `${data.results.situationOptimisee.impots.toLocaleString('fr-FR')} EUR`,
-        `${(data.results.situationOptimisee.impots - data.results.situationActuelle.impots).toLocaleString('fr-FR')} EUR`
-      ],
-      [
-        'NET CASH',
-        `${data.results.situationActuelle.netCash.toLocaleString('fr-FR')} EUR`,
-        `${data.results.situationOptimisee.netCash.toLocaleString('fr-FR')} EUR`,
-        `+${data.results.gain.toLocaleString('fr-FR')} EUR`
-      ],
+      ['CA', formatNumber(data.results.situationActuelle.ca), formatNumber(data.results.situationOptimisee.ca), '-'],
+      ['Charges', formatNumber(data.results.situationActuelle.charges), formatNumber(data.results.situationOptimisee.charges), '+' + formatNumber(data.results.situationOptimisee.charges - data.results.situationActuelle.charges)],
+      ['IK', '0 EUR', formatNumber(data.results.situationOptimisee.ik), '+' + formatNumber(data.results.situationOptimisee.ik)],
+      ['MDA', '0 EUR', formatNumber(data.results.situationOptimisee.mda), '+' + formatNumber(data.results.situationOptimisee.mda)],
+      ['Charges sociales', formatNumber(data.results.situationActuelle.chargesSociales), formatNumber(data.results.situationOptimisee.chargesSociales), formatNumber(data.results.situationOptimisee.chargesSociales - data.results.situationActuelle.chargesSociales)],
+      ['Impots', formatNumber(data.results.situationActuelle.impots), formatNumber(data.results.situationOptimisee.impots), formatNumber(data.results.situationOptimisee.impots - data.results.situationActuelle.impots)],
+      ['NET CASH', formatNumber(data.results.situationActuelle.netCash), formatNumber(data.results.situationOptimisee.netCash), '+' + formatNumber(data.results.gain)],
     ],
-    headStyles: { 
-      fillColor: [249, 115, 22], 
-      textColor: 255, 
-      fontStyle: 'bold',
-      fontSize: 10
-    },
+    headStyles: { fillColor: [249, 115, 22], textColor: 255, fontStyle: 'bold', fontSize: 10 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     styles: { fontSize: 9, font: 'helvetica' },
     columnStyles: {
-      0: { fontStyle: 'bold' },
-      3: { fontStyle: 'bold', textColor: [22, 163, 74] }
+      0: { fontStyle: 'bold', cellWidth: 40 },
+      1: { cellWidth: 40 },
+      2: { cellWidth: 40 },
+      3: { fontStyle: 'bold', textColor: [22, 163, 74], cellWidth: 40 }
     }
   });
   
@@ -237,10 +171,9 @@ export function generateSimulationPDF(data: SimulationData) {
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(COLORS.dark);
-  doc.text('NOS RECOMMANDATIONS', 15, yPos);
+  doc.text('RECOMMANDATIONS', 15, yPos);
   
   yPos += 8;
-  
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   
@@ -250,8 +183,17 @@ export function generateSimulationPDF(data: SimulationData) {
       yPos = 20;
     }
     
-    const cleanedReco = cleanText(reco);
-    const lines = doc.splitTextToSize(`${idx + 1}. ${cleanedReco}`, pageWidth - 30);
+    // Simplifier les emojis
+    const simplifiedReco = reco
+      .replace(/🚗/g, '- IK:')
+      .replace(/🏠/g, '- MDA:')
+      .replace(/💰/g, '- COMPTA:')
+      .replace(/🏢/g, '- STRUCTURE:')
+      .replace(/📊/g, '- STRATEGIE:')
+      .replace(/⚠️/g, '- ATTENTION:')
+      .replace(/📍/g, '- ZONE:');
+    
+    const lines = doc.splitTextToSize(`${idx + 1}. ${simplifiedReco}`, pageWidth - 30);
     doc.text(lines, 15, yPos);
     yPos += lines.length * 5 + 3;
   });
@@ -273,26 +215,26 @@ export function generateSimulationPDF(data: SimulationData) {
     doc.setTextColor(22, 101, 52);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text('ELIGIBILITE ZONES FISCALES AVANTAGEUSES', 20, yPos);
+    doc.text('ZONES FISCALES AVANTAGEUSES', 20, yPos);
     yPos += 10;
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     
     if (data.results.isZFRR) {
-      doc.text('ZFRR: Exoneration fiscale jusqu\'a 50% pendant 5 ans', 20, yPos);
+      doc.text('- ZFRR: Exoneration fiscale 50% pendant 5 ans', 20, yPos);
       yPos += 6;
     }
     if (data.results.isAFR) {
-      doc.text('AFR: Aides a la finalite regionale disponibles (jusqu\'a 20%)', 20, yPos);
+      doc.text('- AFR: Aides investissements productifs (20%)', 20, yPos);
       yPos += 6;
     }
     if (data.results.isQPV) {
-      doc.text('QPV: Exonerations fiscales et sociales (quartier prioritaire)', 20, yPos);
+      doc.text('- QPV: Exonerations fiscales quartier prioritaire', 20, yPos);
       yPos += 6;
     }
     if (data.results.isBER) {
-      doc.text('BER: Aides a l\'implantation (bassin d\'emploi a redynamiser)', 20, yPos);
+      doc.text('- BER: Aides implantation bassin emploi', 20, yPos);
     }
   }
   
@@ -304,15 +246,14 @@ export function generateSimulationPDF(data: SimulationData) {
   
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
     doc.setFont('helvetica', 'normal');
-    doc.text('Declic Entrepreneurs - www.declic-entrepreneurs.fr - contact@declic-entrepreneurs.fr', pageWidth / 2, 285, { align: 'center' });
-    doc.text('Ce document est une simulation indicative. Les chiffres exacts seront confirmes apres audit complet.', pageWidth / 2, 290, { align: 'center' });
+    doc.text('Declic Entrepreneurs - www.declic-entrepreneurs.fr', pageWidth / 2, 285, { align: 'center' });
+    doc.text('Simulation indicative - Chiffres confirmes apres audit', pageWidth / 2, 290, { align: 'center' });
     
     if (data.closerName) {
-      doc.text(cleanText(`Prepare par: ${data.closerName}`), pageWidth / 2, 280, { align: 'center' });
+      doc.text(`Par: ${data.closerName}`, pageWidth / 2, 280, { align: 'center' });
     }
   }
   
@@ -321,6 +262,7 @@ export function generateSimulationPDF(data: SimulationData) {
 
 export function downloadSimulationPDF(data: SimulationData) {
   const doc = generateSimulationPDF(data);
-  const fileName = cleanText(`Simulation_${data.clientName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  const cleanName = data.clientName.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `Simulation_${cleanName}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 }

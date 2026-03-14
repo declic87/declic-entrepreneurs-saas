@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,10 +28,8 @@ interface Simulation {
   is_zfrr: boolean;
   is_afr: boolean;
   created_at: string;
-  users: {
-    first_name: string;
-    last_name: string;
-  };
+  closer_first_name?: string;
+  closer_last_name?: string;
 }
 
 export default function AdminSimulationsPage() {
@@ -57,9 +54,9 @@ export default function AdminSimulationsPage() {
     } else {
       const filtered = simulations.filter(sim =>
         sim.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sim.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sim.code_postal.includes(searchTerm) ||
-        `${sim.users.first_name} ${sim.users.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+        (sim.client_email && sim.client_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (sim.code_postal && sim.code_postal.includes(searchTerm)) ||
+        `${sim.closer_first_name || ''} ${sim.closer_last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredSimulations(filtered);
     }
@@ -67,23 +64,56 @@ export default function AdminSimulationsPage() {
 
   async function loadSimulations() {
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Chargement simulations...');
+      
+      // Récupérer les simulations
+      const { data: simulationsData, error: simError } = await supabase
         .from('closer_simulations')
-        .select(`
-          *,
-          users!closer_id (
-            first_name,
-            last_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (simError) {
+        console.error('❌ Erreur simulations:', simError);
+        throw simError;
+      }
 
-      setSimulations(data || []);
-      setFilteredSimulations(data || []);
+      console.log('📊 Simulations brutes:', simulationsData);
+
+      // Récupérer les users séparément
+      if (simulationsData && simulationsData.length > 0) {
+        const closerIds = [...new Set(simulationsData.map(s => s.closer_id))];
+        
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, first_name, last_name')
+          .in('id', closerIds);
+
+        if (usersError) {
+          console.error('❌ Erreur users:', usersError);
+        }
+
+        console.log('👥 Users:', usersData);
+
+        // Combiner les données
+        const enrichedSimulations = simulationsData.map(sim => {
+          const user = usersData?.find(u => u.id === sim.closer_id);
+          return {
+            ...sim,
+            closer_first_name: user?.first_name || 'Inconnu',
+            closer_last_name: user?.last_name || '',
+          };
+        });
+
+        console.log('✅ Simulations enrichies:', enrichedSimulations);
+
+        setSimulations(enrichedSimulations);
+        setFilteredSimulations(enrichedSimulations);
+      } else {
+        setSimulations([]);
+        setFilteredSimulations([]);
+      }
     } catch (error) {
-      console.error('Erreur chargement simulations:', error);
+      console.error('💥 Erreur chargement simulations:', error);
     } finally {
       setLoading(false);
     }
@@ -92,7 +122,7 @@ export default function AdminSimulationsPage() {
   function handleDownloadPDF(sim: Simulation) {
     downloadSimulationPDF({
       clientName: sim.client_name,
-      clientEmail: sim.client_email,
+      clientEmail: sim.client_email || '',
       results: {
         situationActuelle: sim.situation_actuelle,
         situationOptimisee: sim.situation_optimisee,
@@ -103,7 +133,7 @@ export default function AdminSimulationsPage() {
         isQPV: false,
         isBER: false,
       },
-      closerName: `${sim.users.first_name} ${sim.users.last_name}`,
+      closerName: `${sim.closer_first_name} ${sim.closer_last_name}`,
     });
   }
 
@@ -147,7 +177,7 @@ export default function AdminSimulationsPage() {
               <div>
                 <p className="text-sm text-slate-600">Gain Total Estimé</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {simulations.reduce((acc, sim) => acc + sim.gain_annuel, 0).toLocaleString('fr-FR')} €
+                  {simulations.reduce((acc, sim) => acc + (sim.gain_annuel || 0), 0).toLocaleString('fr-FR')} €
                 </p>
               </div>
               <TrendingUp className="text-green-600" size={32} />
@@ -236,17 +266,17 @@ export default function AdminSimulationsPage() {
                         {new Date(sim.created_at).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="p-4 font-semibold">{sim.client_name}</td>
-                      <td className="p-4 text-sm text-slate-600">{sim.client_email}</td>
+                      <td className="p-4 text-sm text-slate-600">{sim.client_email || '-'}</td>
                       <td className="p-4 text-sm">
-                        {sim.users.first_name} {sim.users.last_name}
+                        {sim.closer_first_name} {sim.closer_last_name}
                       </td>
                       <td className="p-4 font-semibold">
-                        {sim.ca_annuel.toLocaleString('fr-FR')} €
+                        {(sim.ca_annuel || 0).toLocaleString('fr-FR')} €
                       </td>
                       <td className="p-4">
                         <Badge variant="outline">{sim.statut_actuel}</Badge>
                       </td>
-                      <td className="p-4">{sim.code_postal}</td>
+                      <td className="p-4">{sim.code_postal || '-'}</td>
                       <td className="p-4">
                         <div className="flex gap-1">
                           {sim.is_zfrr && (
@@ -258,7 +288,7 @@ export default function AdminSimulationsPage() {
                         </div>
                       </td>
                       <td className="p-4 font-bold text-green-600">
-                        +{sim.gain_annuel.toLocaleString('fr-FR')} €
+                        +{(sim.gain_annuel || 0).toLocaleString('fr-FR')} €
                       </td>
                       <td className="p-4">
                         <div className="flex gap-2">
@@ -312,17 +342,17 @@ export default function AdminSimulationsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Email</p>
-                  <p className="font-semibold">{selectedSimulation.client_email}</p>
+                  <p className="font-semibold">{selectedSimulation.client_email || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Closer</p>
                   <p className="font-semibold">
-                    {selectedSimulation.users.first_name} {selectedSimulation.users.last_name}
+                    {selectedSimulation.closer_first_name} {selectedSimulation.closer_last_name}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Code Postal</p>
-                  <p className="font-semibold">{selectedSimulation.code_postal}</p>
+                  <p className="font-semibold">{selectedSimulation.code_postal || '-'}</p>
                 </div>
               </div>
 
@@ -332,25 +362,25 @@ export default function AdminSimulationsPage() {
                   <div className="p-2 bg-slate-50 rounded">
                     <span className="text-slate-600">CA:</span>
                     <span className="font-semibold ml-2">
-                      {selectedSimulation.ca_annuel.toLocaleString('fr-FR')} €
+                      {(selectedSimulation.ca_annuel || 0).toLocaleString('fr-FR')} €
                     </span>
                   </div>
                   <div className="p-2 bg-slate-50 rounded">
                     <span className="text-slate-600">Charges:</span>
                     <span className="font-semibold ml-2">
-                      {selectedSimulation.charges_reelles.toLocaleString('fr-FR')} €
+                      {(selectedSimulation.charges_reelles || 0).toLocaleString('fr-FR')} €
                     </span>
                   </div>
                   <div className="p-2 bg-slate-50 rounded">
                     <span className="text-slate-600">Comptable:</span>
                     <span className="font-semibold ml-2">
-                      {selectedSimulation.frais_comptable.toLocaleString('fr-FR')} €
+                      {(selectedSimulation.frais_comptable || 0).toLocaleString('fr-FR')} €
                     </span>
                   </div>
                   <div className="p-2 bg-green-50 rounded">
                     <span className="text-slate-600">Gain:</span>
                     <span className="font-bold text-green-600 ml-2">
-                      +{selectedSimulation.gain_annuel.toLocaleString('fr-FR')} €
+                      +{(selectedSimulation.gain_annuel || 0).toLocaleString('fr-FR')} €
                     </span>
                   </div>
                 </div>
@@ -359,7 +389,7 @@ export default function AdminSimulationsPage() {
               <div className="border-t pt-4">
                 <h4 className="font-bold mb-2">Recommandations</h4>
                 <ul className="space-y-2 text-sm">
-                  {selectedSimulation.recommandations.map((reco, idx) => (
+                  {(selectedSimulation.recommandations || []).map((reco, idx) => (
                     <li key={idx} className="flex items-start gap-2 p-2 bg-blue-50 rounded">
                       <span className="text-blue-600 font-bold">{idx + 1}.</span>
                       <span className="text-blue-900">{reco}</span>

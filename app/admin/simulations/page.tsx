@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, Download, Search, Calendar, TrendingUp, MapPin } from 'lucide-react';
+import { Eye, Download, Search, Calendar, TrendingUp, MapPin, Trash2 } from 'lucide-react';
 import { downloadSimulationPDF } from '@/lib/simulation-pdf-generator';
 
 interface Simulation {
@@ -38,6 +38,7 @@ export default function AdminSimulationsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,81 +65,67 @@ export default function AdminSimulationsPage() {
 
   async function loadSimulations() {
     try {
-      console.log('═════════════════════════════════════');
-      console.log('🔍 DÉBUT CHARGEMENT SIMULATIONS');
-      console.log('═════════════════════════════════════');
-      
-      // Vérifier la connexion
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('👤 User actuel:', user);
-      console.log('❌ Auth error:', authError);
-
-      // TEST 1 : Compter les simulations
-      const { count, error: countError } = await supabase
-        .from('closer_simulations')
-        .select('*', { count: 'exact', head: true });
-      
-      console.log('📊 NOMBRE TOTAL DE SIMULATIONS:', count);
-      console.log('❌ Count error:', countError);
-
-      // TEST 2 : Récupérer TOUTES les simulations SANS filtre
-      console.log('📥 Tentative de récupération des simulations...');
       const { data: simulationsData, error: simError } = await supabase
         .from('closer_simulations')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('✅ Données reçues:', simulationsData);
-      console.log('📦 Nombre de lignes:', simulationsData?.length || 0);
-      console.log('❌ Erreur simulations:', simError);
+      if (simError) throw simError;
 
-      if (simError) {
-        console.error('💥 ERREUR CRITIQUE:', simError);
-        alert(`Erreur: ${simError.message}`);
-        throw simError;
-      }
+      if (simulationsData && simulationsData.length > 0) {
+        const closerIds = [...new Set(simulationsData.map(s => s.closer_id))];
+        
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, first_name, last_name')
+          .in('id', closerIds);
 
-      if (!simulationsData || simulationsData.length === 0) {
-        console.warn('⚠️ AUCUNE SIMULATION TROUVÉE');
+        const enrichedSimulations = simulationsData.map(sim => {
+          const user = usersData?.find(u => u.id === sim.closer_id);
+          return {
+            ...sim,
+            closer_first_name: user?.first_name || 'Inconnu',
+            closer_last_name: user?.last_name || '',
+          };
+        });
+
+        setSimulations(enrichedSimulations);
+        setFilteredSimulations(enrichedSimulations);
+      } else {
         setSimulations([]);
         setFilteredSimulations([]);
-        setLoading(false);
-        return;
       }
-
-      // TEST 3 : Récupérer les users
-      const closerIds = [...new Set(simulationsData.map(s => s.closer_id))];
-      console.log('👥 IDs des closers:', closerIds);
-
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, first_name, last_name')
-        .in('id', closerIds);
-
-      console.log('👤 Users récupérés:', usersData);
-      console.log('❌ Users error:', usersError);
-
-      // Combiner les données
-      const enrichedSimulations = simulationsData.map(sim => {
-        const user = usersData?.find(u => u.id === sim.closer_id);
-        console.log(`🔗 Simulation ${sim.id} → User ${user?.first_name || 'NON TROUVÉ'}`);
-        return {
-          ...sim,
-          closer_first_name: user?.first_name || 'Inconnu',
-          closer_last_name: user?.last_name || '',
-        };
-      });
-
-      console.log('✅ SIMULATIONS ENRICHIES:', enrichedSimulations);
-      console.log('═════════════════════════════════════');
-
-      setSimulations(enrichedSimulations);
-      setFilteredSimulations(enrichedSimulations);
     } catch (error) {
-      console.error('💥 ERREUR FATALE:', error);
-      alert(`Erreur fatale: ${error}`);
+      console.error('Erreur chargement simulations:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('closer_simulations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Retirer de la liste
+      setSimulations(prev => prev.filter(s => s.id !== id));
+      setFilteredSimulations(prev => prev.filter(s => s.id !== id));
+      setDeleteConfirm(null);
+
+      alert('Simulation supprimée avec succès');
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      alert('Erreur lors de la suppression');
     }
   }
 
@@ -333,6 +320,15 @@ export default function AdminSimulationsPage() {
                           >
                             <Download size={14} />
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(sim.id)}
+                            className={deleteConfirm === sim.id ? 'border-red-500 bg-red-50 text-red-600' : 'hover:border-red-500 hover:text-red-600'}
+                          >
+                            <Trash2 size={14} />
+                            {deleteConfirm === sim.id && <span className="ml-1 text-xs">Confirmer?</span>}
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -424,13 +420,26 @@ export default function AdminSimulationsPage() {
                 </ul>
               </div>
 
-              <Button
-                onClick={() => handleDownloadPDF(selectedSimulation)}
-                className="w-full bg-orange-600 hover:bg-orange-700"
-              >
-                <Download className="mr-2" size={16} />
-                Télécharger le PDF
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleDownloadPDF(selectedSimulation)}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                >
+                  <Download className="mr-2" size={16} />
+                  Télécharger le PDF
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDelete(selectedSimulation.id);
+                    setSelectedSimulation(null);
+                  }}
+                  variant="outline"
+                  className="border-red-500 text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="mr-2" size={16} />
+                  Supprimer
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

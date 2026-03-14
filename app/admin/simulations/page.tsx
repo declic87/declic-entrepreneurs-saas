@@ -64,56 +64,79 @@ export default function AdminSimulationsPage() {
 
   async function loadSimulations() {
     try {
-      console.log('🔍 Chargement simulations...');
+      console.log('═════════════════════════════════════');
+      console.log('🔍 DÉBUT CHARGEMENT SIMULATIONS');
+      console.log('═════════════════════════════════════');
       
-      // Récupérer les simulations
+      // Vérifier la connexion
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('👤 User actuel:', user);
+      console.log('❌ Auth error:', authError);
+
+      // TEST 1 : Compter les simulations
+      const { count, error: countError } = await supabase
+        .from('closer_simulations')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log('📊 NOMBRE TOTAL DE SIMULATIONS:', count);
+      console.log('❌ Count error:', countError);
+
+      // TEST 2 : Récupérer TOUTES les simulations SANS filtre
+      console.log('📥 Tentative de récupération des simulations...');
       const { data: simulationsData, error: simError } = await supabase
         .from('closer_simulations')
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('✅ Données reçues:', simulationsData);
+      console.log('📦 Nombre de lignes:', simulationsData?.length || 0);
+      console.log('❌ Erreur simulations:', simError);
+
       if (simError) {
-        console.error('❌ Erreur simulations:', simError);
+        console.error('💥 ERREUR CRITIQUE:', simError);
+        alert(`Erreur: ${simError.message}`);
         throw simError;
       }
 
-      console.log('📊 Simulations brutes:', simulationsData);
-
-      // Récupérer les users séparément
-      if (simulationsData && simulationsData.length > 0) {
-        const closerIds = [...new Set(simulationsData.map(s => s.closer_id))];
-        
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('id, first_name, last_name')
-          .in('id', closerIds);
-
-        if (usersError) {
-          console.error('❌ Erreur users:', usersError);
-        }
-
-        console.log('👥 Users:', usersData);
-
-        // Combiner les données
-        const enrichedSimulations = simulationsData.map(sim => {
-          const user = usersData?.find(u => u.id === sim.closer_id);
-          return {
-            ...sim,
-            closer_first_name: user?.first_name || 'Inconnu',
-            closer_last_name: user?.last_name || '',
-          };
-        });
-
-        console.log('✅ Simulations enrichies:', enrichedSimulations);
-
-        setSimulations(enrichedSimulations);
-        setFilteredSimulations(enrichedSimulations);
-      } else {
+      if (!simulationsData || simulationsData.length === 0) {
+        console.warn('⚠️ AUCUNE SIMULATION TROUVÉE');
         setSimulations([]);
         setFilteredSimulations([]);
+        setLoading(false);
+        return;
       }
+
+      // TEST 3 : Récupérer les users
+      const closerIds = [...new Set(simulationsData.map(s => s.closer_id))];
+      console.log('👥 IDs des closers:', closerIds);
+
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, first_name, last_name')
+        .in('id', closerIds);
+
+      console.log('👤 Users récupérés:', usersData);
+      console.log('❌ Users error:', usersError);
+
+      // Combiner les données
+      const enrichedSimulations = simulationsData.map(sim => {
+        const user = usersData?.find(u => u.id === sim.closer_id);
+        console.log(`🔗 Simulation ${sim.id} → User ${user?.first_name || 'NON TROUVÉ'}`);
+        return {
+          ...sim,
+          closer_first_name: user?.first_name || 'Inconnu',
+          closer_last_name: user?.last_name || '',
+        };
+      });
+
+      console.log('✅ SIMULATIONS ENRICHIES:', enrichedSimulations);
+      console.log('═════════════════════════════════════');
+
+      setSimulations(enrichedSimulations);
+      setFilteredSimulations(enrichedSimulations);
     } catch (error) {
-      console.error('💥 Erreur chargement simulations:', error);
+      console.error('💥 ERREUR FATALE:', error);
+      alert(`Erreur fatale: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -285,6 +308,9 @@ export default function AdminSimulationsPage() {
                           {sim.is_afr && (
                             <Badge className="bg-blue-100 text-blue-800 text-xs">AFR</Badge>
                           )}
+                          {!sim.is_zfrr && !sim.is_afr && (
+                            <span className="text-slate-400 text-xs">-</span>
+                          )}
                         </div>
                       </td>
                       <td className="p-4 font-bold text-green-600">
@@ -388,7 +414,7 @@ export default function AdminSimulationsPage() {
 
               <div className="border-t pt-4">
                 <h4 className="font-bold mb-2">Recommandations</h4>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-2 text-sm max-h-60 overflow-y-auto">
                   {(selectedSimulation.recommandations || []).map((reco, idx) => (
                     <li key={idx} className="flex items-start gap-2 p-2 bg-blue-50 rounded">
                       <span className="text-blue-600 font-bold">{idx + 1}.</span>

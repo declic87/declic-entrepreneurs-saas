@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, TrendingUp, AlertTriangle, CheckCircle, Download } from 'lucide-react';
+import { Calculator, TrendingUp, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { downloadSimulationPDF } from '@/lib/simulation-pdf-generator';
 
 export default function SimulateurSocietePage() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   
   // Inputs
@@ -40,26 +42,95 @@ export default function SimulateurSocietePage() {
     if (user) {
       const { data: userData } = await supabase
         .from('users')
-        .select('id')
+        .select('id, first_name, last_name')
         .eq('auth_id', user.id)
         .single();
-      if (userData) setUserId(userData.id);
+      
+      if (userData) {
+        setUserId(userData.id);
+        setUserName(`${userData.first_name} ${userData.last_name}`);
+      }
     }
   }
 
+  async function detectZones() {
+    if (!codePostal || codePostal.length < 5) return { isZFRR: false, isAFR: false, isQPV: false, isBER: false };
+
+    try {
+      const response = await fetch('/api/zones-fiscales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codePostal }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          isZFRR: data.isZFRR || false,
+          isAFR: data.isAFR || false,
+          isQPV: data.isQPV || false,
+          isBER: data.isBER || false,
+        };
+      }
+    } catch (error) {
+      console.error('Erreur détection zones:', error);
+    }
+
+    return { isZFRR: false, isAFR: false, isQPV: false, isBER: false };
+  }
+
   async function calculate() {
+    if (!clientName || !ca || !charges) {
+      alert('Veuillez remplir au minimum le nom du client, le CA et les charges');
+      return;
+    }
+
     setLoading(true);
     
     try {
       const caNum = parseFloat(ca);
       const chargesNum = parseFloat(charges);
-      const fraisComptableNum = parseFloat(fraisComptable);
-      const besoinMensuelNum = parseFloat(besoinMensuel);
+      const fraisComptableNum = parseFloat(fraisComptable) || 0;
+      const besoinMensuelNum = parseFloat(besoinMensuel) || 0;
 
       // 1. Situation actuelle (estimation)
-      const remunerationBrute = caNum - chargesNum;
-      const chargesSociales = remunerationBrute * 0.45; // Approximation
-      const impots = (remunerationBrute - chargesSociales) * 0.20; // Approximation
+      let remunerationBrute = caNum - chargesNum;
+      let chargesSociales = 0;
+      let impots = 0;
+
+      switch (statutActuel) {
+        case 'EI':
+          chargesSociales = caNum * 0.22;
+          const revenuImposable = caNum * 0.66;
+          impots = revenuImposable * 0.15;
+          remunerationBrute = caNum - chargesSociales;
+          break;
+        
+        case 'EURL':
+          chargesSociales = remunerationBrute * 0.45;
+          impots = (remunerationBrute - chargesSociales) * 0.20;
+          break;
+        
+        case 'SASU_IS':
+          const is = (caNum - chargesNum) * 0.15;
+          const dividendes = (caNum - chargesNum - is) * 0.5;
+          const salaire = (caNum - chargesNum - is) * 0.5;
+          chargesSociales = salaire * 0.82;
+          const flatTax = dividendes * 0.30;
+          impots = is + flatTax;
+          remunerationBrute = salaire;
+          break;
+        
+        case 'SASU_IR':
+          chargesSociales = remunerationBrute * 0.82;
+          impots = (remunerationBrute - chargesSociales) * 0.15;
+          break;
+        
+        default:
+          chargesSociales = remunerationBrute * 0.45;
+          impots = (remunerationBrute - chargesSociales) * 0.20;
+      }
+
       const netActuel = remunerationBrute - chargesSociales - impots;
 
       // 2. Situation optimisée Déclic
@@ -68,8 +139,8 @@ export default function SimulateurSocietePage() {
       const fraisOptimises = ikOptimal + mdaOptimal + chargesNum;
       const baseImposable = caNum - fraisOptimises;
       
-      const chargesSocialesOptimisees = baseImposable * 0.25; // Optimisé
-      const impotsOptimises = (baseImposable - chargesSocialesOptimisees) * 0.15; // Optimisé
+      const chargesSocialesOptimisees = baseImposable * 0.25;
+      const impotsOptimises = (baseImposable - chargesSocialesOptimisees) * 0.12;
       const netOptimise = baseImposable - chargesSocialesOptimisees - impotsOptimises + ikOptimal + mdaOptimal;
 
       const gain = netOptimise - netActuel;
@@ -77,25 +148,39 @@ export default function SimulateurSocietePage() {
       // 3. Recommandations
       const recommandations: string[] = [];
       
-      if (fraisComptableNum > 3000) {
-        recommandations.push(`💰 Votre comptable coûte ${fraisComptableNum}€/an. Nous recommandons un partenaire à partir de 1200€/an (économie: ${fraisComptableNum - 1200}€)`);
-      }
+      recommandations.push(`🚗 Indemnités Kilométriques: 12 000€/an de remboursement cash non imposé (barème fiscal 7CV)`);
+      recommandations.push(`🏠 Mise à disposition habitation: 8 000€/an de remboursement cash non imposé (bureau domicile)`);
       
-      recommandations.push(`🚗 Optimisez vos IK à 12 000€/an (remboursement cash non imposé)`);
-      recommandations.push(`🏠 Mise à disposition habitation: 8 000€/an (remboursement cash non imposé)`);
+      if (fraisComptableNum > 3000) {
+        recommandations.push(`💰 Votre comptable coûte ${fraisComptableNum.toLocaleString('fr-FR')}€/an. Notre partenaire: 1200€/an (économie: ${(fraisComptableNum - 1200).toLocaleString('fr-FR')}€)`);
+      }
       
       if (statutActuel === 'EI' || statutActuel === 'EURL') {
-        recommandations.push(`🏢 Passage en SASU à l'IR recommandé pour optimiser les charges sociales`);
+        recommandations.push(`🏢 Passage en SASU à l'IR recommandé pour optimiser les charges sociales (-${((chargesSociales - chargesSocialesOptimisees)).toLocaleString('fr-FR')}€/an)`);
       }
 
-      // Détection zones fiscales (à affiner avec vraie API)
-      const departement = codePostal.substring(0, 2);
-      let isZFRR = false;
-      let isAFR = false;
-      
-      if (['09', '11', '15', '19', '23', '48', '63', '87'].includes(departement)) {
-        isZFRR = true;
+      if (statutActuel === 'SASU_IS' && caNum < 150000) {
+        recommandations.push(`📊 SASU à l'IR plus avantageuse pour votre CA (économie: ${(impots - impotsOptimises).toLocaleString('fr-FR')}€/an)`);
+      }
+
+      if (chargesNum < caNum * 0.15) {
+        recommandations.push(`📝 Vos charges semblent faibles (${((chargesNum / caNum) * 100).toFixed(0)}%). Pensez à déduire: repas, formations, téléphone, internet, équipement, assurances...`);
+      }
+
+      // 4. Détection zones fiscales
+      const zones = await detectZones();
+
+      if (zones.isZFRR) {
         recommandations.push(`📍 Vous êtes en ZFRR ! Exonération fiscale possible jusqu'à 50% pendant 5 ans`);
+      }
+      if (zones.isAFR) {
+        recommandations.push(`📍 Vous êtes éligible AFR : subventions pour investissements disponibles`);
+      }
+      if (zones.isQPV) {
+        recommandations.push(`📍 Quartier Prioritaire : exonérations fiscales et sociales possibles`);
+      }
+      if (zones.isBER) {
+        recommandations.push(`📍 Bassin d'Emploi à Redynamiser : aides à l'implantation disponibles`);
       }
 
       const resultData = {
@@ -118,8 +203,10 @@ export default function SimulateurSocietePage() {
         },
         gain,
         recommandations,
-        isZFRR,
-        isAFR,
+        isZFRR: zones.isZFRR,
+        isAFR: zones.isAFR,
+        isQPV: zones.isQPV,
+        isBER: zones.isBER,
       };
 
       setResults(resultData);
@@ -139,8 +226,8 @@ export default function SimulateurSocietePage() {
         situation_optimisee: resultData.situationOptimisee,
         gain_annuel: gain,
         recommandations,
-        is_zfrr: isZFRR,
-        is_afr: isAFR,
+        is_zfrr: zones.isZFRR,
+        is_afr: zones.isAFR,
       });
 
     } catch (error) {
@@ -149,6 +236,17 @@ export default function SimulateurSocietePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleDownloadPDF() {
+    if (!results) return;
+
+    downloadSimulationPDF({
+      clientName,
+      clientEmail,
+      results,
+      closerName: userName,
+    });
   }
 
   return (
@@ -170,28 +268,55 @@ export default function SimulateurSocietePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Nom du client</Label>
-              <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
+              <Label>Nom du client *</Label>
+              <Input 
+                value={clientName} 
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="Jean Dupont"
+              />
             </div>
             
             <div>
               <Label>Email</Label>
-              <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
+              <Input 
+                type="email" 
+                value={clientEmail} 
+                onChange={(e) => setClientEmail(e.target.value)}
+                placeholder="jean.dupont@exemple.fr"
+              />
             </div>
 
             <div>
-              <Label>CA annuel (€)</Label>
-              <Input type="number" value={ca} onChange={(e) => setCa(e.target.value)} placeholder="80000" />
+              <Label>CA annuel (€) *</Label>
+              <Input 
+                type="number" 
+                value={ca} 
+                onChange={(e) => setCa(e.target.value)} 
+                placeholder="80000" 
+              />
             </div>
 
             <div>
-              <Label>Charges réelles annuelles (€)</Label>
-              <Input type="number" value={charges} onChange={(e) => setCharges(e.target.value)} placeholder="15000" />
+              <Label>Charges réelles annuelles (€) *</Label>
+              <Input 
+                type="number" 
+                value={charges} 
+                onChange={(e) => setCharges(e.target.value)} 
+                placeholder="15000" 
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Loyers, matériel, sous-traitance, déplacements...
+              </p>
             </div>
 
             <div>
               <Label>Frais comptable annuel (€)</Label>
-              <Input type="number" value={fraisComptable} onChange={(e) => setFraisComptable(e.target.value)} placeholder="2400" />
+              <Input 
+                type="number" 
+                value={fraisComptable} 
+                onChange={(e) => setFraisComptable(e.target.value)} 
+                placeholder="2400" 
+              />
             </div>
 
             <div>
@@ -212,16 +337,38 @@ export default function SimulateurSocietePage() {
 
             <div>
               <Label>Code postal</Label>
-              <Input value={codePostal} onChange={(e) => setCodePostal(e.target.value)} placeholder="63000" />
+              <Input 
+                value={codePostal} 
+                onChange={(e) => setCodePostal(e.target.value)} 
+                placeholder="63000"
+                maxLength={5}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Pour détecter les zones fiscales avantageuses
+              </p>
             </div>
 
             <div>
               <Label>Besoin mensuel (€)</Label>
-              <Input type="number" value={besoinMensuel} onChange={(e) => setBesoinMensuel(e.target.value)} placeholder="3500" />
+              <Input 
+                type="number" 
+                value={besoinMensuel} 
+                onChange={(e) => setBesoinMensuel(e.target.value)} 
+                placeholder="3500" 
+              />
             </div>
 
-            <Button onClick={calculate} disabled={loading} className="w-full bg-orange-600 hover:bg-orange-700">
-              {loading ? 'Calcul...' : (
+            <Button 
+              onClick={calculate} 
+              disabled={loading || !clientName || !ca || !charges} 
+              className="w-full bg-orange-600 hover:bg-orange-700"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 animate-spin" size={16} />
+                  Calcul en cours...
+                </>
+              ) : (
                 <>
                   <Calculator className="mr-2" size={16} />
                   Calculer l'optimisation
@@ -232,7 +379,7 @@ export default function SimulateurSocietePage() {
         </Card>
 
         {/* Résultats */}
-        {results && (
+        {results ? (
           <div className="space-y-6">
             {/* Comparatif */}
             <Card className="border-2 border-green-500">
@@ -247,21 +394,24 @@ export default function SimulateurSocietePage() {
                   <div className="flex justify-between items-center p-3 bg-slate-50 rounded">
                     <span className="font-semibold">Situation actuelle</span>
                     <span className="text-2xl font-bold text-slate-900">
-                      {results.situationActuelle.netCash.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}€
+                      {results.situationActuelle.netCash.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} €
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center p-3 bg-green-50 rounded border-2 border-green-500">
                     <span className="font-semibold text-green-900">Avec Méthode Déclic</span>
                     <span className="text-2xl font-bold text-green-600">
-                      {results.situationOptimisee.netCash.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}€
+                      {results.situationOptimisee.netCash.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} €
                     </span>
                   </div>
 
                   <div className="text-center p-4 bg-amber-50 rounded-lg border-2 border-amber-500">
                     <p className="text-sm text-amber-900 mb-1">GAIN ANNUEL</p>
                     <p className="text-3xl font-black text-amber-600">
-                      +{results.gain.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}€
+                      +{results.gain.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} €
+                    </p>
+                    <p className="text-xs text-amber-700 mt-2">
+                      soit +{(results.gain / 12).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} €/mois
                     </p>
                   </div>
                 </div>
@@ -288,11 +438,26 @@ export default function SimulateurSocietePage() {
               </CardContent>
             </Card>
 
-            <Button className="w-full bg-slate-900 hover:bg-slate-800">
+            <Button 
+              onClick={handleDownloadPDF}
+              className="w-full bg-slate-900 hover:bg-slate-800"
+            >
               <Download className="mr-2" size={16} />
               Télécharger le rapport PDF
             </Button>
           </div>
+        ) : (
+          <Card className="flex items-center justify-center h-full">
+            <CardContent className="text-center p-12">
+              <Calculator className="mx-auto text-slate-300 mb-4" size={64} />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                Prêt à optimiser ?
+              </h3>
+              <p className="text-slate-600">
+                Remplissez le formulaire et lancez le calcul pour voir les résultats
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

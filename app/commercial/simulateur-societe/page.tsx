@@ -250,6 +250,16 @@ export default function SimulateurSocietePage() {
         recommandations.push(`🏢 Avec ${societes.length} sociétés, le régime mère-fille permettrait d'éviter la double imposition sur les dividendes (économie estimée: ${((caTotal * 0.05) * 0.30).toLocaleString('fr-FR')}€/an)`);
       }
 
+      // SASU IR de marque
+      if (societes.length === 1 && societes[0].statut.includes('SASU') && caTotal > 50000) {
+        recommandations.push(`🏢 STRATÉGIE AVANCÉE : Créer une SASU à l'IR "Marque" pour protéger votre nom commercial. Elle facturera des redevances de marque (5-10% du CA) à votre société opérationnelle, optimisant ainsi la fiscalité et protégeant votre image de marque.`);
+      }
+
+      // Si déjà multi-société, proposer la marque
+      if (societes.length >= 2 && !societes.some(s => s.nom.toLowerCase().includes('marque'))) {
+        recommandations.push(`🏢 OPTIMISATION : Une structure "Holding + Marque + Exploitation" permettrait de séparer les risques et optimiser la fiscalité via le régime mère-fille et les redevances de marque.`);
+      }
+
       if (societes.length === 1 && caTotal > 100000) {
         recommandations.push(`📊 Au-delà de 100k€ de CA, envisagez une structure mère-fille pour séparer activité opérationnelle et holding patrimonial`);
       }
@@ -451,7 +461,7 @@ export default function SimulateurSocietePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {societes.map((soc, idx) => (
+              {societes.map((soc) => (
                 <div key={soc.id} className="p-4 border rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <Input
@@ -630,6 +640,7 @@ export default function SimulateurSocietePage() {
         {/* RÉSULTATS */}
         {results ? (
           <div className="space-y-6">
+            {/* Résultat principal */}
             <Card className="border-2 border-green-500">
               <CardHeader className="bg-green-50">
                 <CardTitle className="flex items-center gap-2">
@@ -665,21 +676,21 @@ export default function SimulateurSocietePage() {
 
                   {results.details && (
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 bg-blue-50 rounded">
+                      <div className="p-2 bg-blue-50 rounded text-center">
                         <span className="font-semibold">Sociétés:</span> {results.details.nbSocietes}
                       </div>
                       {results.details.hasLMNP && (
-                        <div className="p-2 bg-purple-50 rounded">
+                        <div className="p-2 bg-purple-50 rounded text-center font-semibold">
                           ✓ LMNP
                         </div>
                       )}
                       {results.details.hasSCI && (
-                        <div className="p-2 bg-green-50 rounded">
+                        <div className="p-2 bg-green-50 rounded text-center font-semibold">
                           ✓ SCI
                         </div>
                       )}
                       {results.details.hasRegimeMereFille && (
-                        <div className="p-2 bg-orange-50 rounded">
+                        <div className="p-2 bg-orange-50 rounded text-center font-semibold">
                           ✓ Mère-fille
                         </div>
                       )}
@@ -689,11 +700,179 @@ export default function SimulateurSocietePage() {
               </CardContent>
             </Card>
 
+            {/* DÉTAILS DU CALCUL */}
+            <Card>
+              <CardHeader>
+                <CardTitle>📊 Détails du calcul</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Situation actuelle */}
+                  <div>
+                    <h4 className="font-bold text-slate-900 mb-2">Situation actuelle</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between p-2 bg-slate-50 rounded">
+                        <span>CA total</span>
+                        <span className="font-semibold">{results.situationActuelle.ca.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2">
+                        <span>- Charges</span>
+                        <span className="font-semibold text-red-600">-{results.situationActuelle.charges.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-slate-50 rounded">
+                        <span>= Rémunération brute</span>
+                        <span className="font-semibold">{results.situationActuelle.remunerationBrute.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2">
+                        <span>- Charges sociales</span>
+                        <span className="font-semibold text-red-600">-{results.situationActuelle.chargesSociales.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-slate-50 rounded">
+                        <span>- Impôts</span>
+                        <span className="font-semibold text-red-600">-{results.situationActuelle.impots.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-3 bg-slate-900 text-white rounded font-bold">
+                        <span>= NET CASH</span>
+                        <span>{results.situationActuelle.netCash.toLocaleString('fr-FR')} €</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Situation optimisée */}
+                  <div>
+                    <h4 className="font-bold text-green-900 mb-2">Avec Méthode Déclic</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between p-2 bg-green-50 rounded">
+                        <span>CA total</span>
+                        <span className="font-semibold">{results.situationOptimisee.ca.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2">
+                        <span>- Charges + IK + MDA</span>
+                        <span className="font-semibold text-red-600">-{results.situationOptimisee.charges.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-blue-50 rounded text-xs">
+                        <span className="ml-4">dont IK remboursés</span>
+                        <span className="font-semibold text-blue-600">+{results.situationOptimisee.ik.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-blue-50 rounded text-xs">
+                        <span className="ml-4">dont MDA habitation</span>
+                        <span className="font-semibold text-blue-600">+{results.situationOptimisee.mda.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-green-50 rounded">
+                        <span>- Charges sociales optimisées</span>
+                        <span className="font-semibold text-red-600">-{results.situationOptimisee.chargesSociales.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-2">
+                        <span>- Impôts optimisés</span>
+                        <span className="font-semibold text-red-600">-{results.situationOptimisee.impots.toLocaleString('fr-FR')} €</span>
+                      </div>
+                      <div className="flex justify-between p-3 bg-green-600 text-white rounded font-bold">
+                        <span>= NET CASH</span>
+                        <span>{results.situationOptimisee.netCash.toLocaleString('fr-FR')} €</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ZONES FISCALES */}
+            {(results.isZFRR || results.isAFR || results.isQPV || results.isBER) && (
+              <Card className="border-2 border-green-500 bg-green-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-900">
+                    🎯 Zones fiscales avantageuses détectées !
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {results.isZFRR && (
+                      <div className="p-4 bg-white rounded-lg border-2 border-green-500">
+                        <div className="flex items-start gap-3">
+                          <div className="text-3xl">🏞️</div>
+                          <div>
+                            <h4 className="font-bold text-green-900 mb-1">ZFRR - Zone Franche Rurale</h4>
+                            <p className="text-sm text-green-800 mb-2">
+                              Exonération d'impôts sur les bénéfices jusqu'à 50% pendant 5 ans
+                            </p>
+                            <ul className="text-xs text-green-700 space-y-1">
+                              <li>✓ 100% la 1ère année</li>
+                              <li>✓ 75% la 2ème année</li>
+                              <li>✓ 50% la 3ème année</li>
+                              <li>✓ 25% les 4ème et 5ème années</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {results.isAFR && (
+                      <div className="p-4 bg-white rounded-lg border-2 border-blue-500">
+                        <div className="flex items-start gap-3">
+                          <div className="text-3xl">💰</div>
+                          <div>
+                            <h4 className="font-bold text-blue-900 mb-1">AFR - Aide à la Finalité Régionale</h4>
+                            <p className="text-sm text-blue-800 mb-2">
+                              Subventions pour investissements productifs
+                            </p>
+                            <ul className="text-xs text-blue-700 space-y-1">
+                              <li>✓ Jusqu'à 20% de l'investissement</li>
+                              <li>✓ Machines, bâtiments, équipements</li>
+                              <li>✓ Accompagnement région</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {results.isQPV && (
+                      <div className="p-4 bg-white rounded-lg border-2 border-purple-500">
+                        <div className="flex items-start gap-3">
+                          <div className="text-3xl">🏘️</div>
+                          <div>
+                            <h4 className="font-bold text-purple-900 mb-1">QPV - Quartier Prioritaire</h4>
+                            <p className="text-sm text-purple-800 mb-2">
+                              Exonérations fiscales et sociales
+                            </p>
+                            <ul className="text-xs text-purple-700 space-y-1">
+                              <li>✓ Exonération cotisations patronales (1,5 SMIC)</li>
+                              <li>✓ Exonération impôts 5 ans</li>
+                              <li>✓ Exonération CFE 5 ans</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {results.isBER && (
+                      <div className="p-4 bg-white rounded-lg border-2 border-orange-500">
+                        <div className="flex items-start gap-3">
+                          <div className="text-3xl">🏭</div>
+                          <div>
+                            <h4 className="font-bold text-orange-900 mb-1">BER - Bassin d'Emploi à Redynamiser</h4>
+                            <p className="text-sm text-orange-800 mb-2">
+                              Aides à l'implantation et à l'emploi
+                            </p>
+                            <ul className="text-xs text-orange-700 space-y-1">
+                              <li>✓ Exonération cotisations patronales</li>
+                              <li>✓ Prime aménagement territoire</li>
+                              <li>✓ Accompagnement Pôle Emploi</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recommandations */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="text-blue-600" />
-                  Recommandations
+                  Recommandations personnalisées
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -708,12 +887,13 @@ export default function SimulateurSocietePage() {
               </CardContent>
             </Card>
 
+            {/* Bouton PDF */}
             <Button 
               onClick={handleDownloadPDF}
-              className="w-full bg-slate-900 hover:bg-slate-800"
+              className="w-full bg-slate-900 hover:bg-slate-800 h-12 text-base"
             >
-              <Download className="mr-2" size={16} />
-              Télécharger le rapport PDF
+              <Download className="mr-2" size={20} />
+              Télécharger le rapport PDF complet
             </Button>
           </div>
         ) : (

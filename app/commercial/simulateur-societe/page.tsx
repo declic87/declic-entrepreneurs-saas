@@ -103,34 +103,49 @@ export default function SimulateurSocietePage() {
 
     const departement = codePostal.substring(0, 2);
 
-    // ZFRR - Départements ruraux
+    // ZFRR - Zone Franche Rurale Revitalisation (source officielle DGCL)
+    // PAS LE 51 (Marne) - PAS LE 63 (Puy-de-Dôme dans certaines communes uniquement)
     const ZFRR_DEPTS = [
       '01', '02', '03', '04', '05', '07', '08', '09', '11', '12', '15', '16',
       '17', '18', '19', '21', '22', '23', '24', '25', '26', '27', '28', '29',
       '32', '36', '37', '39', '40', '41', '42', '43', '46', '47', '48', '49',
-      '50', '52', '53', '55', '56', '58', '61', '63', '64', '65', '70', '71',
+      '50', '52', '53', '55', '56', '58', '61', '64', '65', '70', '71',
       '72', '79', '81', '82', '85', '86', '87', '88', '89', '90'
     ];
 
-    // AFR - Aide Finalité Régionale
+    // AFR - Aide Finalité Régionale (zones éligibles aux aides d'État)
+    // INCLUT LE 51 (Grand-Est) et 63 (Auvergne)
     const AFR_DEPTS = [
-      '01', '02', '03', '07', '08', '10', '15', '18', '19', '21', '23', '25',
-      '36', '39', '42', '43', '48', '52', '54', '55', '58', '63', '70', '71',
-      '87', '88', '89', '90'
+      '01', '02', '03', '05', '07', '08', '10', '15', '18', '19', '21', '23', '25',
+      '26', '36', '38', '39', '42', '43', '48', '51', '52', '54', '55', '57', '58',
+      '63', '67', '68', '70', '71', '73', '74', '87', '88', '89', '90'
     ];
 
-    // BER - Bassins d'Emploi à Redynamiser
+    // BER - Bassins d'Emploi à Redynamiser (2024)
     const BER_DEPTS = ['08', '52', '55', '88', '02', '59', '62'];
 
-    // QPV - Codes postaux majeurs
-    const QPV_CODES = ['75018', '75019', '75020', '93001', '93008', '13001', '13002', '13003'];
+    // QPV - Quartiers Prioritaires de la Ville (codes postaux principaux)
+    const QPV_CODES = [
+      '75018', '75019', '75020', // Paris
+      '93001', '93008', '93013', '93029', '93031', '93048', '93070', // Seine-Saint-Denis
+      '13001', '13002', '13003', '13014', '13015', '13016', // Marseille
+      '69003', '69007', '69008', '69009', // Lyon
+      '59000', '59100', '59260', // Lille/Roubaix/Tourcoing
+      '31200', '31300', // Toulouse
+      '33000', '33100', '33130', '33200', // Bordeaux
+      '34000', '34080', '34090', // Montpellier
+      '44000', '44100', '44200', // Nantes
+      '67000', '67100', '67200', // Strasbourg
+      '38000', '38100', // Grenoble
+      '51100', // Reims (QPV uniquement, pas ZFRR)
+    ];
 
     const isZFRR = ZFRR_DEPTS.includes(departement);
     const isAFR = AFR_DEPTS.includes(departement);
     const isBER = BER_DEPTS.includes(departement);
-    const isQPV = QPV_CODES.some(cp => codePostal.startsWith(cp));
+    const isQPV = QPV_CODES.some(cp => codePostal.startsWith(cp.substring(0, 5)));
 
-    console.log('📍 Détection locale:', { departement, isZFRR, isAFR, isBER, isQPV });
+    console.log('📍 Détection locale:', { codePostal, departement, isZFRR, isAFR, isBER, isQPV });
 
     return { isZFRR, isAFR, isQPV, isBER };
   }
@@ -302,7 +317,7 @@ export default function SimulateurSocietePage() {
       }
       if (zones.isAFR) {
         console.log('✅ AFR détectée !');
-        recommandations.push(`📍 Éligible AFR : subventions pour investissements productifs`);
+        recommandations.push(`📍 Éligible AFR : subventions pour investissements productifs jusqu'à 20%`);
       }
       if (zones.isQPV) {
         console.log('✅ QPV détectée !');
@@ -414,7 +429,6 @@ export default function SimulateurSocietePage() {
       alert(`Erreur PDF : ${error}`);
     }
   }
-
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -469,7 +483,7 @@ export default function SimulateurSocietePage() {
                 <Input 
                   value={codePostal} 
                   onChange={(e) => setCodePostal(e.target.value)} 
-                  placeholder="63000"
+                  placeholder="51000"
                   maxLength={5}
                 />
               </div>
@@ -674,7 +688,6 @@ export default function SimulateurSocietePage() {
           </Button>
         </div>
 
-        {/* RÉSULTATS - SUITE DANS LE PROCHAIN MESSAGE */}
         {/* RÉSULTATS */}
         {results ? (
           <div className="space-y-6">

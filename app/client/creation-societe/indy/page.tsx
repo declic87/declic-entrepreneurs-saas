@@ -59,6 +59,14 @@ export default function IndyPage() {
     );
   }
 
+  if (!solution) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Solution non trouvée</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-slate-100 p-8">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -70,17 +78,16 @@ export default function IndyPage() {
         </Link>
 
         <div className="text-center">
-          <div className="text-6xl mb-4">{solution?.icon}</div>
+          <div className="text-6xl mb-4">{solution.icon}</div>
           <h1 className="text-4xl font-black text-slate-900 mb-4">
-            {solution?.name}
+            {solution.name}
           </h1>
           <p className="text-lg text-slate-600">
-            {solution?.description}
+            {solution.description}
           </p>
         </div>
 
-        {/* Vidéo */}
-        {solution?.loom_video_url && (
+        {solution.loom_video_url && (
           <Card>
             <CardContent className="p-0">
               <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
@@ -95,7 +102,6 @@ export default function IndyPage() {
           </Card>
         )}
 
-        {/* Avantages partenaire */}
         <Card className="border-2 border-green-300 bg-green-50">
           <CardContent className="p-8">
             <h2 className="text-2xl font-bold text-green-900 mb-6 text-center">
@@ -112,7 +118,6 @@ export default function IndyPage() {
           </CardContent>
         </Card>
 
-        {/* CTA */}
         <Card className="border-2 border-green-500">
           <CardContent className="p-8 text-center space-y-4">
             <h3 className="text-2xl font-bold text-slate-900">
@@ -121,9 +126,9 @@ export default function IndyPage() {
             <p className="text-slate-600">
               Cliquez ci-dessous pour profiter de nos avantages partenaires
             </p>
-            <a href={solution?.cta_link} target="_blank" rel="noopener noreferrer">
+            <a href={solution.cta_link} target="_blank" rel="noopener noreferrer">
               <Button className="bg-green-600 hover:bg-green-700 text-white text-lg px-8 py-6">
-                {solution?.cta_text}
+                {solution.cta_text}
                 <ExternalLink className="ml-2" size={20} />
               </Button>
             </a>

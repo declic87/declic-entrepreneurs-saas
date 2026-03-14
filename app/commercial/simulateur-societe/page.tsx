@@ -97,29 +97,42 @@ export default function SimulateurSocietePage() {
   }
 
   async function detectZones() {
-    if (!codePostal || codePostal.length < 5) return { isZFRR: false, isAFR: false, isQPV: false, isBER: false };
-
-    try {
-      const response = await fetch('/api/zones-fiscales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codePostal }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          isZFRR: data.isZFRR || false,
-          isAFR: data.isAFR || false,
-          isQPV: data.isQPV || false,
-          isBER: data.isBER || false,
-        };
-      }
-    } catch (error) {
-      console.error('Erreur détection zones:', error);
+    if (!codePostal || codePostal.length < 5) {
+      return { isZFRR: false, isAFR: false, isQPV: false, isBER: false };
     }
 
-    return { isZFRR: false, isAFR: false, isQPV: false, isBER: false };
+    const departement = codePostal.substring(0, 2);
+
+    // ZFRR - Départements ruraux
+    const ZFRR_DEPTS = [
+      '01', '02', '03', '04', '05', '07', '08', '09', '11', '12', '15', '16',
+      '17', '18', '19', '21', '22', '23', '24', '25', '26', '27', '28', '29',
+      '32', '36', '37', '39', '40', '41', '42', '43', '46', '47', '48', '49',
+      '50', '52', '53', '55', '56', '58', '61', '63', '64', '65', '70', '71',
+      '72', '79', '81', '82', '85', '86', '87', '88', '89', '90'
+    ];
+
+    // AFR - Aide Finalité Régionale
+    const AFR_DEPTS = [
+      '01', '02', '03', '07', '08', '10', '15', '18', '19', '21', '23', '25',
+      '36', '39', '42', '43', '48', '52', '54', '55', '58', '63', '70', '71',
+      '87', '88', '89', '90'
+    ];
+
+    // BER - Bassins d'Emploi à Redynamiser
+    const BER_DEPTS = ['08', '52', '55', '88', '02', '59', '62'];
+
+    // QPV - Codes postaux majeurs
+    const QPV_CODES = ['75018', '75019', '75020', '93001', '93008', '13001', '13002', '13003'];
+
+    const isZFRR = ZFRR_DEPTS.includes(departement);
+    const isAFR = AFR_DEPTS.includes(departement);
+    const isBER = BER_DEPTS.includes(departement);
+    const isQPV = QPV_CODES.some(cp => codePostal.startsWith(cp));
+
+    console.log('📍 Détection locale:', { departement, isZFRR, isAFR, isBER, isQPV });
+
+    return { isZFRR, isAFR, isQPV, isBER };
   }
 
   async function calculate() {
@@ -279,20 +292,28 @@ export default function SimulateurSocietePage() {
       }
 
       // Zones fiscales
+      console.log('🔍 Détection zones pour code postal:', codePostal);
       const zones = await detectZones();
+      console.log('📍 Zones détectées:', zones);
 
       if (zones.isZFRR) {
+        console.log('✅ ZFRR détectée !');
         recommandations.push(`📍 ZFRR détectée ! Exonération fiscale jusqu'à 50% pendant 5 ans`);
       }
       if (zones.isAFR) {
+        console.log('✅ AFR détectée !');
         recommandations.push(`📍 Éligible AFR : subventions pour investissements productifs`);
       }
       if (zones.isQPV) {
+        console.log('✅ QPV détectée !');
         recommandations.push(`📍 Quartier Prioritaire : exonérations fiscales et sociales possibles`);
       }
       if (zones.isBER) {
+        console.log('✅ BER détectée !');
         recommandations.push(`📍 Bassin d'Emploi à Redynamiser : aides à l'implantation`);
       }
+
+      console.log('📋 Recommandations finales:', recommandations);
 
       // Optimisations statut
       const hasEI = societes.some(s => s.statut === 'EI');
@@ -368,14 +389,30 @@ export default function SimulateurSocietePage() {
   }
 
   function handleDownloadPDF() {
-    if (!results) return;
+    console.log('🔍 Tentative téléchargement PDF');
+    console.log('📦 Results:', results);
+    console.log('👤 Client:', clientName, clientEmail);
+    console.log('🧑‍💼 Closer:', userName);
 
-    downloadSimulationPDF({
-      clientName,
-      clientEmail,
-      results,
-      closerName: userName,
-    });
+    if (!results) {
+      console.error('❌ Pas de résultats !');
+      alert('Erreur : Aucun résultat à exporter');
+      return;
+    }
+
+    try {
+      console.log('📄 Appel downloadSimulationPDF...');
+      downloadSimulationPDF({
+        clientName,
+        clientEmail,
+        results,
+        closerName: userName,
+      });
+      console.log('✅ PDF généré !');
+    } catch (error) {
+      console.error('❌ Erreur PDF:', error);
+      alert(`Erreur PDF : ${error}`);
+    }
   }
 
   return (
@@ -637,6 +674,7 @@ export default function SimulateurSocietePage() {
           </Button>
         </div>
 
+        {/* RÉSULTATS - SUITE DANS LE PROCHAIN MESSAGE */}
         {/* RÉSULTATS */}
         {results ? (
           <div className="space-y-6">

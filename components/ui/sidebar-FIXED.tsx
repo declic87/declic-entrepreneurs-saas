@@ -36,6 +36,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Contrats", href: "/admin/contrats", icon: FileText },
     { label: "Solutions Création", href: "/admin/solutions-creation", icon: Building },
     { label: "📊 Simulations", href: "/admin/simulations", icon: Calculator },
+    { label: "📊 Simulations Closers", href: "/admin/simulations", icon: BarChart3 },
     { label: "Contenus", href: "/admin/contenus", icon: Video },
     { label: "Onboarding Staff", href: "/admin/onboarding-staff", icon: Play },
     { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video },

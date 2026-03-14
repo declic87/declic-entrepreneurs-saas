@@ -7,23 +7,46 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, TrendingUp, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calculator, TrendingUp, CheckCircle, Download, Loader2, Plus, Trash2 } from 'lucide-react';
 import { downloadSimulationPDF } from '@/lib/simulation-pdf-generator';
+
+interface Societe {
+  id: string;
+  nom: string;
+  statut: string;
+  ca: string;
+  charges: string;
+}
 
 export default function SimulateurSocietePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   
-  // Inputs
+  // Inputs client
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  const [ca, setCa] = useState('');
-  const [charges, setCharges] = useState('');
   const [fraisComptable, setFraisComptable] = useState('');
-  const [statutActuel, setStatutActuel] = useState('');
   const [codePostal, setCodePostal] = useState('');
   const [besoinMensuel, setBesoinMensuel] = useState('');
+  
+  // Sociétés (multi)
+  const [societes, setSocietes] = useState<Societe[]>([
+    { id: '1', nom: 'Société principale', statut: '', ca: '', charges: '' }
+  ]);
+  
+  // Options avancées
+  const [hasLMNP, setHasLMNP] = useState(false);
+  const [lmnpCA, setLmnpCA] = useState('');
+  const [lmnpCharges, setLmnpCharges] = useState('');
+  
+  const [hasSCI, setHasSCI] = useState(false);
+  const [sciType, setSciType] = useState('IR');
+  const [sciCA, setSciCA] = useState('');
+  const [sciCharges, setSciCharges] = useState('');
+  
+  const [hasRegimeMereFille, setHasRegimeMereFille] = useState(false);
   
   // Résultats
   const [results, setResults] = useState<any>(null);
@@ -53,6 +76,26 @@ export default function SimulateurSocietePage() {
     }
   }
 
+  function addSociete() {
+    setSocietes([...societes, { 
+      id: Date.now().toString(), 
+      nom: `Société ${societes.length + 1}`, 
+      statut: '', 
+      ca: '', 
+      charges: '' 
+    }]);
+  }
+
+  function removeSociete(id: string) {
+    if (societes.length > 1) {
+      setSocietes(societes.filter(s => s.id !== id));
+    }
+  }
+
+  function updateSociete(id: string, field: keyof Societe, value: string) {
+    setSocietes(societes.map(s => s.id === id ? { ...s, [field]: value } : s));
+  }
+
   async function detectZones() {
     if (!codePostal || codePostal.length < 5) return { isZFRR: false, isAFR: false, isQPV: false, isBER: false };
 
@@ -80,64 +123,108 @@ export default function SimulateurSocietePage() {
   }
 
   async function calculate() {
-    if (!clientName || !ca || !charges) {
-      alert('Veuillez remplir au minimum le nom du client, le CA et les charges');
+    if (!clientName || societes.some(s => !s.ca || !s.charges)) {
+      alert('Veuillez remplir le nom du client et les informations de toutes les sociétés');
       return;
     }
 
     setLoading(true);
     
     try {
-      const caNum = parseFloat(ca);
-      const chargesNum = parseFloat(charges);
       const fraisComptableNum = parseFloat(fraisComptable) || 0;
       const besoinMensuelNum = parseFloat(besoinMensuel) || 0;
 
-      // 1. Situation actuelle (estimation)
-      let remunerationBrute = caNum - chargesNum;
-      let chargesSociales = 0;
-      let impots = 0;
+      // ═══════════════════════════════════════════════
+      // CALCUL PAR SOCIÉTÉ
+      // ═══════════════════════════════════════════════
+      
+      let caTotal = 0;
+      let chargesTotal = 0;
+      let chargesSocialesActuelles = 0;
+      let impotsActuels = 0;
 
-      switch (statutActuel) {
-        case 'EI':
-          chargesSociales = caNum * 0.22;
-          const revenuImposable = caNum * 0.66;
-          impots = revenuImposable * 0.15;
-          remunerationBrute = caNum - chargesSociales;
-          break;
+      societes.forEach(soc => {
+        const ca = parseFloat(soc.ca);
+        const charges = parseFloat(soc.charges);
+        caTotal += ca;
+        chargesTotal += charges;
+
+        const remunerationBrute = ca - charges;
+
+        switch (soc.statut) {
+          case 'EI':
+            chargesSocialesActuelles += ca * 0.22;
+            impotsActuels += (ca * 0.66) * 0.15;
+            break;
+          case 'EURL':
+          case 'SARL':
+            chargesSocialesActuelles += remunerationBrute * 0.45;
+            impotsActuels += (remunerationBrute - (remunerationBrute * 0.45)) * 0.20;
+            break;
+          case 'SASU_IS':
+          case 'SAS_IS':
+            const is = (ca - charges) * 0.15;
+            const dividendes = (ca - charges - is) * 0.5;
+            const salaire = (ca - charges - is) * 0.5;
+            chargesSocialesActuelles += salaire * 0.82;
+            impotsActuels += is + (dividendes * 0.30);
+            break;
+          case 'SASU_IR':
+          case 'SAS_IR':
+            chargesSocialesActuelles += remunerationBrute * 0.82;
+            impotsActuels += (remunerationBrute - (remunerationBrute * 0.82)) * 0.15;
+            break;
+          default:
+            chargesSocialesActuelles += remunerationBrute * 0.45;
+            impotsActuels += (remunerationBrute - (remunerationBrute * 0.45)) * 0.20;
+        }
+      });
+
+      // ═══════════════════════════════════════════════
+      // LMNP
+      // ═══════════════════════════════════════════════
+      
+      if (hasLMNP && lmnpCA) {
+        const lmnpCANum = parseFloat(lmnpCA);
+        const lmnpChargesNum = parseFloat(lmnpCharges) || 0;
+        caTotal += lmnpCANum;
+        chargesTotal += lmnpChargesNum;
         
-        case 'EURL':
-          chargesSociales = remunerationBrute * 0.45;
-          impots = (remunerationBrute - chargesSociales) * 0.20;
-          break;
-        
-        case 'SASU_IS':
-          const is = (caNum - chargesNum) * 0.15;
-          const dividendes = (caNum - chargesNum - is) * 0.5;
-          const salaire = (caNum - chargesNum - is) * 0.5;
-          chargesSociales = salaire * 0.82;
-          const flatTax = dividendes * 0.30;
-          impots = is + flatTax;
-          remunerationBrute = salaire;
-          break;
-        
-        case 'SASU_IR':
-          chargesSociales = remunerationBrute * 0.82;
-          impots = (remunerationBrute - chargesSociales) * 0.15;
-          break;
-        
-        default:
-          chargesSociales = remunerationBrute * 0.45;
-          impots = (remunerationBrute - chargesSociales) * 0.20;
+        // LMNP au micro : abattement 50%
+        const lmnpImposable = lmnpCANum * 0.5;
+        impotsActuels += lmnpImposable * 0.15;
       }
 
-      const netActuel = remunerationBrute - chargesSociales - impots;
+      // ═══════════════════════════════════════════════
+      // SCI
+      // ═══════════════════════════════════════════════
+      
+      if (hasSCI && sciCA) {
+        const sciCANum = parseFloat(sciCA);
+        const sciChargesNum = parseFloat(sciCharges) || 0;
+        caTotal += sciCANum;
+        chargesTotal += sciChargesNum;
 
-      // 2. Situation optimisée Déclic
+        if (sciType === 'IS') {
+          const sciIS = (sciCANum - sciChargesNum) * 0.15;
+          impotsActuels += sciIS;
+        } else {
+          // SCI à l'IR
+          const sciImposable = sciCANum - sciChargesNum;
+          impotsActuels += sciImposable * 0.20;
+        }
+      }
+
+      const netActuel = caTotal - chargesTotal - chargesSocialesActuelles - impotsActuels;
+
+      // ═══════════════════════════════════════════════
+      // SITUATION OPTIMISÉE
+      // ═══════════════════════════════════════════════
+      
       const ikOptimal = 12000;
       const mdaOptimal = 8000;
-      const fraisOptimises = ikOptimal + mdaOptimal + chargesNum;
-      const baseImposable = caNum - fraisOptimises;
+      const fraisOptimises = chargesTotal + ikOptimal + mdaOptimal;
+      const baseImposable = caTotal - fraisOptimises;
       
       const chargesSocialesOptimisees = baseImposable * 0.25;
       const impotsOptimises = (baseImposable - chargesSocialesOptimisees) * 0.12;
@@ -145,55 +232,81 @@ export default function SimulateurSocietePage() {
 
       const gain = netOptimise - netActuel;
 
-      // 3. Recommandations
+      // ═══════════════════════════════════════════════
+      // RECOMMANDATIONS
+      // ═══════════════════════════════════════════════
+      
       const recommandations: string[] = [];
       
       recommandations.push(`🚗 Indemnités Kilométriques: 12 000€/an de remboursement cash non imposé (barème fiscal 7CV)`);
       recommandations.push(`🏠 Mise à disposition habitation: 8 000€/an de remboursement cash non imposé (bureau domicile)`);
       
       if (fraisComptableNum > 3000) {
-        recommandations.push(`💰 Votre comptable coûte ${fraisComptableNum.toLocaleString('fr-FR')}€/an. Notre partenaire: 1200€/an (économie: ${(fraisComptableNum - 1200).toLocaleString('fr-FR')}€)`);
-      }
-      
-      if (statutActuel === 'EI' || statutActuel === 'EURL') {
-        recommandations.push(`🏢 Passage en SASU à l'IR recommandé pour optimiser les charges sociales (-${((chargesSociales - chargesSocialesOptimisees)).toLocaleString('fr-FR')}€/an)`);
+        recommandations.push(`💰 Comptable actuel: ${fraisComptableNum.toLocaleString('fr-FR')}€/an. Notre partenaire: 1200€/an (économie: ${(fraisComptableNum - 1200).toLocaleString('fr-FR')}€)`);
       }
 
-      if (statutActuel === 'SASU_IS' && caNum < 150000) {
-        recommandations.push(`📊 SASU à l'IR plus avantageuse pour votre CA (économie: ${(impots - impotsOptimises).toLocaleString('fr-FR')}€/an)`);
+      // Multi-société
+      if (societes.length > 1 && !hasRegimeMereFille) {
+        recommandations.push(`🏢 Avec ${societes.length} sociétés, le régime mère-fille permettrait d'éviter la double imposition sur les dividendes (économie estimée: ${((caTotal * 0.05) * 0.30).toLocaleString('fr-FR')}€/an)`);
       }
 
-      if (chargesNum < caNum * 0.15) {
-        recommandations.push(`📝 Vos charges semblent faibles (${((chargesNum / caNum) * 100).toFixed(0)}%). Pensez à déduire: repas, formations, téléphone, internet, équipement, assurances...`);
+      if (societes.length === 1 && caTotal > 100000) {
+        recommandations.push(`📊 Au-delà de 100k€ de CA, envisagez une structure mère-fille pour séparer activité opérationnelle et holding patrimonial`);
       }
 
-      // 4. Détection zones fiscales
+      // LMNP
+      if (hasLMNP) {
+        recommandations.push(`🏠 LMNP au réel recommandé si charges > 50% du CA (amortissement du bien déductible)`);
+      }
+
+      // SCI
+      if (hasSCI) {
+        if (sciType === 'IS') {
+          recommandations.push(`🏢 SCI à l'IS : intéressant si vous réinvestissez les loyers. Attention à la plus-value à la revente (19% + PS)`);
+        } else {
+          recommandations.push(`🏢 SCI à l'IR : transparent fiscalement, idéal pour transmission. Envisagez passage IS si gros travaux`);
+        }
+      }
+
+      // Zones fiscales
       const zones = await detectZones();
 
       if (zones.isZFRR) {
-        recommandations.push(`📍 Vous êtes en ZFRR ! Exonération fiscale possible jusqu'à 50% pendant 5 ans`);
+        recommandations.push(`📍 ZFRR détectée ! Exonération fiscale jusqu'à 50% pendant 5 ans`);
       }
       if (zones.isAFR) {
-        recommandations.push(`📍 Vous êtes éligible AFR : subventions pour investissements disponibles`);
+        recommandations.push(`📍 Éligible AFR : subventions pour investissements productifs`);
       }
       if (zones.isQPV) {
         recommandations.push(`📍 Quartier Prioritaire : exonérations fiscales et sociales possibles`);
       }
       if (zones.isBER) {
-        recommandations.push(`📍 Bassin d'Emploi à Redynamiser : aides à l'implantation disponibles`);
+        recommandations.push(`📍 Bassin d'Emploi à Redynamiser : aides à l'implantation`);
+      }
+
+      // Optimisations statut
+      const hasEI = societes.some(s => s.statut === 'EI');
+      const hasSASU_IS = societes.some(s => s.statut === 'SASU_IS' || s.statut === 'SAS_IS');
+
+      if (hasEI) {
+        recommandations.push(`⚠️ EI détectée : passage en SASU à l'IR recommandé pour réduire les charges sociales de ${((chargesSocialesActuelles * 0.3)).toLocaleString('fr-FR')}€/an`);
+      }
+
+      if (hasSASU_IS && caTotal < 150000) {
+        recommandations.push(`📊 SASU à l'IS détectée avec CA < 150k€ : passage à l'IR plus avantageux (économie impôts: ${(impotsActuels * 0.2).toLocaleString('fr-FR')}€/an)`);
       }
 
       const resultData = {
         situationActuelle: {
-          ca: caNum,
-          charges: chargesNum,
-          remunerationBrute,
-          chargesSociales,
-          impots,
+          ca: caTotal,
+          charges: chargesTotal,
+          remunerationBrute: caTotal - chargesTotal,
+          chargesSociales: chargesSocialesActuelles,
+          impots: impotsActuels,
           netCash: netActuel,
         },
         situationOptimisee: {
-          ca: caNum,
+          ca: caTotal,
           charges: fraisOptimises,
           ik: ikOptimal,
           mda: mdaOptimal,
@@ -207,19 +320,25 @@ export default function SimulateurSocietePage() {
         isAFR: zones.isAFR,
         isQPV: zones.isQPV,
         isBER: zones.isBER,
+        details: {
+          nbSocietes: societes.length,
+          hasLMNP,
+          hasSCI,
+          hasRegimeMereFille,
+        }
       };
 
       setResults(resultData);
 
-      // Sauvegarder en base
+      // Sauvegarder
       await supabase.from('closer_simulations').insert({
         closer_id: userId,
         client_name: clientName,
         client_email: clientEmail,
-        ca_annuel: caNum,
-        charges_reelles: chargesNum,
+        ca_annuel: caTotal,
+        charges_reelles: chargesTotal,
         frais_comptable: fraisComptableNum,
-        statut_actuel: statutActuel,
+        statut_actuel: societes.length > 1 ? 'MULTI' : societes[0].statut,
         code_postal: codePostal,
         besoin_mensuel: besoinMensuelNum,
         situation_actuelle: resultData.situationActuelle,
@@ -253,135 +372,264 @@ export default function SimulateurSocietePage() {
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">
-          🧮 Simulateur Société
+          🧮 Simulateur Société Avancé
         </h1>
         <p className="text-slate-600 mt-2">
-          Outil d'analyse comptable et fiscale pour vos prospects
+          Analyse multi-société, LMNP, SCI, régime mère-fille
         </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Formulaire */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Informations Client</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Nom du client *</Label>
-              <Input 
-                value={clientName} 
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="Jean Dupont"
-              />
-            </div>
-            
-            <div>
-              <Label>Email</Label>
-              <Input 
-                type="email" 
-                value={clientEmail} 
-                onChange={(e) => setClientEmail(e.target.value)}
-                placeholder="jean.dupont@exemple.fr"
-              />
-            </div>
+        {/* FORMULAIRE */}
+        <div className="space-y-6">
+          {/* Client */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations Client</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Nom du client *</Label>
+                <Input 
+                  value={clientName} 
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Jean Dupont"
+                />
+              </div>
+              
+              <div>
+                <Label>Email</Label>
+                <Input 
+                  type="email" 
+                  value={clientEmail} 
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="jean.dupont@exemple.fr"
+                />
+              </div>
 
-            <div>
-              <Label>CA annuel (€) *</Label>
-              <Input 
-                type="number" 
-                value={ca} 
-                onChange={(e) => setCa(e.target.value)} 
-                placeholder="80000" 
-              />
-            </div>
+              <div>
+                <Label>Frais comptable annuel (€)</Label>
+                <Input 
+                  type="number" 
+                  value={fraisComptable} 
+                  onChange={(e) => setFraisComptable(e.target.value)} 
+                  placeholder="2400" 
+                />
+              </div>
 
-            <div>
-              <Label>Charges réelles annuelles (€) *</Label>
-              <Input 
-                type="number" 
-                value={charges} 
-                onChange={(e) => setCharges(e.target.value)} 
-                placeholder="15000" 
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Loyers, matériel, sous-traitance, déplacements...
-              </p>
-            </div>
+              <div>
+                <Label>Code postal</Label>
+                <Input 
+                  value={codePostal} 
+                  onChange={(e) => setCodePostal(e.target.value)} 
+                  placeholder="63000"
+                  maxLength={5}
+                />
+              </div>
 
-            <div>
-              <Label>Frais comptable annuel (€)</Label>
-              <Input 
-                type="number" 
-                value={fraisComptable} 
-                onChange={(e) => setFraisComptable(e.target.value)} 
-                placeholder="2400" 
-              />
-            </div>
+              <div>
+                <Label>Besoin mensuel (€)</Label>
+                <Input 
+                  type="number" 
+                  value={besoinMensuel} 
+                  onChange={(e) => setBesoinMensuel(e.target.value)} 
+                  placeholder="3500" 
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label>Statut actuel</Label>
-              <Select value={statutActuel} onValueChange={setStatutActuel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EI">EI (Auto-entrepreneur)</SelectItem>
-                  <SelectItem value="EURL">EURL</SelectItem>
-                  <SelectItem value="SASU_IR">SASU à l'IR</SelectItem>
-                  <SelectItem value="SASU_IS">SASU à l'IS</SelectItem>
-                  <SelectItem value="SARL">SARL</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Sociétés */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Sociétés ({societes.length})</CardTitle>
+                <Button size="sm" onClick={addSociete} variant="outline">
+                  <Plus size={14} className="mr-1" />
+                  Ajouter
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {societes.map((soc, idx) => (
+                <div key={soc.id} className="p-4 border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Input
+                      value={soc.nom}
+                      onChange={(e) => updateSociete(soc.id, 'nom', e.target.value)}
+                      placeholder="Nom société"
+                      className="font-semibold"
+                    />
+                    {societes.length > 1 && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => removeSociete(soc.id)}
+                      >
+                        <Trash2 size={14} className="text-red-500" />
+                      </Button>
+                    )}
+                  </div>
 
-            <div>
-              <Label>Code postal</Label>
-              <Input 
-                value={codePostal} 
-                onChange={(e) => setCodePostal(e.target.value)} 
-                placeholder="63000"
-                maxLength={5}
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Pour détecter les zones fiscales avantageuses
-              </p>
-            </div>
+                  <Select 
+                    value={soc.statut} 
+                    onValueChange={(v) => updateSociete(soc.id, 'statut', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Statut juridique *" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EI">EI / Auto-entrepreneur</SelectItem>
+                      <SelectItem value="EURL">EURL</SelectItem>
+                      <SelectItem value="SARL">SARL</SelectItem>
+                      <SelectItem value="SASU_IR">SASU à l'IR</SelectItem>
+                      <SelectItem value="SASU_IS">SASU à l'IS</SelectItem>
+                      <SelectItem value="SAS_IR">SAS à l'IR</SelectItem>
+                      <SelectItem value="SAS_IS">SAS à l'IS</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-            <div>
-              <Label>Besoin mensuel (€)</Label>
-              <Input 
-                type="number" 
-                value={besoinMensuel} 
-                onChange={(e) => setBesoinMensuel(e.target.value)} 
-                placeholder="3500" 
-              />
-            </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">CA annuel (€) *</Label>
+                      <Input
+                        type="number"
+                        value={soc.ca}
+                        onChange={(e) => updateSociete(soc.id, 'ca', e.target.value)}
+                        placeholder="80000"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Charges (€) *</Label>
+                      <Input
+                        type="number"
+                        value={soc.charges}
+                        onChange={(e) => updateSociete(soc.id, 'charges', e.target.value)}
+                        placeholder="15000"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
 
-            <Button 
-              onClick={calculate} 
-              disabled={loading || !clientName || !ca || !charges} 
-              className="w-full bg-orange-600 hover:bg-orange-700"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 animate-spin" size={16} />
-                  Calcul en cours...
-                </>
-              ) : (
-                <>
-                  <Calculator className="mr-2" size={16} />
-                  Calculer l'optimisation
-                </>
+              {societes.length > 1 && (
+                <div className="flex items-center gap-2 p-3 bg-orange-50 rounded">
+                  <Checkbox
+                    checked={hasRegimeMereFille}
+                    onCheckedChange={(checked) => setHasRegimeMereFille(checked as boolean)}
+                  />
+                  <Label className="text-sm">Déjà en régime mère-fille</Label>
+                </div>
               )}
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Résultats */}
+          {/* LMNP */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox
+                  checked={hasLMNP}
+                  onCheckedChange={(checked) => setHasLMNP(checked as boolean)}
+                />
+                <Label className="font-semibold">LMNP (Location Meublée Non Professionnelle)</Label>
+              </div>
+
+              {hasLMNP && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">CA LMNP (€)</Label>
+                    <Input
+                      type="number"
+                      value={lmnpCA}
+                      onChange={(e) => setLmnpCA(e.target.value)}
+                      placeholder="24000"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Charges LMNP (€)</Label>
+                    <Input
+                      type="number"
+                      value={lmnpCharges}
+                      onChange={(e) => setLmnpCharges(e.target.value)}
+                      placeholder="5000"
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* SCI */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox
+                  checked={hasSCI}
+                  onCheckedChange={(checked) => setHasSCI(checked as boolean)}
+                />
+                <Label className="font-semibold">SCI (Société Civile Immobilière)</Label>
+              </div>
+
+              {hasSCI && (
+                <div className="space-y-3">
+                  <Select value={sciType} onValueChange={setSciType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IR">SCI à l'IR</SelectItem>
+                      <SelectItem value="IS">SCI à l'IS</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Loyers annuels (€)</Label>
+                      <Input
+                        type="number"
+                        value={sciCA}
+                        onChange={(e) => setSciCA(e.target.value)}
+                        placeholder="18000"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Charges SCI (€)</Label>
+                      <Input
+                        type="number"
+                        value={sciCharges}
+                        onChange={(e) => setSciCharges(e.target.value)}
+                        placeholder="3000"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Button 
+            onClick={calculate} 
+            disabled={loading || !clientName || societes.some(s => !s.ca || !s.charges)} 
+            className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-base"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 animate-spin" size={20} />
+                Calcul en cours...
+              </>
+            ) : (
+              <>
+                <Calculator className="mr-2" size={20} />
+                Calculer l'optimisation
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* RÉSULTATS */}
         {results ? (
           <div className="space-y-6">
-            {/* Comparatif */}
             <Card className="border-2 border-green-500">
               <CardHeader className="bg-green-50">
                 <CardTitle className="flex items-center gap-2">
@@ -414,11 +662,33 @@ export default function SimulateurSocietePage() {
                       soit +{(results.gain / 12).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} €/mois
                     </p>
                   </div>
+
+                  {results.details && (
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 bg-blue-50 rounded">
+                        <span className="font-semibold">Sociétés:</span> {results.details.nbSocietes}
+                      </div>
+                      {results.details.hasLMNP && (
+                        <div className="p-2 bg-purple-50 rounded">
+                          ✓ LMNP
+                        </div>
+                      )}
+                      {results.details.hasSCI && (
+                        <div className="p-2 bg-green-50 rounded">
+                          ✓ SCI
+                        </div>
+                      )}
+                      {results.details.hasRegimeMereFille && (
+                        <div className="p-2 bg-orange-50 rounded">
+                          ✓ Mère-fille
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Recommandations */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -454,7 +724,7 @@ export default function SimulateurSocietePage() {
                 Prêt à optimiser ?
               </h3>
               <p className="text-slate-600">
-                Remplissez le formulaire et lancez le calcul pour voir les résultats
+                Remplissez le formulaire et lancez le calcul
               </p>
             </CardContent>
           </Card>

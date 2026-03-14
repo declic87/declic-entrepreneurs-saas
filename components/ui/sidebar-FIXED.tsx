@@ -11,7 +11,7 @@ import { NotificationBell } from "@/components/ui/notification-bell";
 import CompanySelector from "@/components/creation/CompanySelector";
 import {
   LayoutDashboard, Target, Users, Briefcase, CreditCard, RefreshCw,
-  CheckCircle, Calendar, Mail, BarChart3, Settings, XCircle, Clock,
+  CheckCircle, Calendar, BarChart3, Settings, XCircle, Clock,
   UserCheck, FileText, Calculator, MessageSquare, LogOut, Building,
   Play, Video, ChevronRight, Handshake, TrendingUp, DollarSign, UserPlus,
   BookOpen, GraduationCap
@@ -35,6 +35,7 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Experts", href: "/admin/experts", icon: Briefcase },
     { label: "Contrats", href: "/admin/contrats", icon: FileText },
     { label: "Solutions Création", href: "/admin/solutions-creation", icon: Building },
+    { label: "📊 Simulations", href: "/admin/simulations", icon: Calculator },
     { label: "Contenus", href: "/admin/contenus", icon: Video },
     { label: "Onboarding Staff", href: "/admin/onboarding-staff", icon: Play },
     { label: "Vidéos Onboarding", href: "/admin/videos", icon: Video },
@@ -54,11 +55,11 @@ const navItemsByRole: Record<string, { label: string; href: string; icon: any }[
     { label: "Dashboard", href: "/commercial", icon: LayoutDashboard },
     { label: "Pipeline", href: "/commercial/pipeline", icon: Target },
     { label: "💳 Liens Paiement", href: "/commercial/liens-paiement", icon: CreditCard },
+    { label: "🧮 Simulateur Société", href: "/commercial/simulateur-societe", icon: Calculator },
     { label: "Mon Agenda", href: "/commercial/agenda", icon: Calendar },
     { label: "No-Shows", href: "/commercial/no-shows", icon: XCircle },
     { label: "Non Closes", href: "/commercial/non-closes", icon: Clock },
     { label: "Boîte à Outils", href: "/commercial/outils", icon: FileText },
-    { label: "Simulateur Société", href: "/commercial/simulateur-societe", icon: Calculator },
     { label: "📚 Formations", href: "/commercial/formations", icon: GraduationCap },
     { label: "📖 Tutos", href: "/commercial/tutos", icon: BookOpen },
     { label: "🎥 Coachings", href: "/commercial/coachings", icon: Video },
